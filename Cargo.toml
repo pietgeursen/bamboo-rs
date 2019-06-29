@@ -8,6 +8,4 @@ edition = "2018"
 
 [dependencies]
 snafu = "0.4"
-bytes = "0.4"
-serde = "1.0.94"
 varu64 = "0.6.1"

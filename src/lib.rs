@@ -1,8 +1,9 @@
-use snafu::{ensure, Backtrace, ErrorCompat, ResultExt, Snafu};
+use snafu::{Snafu};
 use std::path::PathBuf;
 
-mod entry;
-mod yamf_hash;
+pub mod entry;
+pub mod signature;
+pub mod yamf_hash;
 
 // publish(content, getHashOfEntry) -> entry
 // add(content, getHashOfEntry)
@@ -15,31 +16,8 @@ mod yamf_hash;
 // - hashes and signatures of lipmaa link dependencies
 // -
 
-// One option is the oo way. A struct to represent a feed with methods.
-//
-// trait EntryStore {
-//   fn getEntry(seq: u64) -> &[u8]
-//   fn getLastEntry() -> &[u8]
-//   fn appendEntry(entry: &[u8]) -> u64
-// }
-//
-// struct Log<Store: EntryStore> {
-//   store: Store
-// }
-
-// Entry type
-// struct Entry {
-//  is_end_of_feed: bool
-//  payload_hash: yamfhash or bytes?
-//  payload_size: u64,
-//  seq_num: u64,
-//  backlink: yamf or bytes
-//  lipmaa_link: ditto,
-//  sig: bytes
-// }
-
 #[derive(Debug, Snafu)]
-enum Error {
+pub enum Error {
     #[snafu(display("Invalid sequence number {}", seq_num))]
     GetEntrySequenceInvalid { seq_num: u64 },
     #[snafu(display("IO error when getting entry. {}: {}", filename.display(), source))]
@@ -54,9 +32,9 @@ enum Error {
     },
 }
 
-type Result<T, E = Error> = std::result::Result<T, E>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-trait EntryStore {
+pub trait EntryStore {
     fn get_entry(&self, seq_num: u64) -> Result<Vec<u8>>; // these are inconsistent. Should be an option?
     fn get_entry_ref<'a>(&'a self, seq_num: u64) -> Result<Option<&'a [u8]>>;
     fn get_last_entry(&self) -> Result<Option<Vec<u8>>>;
@@ -64,8 +42,8 @@ trait EntryStore {
     fn append_entry(&mut self, entry: &[u8]) -> Result<()>;
 }
 
-struct MemoryEntryStore {
-    store: Vec<Vec<u8>>,
+pub struct MemoryEntryStore {
+    pub store: Vec<Vec<u8>>,
 }
 
 impl EntryStore for MemoryEntryStore {
@@ -91,8 +69,8 @@ impl EntryStore for MemoryEntryStore {
     }
 }
 
-struct Log<Store: EntryStore> {
-    store: Store,
+pub struct Log<Store: EntryStore> {
+    pub store: Store,
 }
 
 impl<Store: EntryStore> Log<Store> {
