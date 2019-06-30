@@ -1,4 +1,4 @@
-use snafu::{Snafu};
+use snafu::Snafu;
 use std::path::PathBuf;
 
 pub mod entry;

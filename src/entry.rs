@@ -1,8 +1,8 @@
-use std::io::{Write};
+use std::io::Write;
 use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
 
-use super::yamf_hash::YamfHash;
 use super::signature::Signature;
+use super::yamf_hash::YamfHash;
 
 pub struct Entry<'a> {
     pub is_end_of_feed: bool,
@@ -11,7 +11,7 @@ pub struct Entry<'a> {
     pub seq_num: u64,
     pub backlink: Option<YamfHash<'a>>,
     pub lipmaa_link: Option<YamfHash<'a>>,
-    pub sig: Signature<'a> ,
+    pub sig: Signature<'a>,
 }
 
 impl<'a> Entry<'a> {
@@ -27,10 +27,9 @@ impl<'a> Entry<'a> {
         let is_end_of_feed = bytes[0] == 1;
 
         let (payload_hash, remaining_bytes) = YamfHash::decode(&bytes[1..])?;
-        let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
-            .map_err(|(err, _)| {err})?;
-        let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
-            .map_err(|(err, _)| {err})?;
+        let (payload_size, remaining_bytes) =
+            varu64_decode(remaining_bytes).map_err(|(err, _)| err)?;
+        let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes).map_err(|(err, _)| err)?;
 
         let (backlink, lipmaa_link, remaining_bytes) = match seq_num {
             1 => (None, None, remaining_bytes),
@@ -41,16 +40,16 @@ impl<'a> Entry<'a> {
             }
         };
 
-        let (sig, _) = Signature::decode(remaining_bytes)?; 
+        let (sig, _) = Signature::decode(remaining_bytes)?;
 
-        Ok(Entry{
+        Ok(Entry {
             is_end_of_feed,
             payload_hash,
             payload_size,
             seq_num,
             backlink,
             lipmaa_link,
-            sig
+            sig,
         })
     }
 
@@ -60,13 +59,14 @@ impl<'a> Entry<'a> {
         //sig.
         unimplemented!();
     }
-
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Signature, Entry, YamfHash};
-    use varu64::{decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write};
+    use super::{Entry, Signature, YamfHash};
+    use varu64::{
+        decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
+    };
 
     #[test]
     fn decode_entry() {
@@ -100,28 +100,28 @@ mod tests {
         match entry.payload_hash {
             YamfHash::Blake2b(hash) => {
                 assert_eq!(hash, &payload_hash_bytes[..]);
-            },
-            _ => panic!()
+            }
+            _ => panic!(),
         }
 
         match entry.backlink {
             Some(YamfHash::Blake2b(hash)) => {
                 assert_eq!(hash, &backlink_bytes[..]);
-            },
-            _ => panic!()
+            }
+            _ => panic!(),
         }
         match entry.lipmaa_link {
             Some(YamfHash::Blake2b(hash)) => {
                 assert_eq!(hash, &lipmaa_link_bytes[..]);
-            },
-            _ => panic!()
+            }
+            _ => panic!(),
         }
 
         match entry.sig {
             Signature(sig) => {
                 assert_eq!(sig, &sig_bytes[..]);
-            },
-            _ => panic!()
+            }
+            _ => panic!(),
         }
     }
 }

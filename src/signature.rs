@@ -1,5 +1,8 @@
 use std::io::{Error, Write};
-use varu64::{decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write, DecodeError};
+use varu64::{
+    decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
+    DecodeError,
+};
 
 pub struct Signature<'a>(pub &'a [u8]);
 
@@ -23,13 +26,15 @@ impl<'a> Signature<'a> {
         Ok(())
     }
 
-    pub fn decode(bytes: &'a [u8]) -> Result<(Signature<'a>, &'a[u8]), DecodeError> {
+    pub fn decode(bytes: &'a [u8]) -> Result<(Signature<'a>, &'a [u8]), DecodeError> {
         match varu64_decode(&bytes) {
-            Ok((size, remaining_bytes)) => Ok((Signature(&remaining_bytes[..size as usize]), &remaining_bytes[size as usize..])),
-            Err((err, _)) => Err(err)
+            Ok((size, remaining_bytes)) => Ok((
+                Signature(&remaining_bytes[..size as usize]),
+                &remaining_bytes[size as usize..],
+            )),
+            Err((err, _)) => Err(err),
         }
     }
-
 }
 
 #[cfg(test)]
@@ -64,7 +69,7 @@ mod tests {
         let bytes = vec![0xFF; 5];
         let sig = Signature(&bytes);
 
-        let mut out = Vec::new(); 
+        let mut out = Vec::new();
         sig.encode_write(&mut out).unwrap();
         assert_eq!(out, &[0x05, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])
     }

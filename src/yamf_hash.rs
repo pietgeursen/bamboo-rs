@@ -29,14 +29,14 @@ impl<'a> YamfHash<'a> {
         }
     }
 
-    pub fn decode(bytes: &'a [u8]) -> Result<(YamfHash<'a>, &'a[u8]), DecodeError> {
+    pub fn decode(bytes: &'a [u8]) -> Result<(YamfHash<'a>, &'a [u8]), DecodeError> {
         match varu64_decode(&bytes) {
             Ok((1, remaining_bytes)) => {
                 let hash = &remaining_bytes[1..65];
                 Ok((YamfHash::Blake2b(hash), &remaining_bytes[65..]))
-            },
+            }
             Err((err, _)) => Err(err),
-            _ => Err(DecodeError::NonCanonical(0))// TODO fix the errors 
+            _ => Err(DecodeError::NonCanonical(0)), // TODO fix the errors
         }
     }
 }
@@ -79,7 +79,7 @@ mod tests {
                 assert_eq!(vec, &hash_bytes[2..66]);
                 assert_eq!(remaining_bytes, &[0xAA]);
             }
-            _ => panic!()
+            _ => panic!(),
         }
     }
 }
