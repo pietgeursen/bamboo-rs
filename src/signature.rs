@@ -12,6 +12,7 @@ impl<'a> Signature<'a> {
         self.0.len()
     }
 
+    // This is bit yuck that the out slice needs to be the right length.
     /// Encodes signature into `out`. `out` must be the same length as the inner slice.
     pub fn encode(&self, out: &mut [u8]) {
         varu64_encode(self.0.len() as u64, &mut out[0..]);

@@ -1,5 +1,8 @@
-use std::io::Write;
-use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
+use std::io::{Error, Write};
+use varu64::{
+    decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
+    DecodeError,
+};
 
 use super::signature::Signature;
 use super::yamf_hash::YamfHash;
@@ -15,12 +18,31 @@ pub struct Entry<'a> {
 }
 
 impl<'a> Entry<'a> {
-    pub fn encode(self) -> Vec<u8> {
-        unimplemented!()
+    pub fn encode(self, out: &mut [u8]) {
+        unimplemented!();
     }
 
-    pub fn encode_write<W: Write>(self, w: W) -> Vec<u8> {
-        unimplemented!()
+    pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
+        let mut is_end_of_feed_byte = [0];
+        if self.is_end_of_feed {
+            is_end_of_feed_byte[0] = 1;
+        }
+        w.write_all(&is_end_of_feed_byte[..])?;
+        self.payload_hash.encode_write(&mut w)?;
+        varu64_encode_write(self.payload_size, &mut w)?;
+        varu64_encode_write(self.seq_num, &mut w)?;
+
+        match (self.seq_num, &self.backlink, &self.lipmaa_link) {
+            (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
+                backlink.encode_write(&mut w)?;
+                lipmaa_link.encode_write(&mut w)?;
+            }
+            _ => (), //TODO: error
+        }
+
+        self.sig.encode_write(&mut w)?;
+
+        Ok(())
     }
 
     pub fn decode(bytes: &'a [u8]) -> Result<Entry<'a>, DecodeError> {
@@ -69,7 +91,7 @@ mod tests {
     };
 
     #[test]
-    fn decode_entry() {
+    fn encode_decode_entry() {
         let backlink_bytes = [0xAA; 64];
         let backlink = YamfHash::Blake2b(&backlink_bytes);
         let payload_hash_bytes = [0xAB; 64];
@@ -123,5 +145,11 @@ mod tests {
             }
             _ => panic!(),
         }
+
+        let mut encoded = Vec::new();
+
+        entry.encode_write(&mut encoded).unwrap();
+
+        assert_eq!(encoded, entry_vec);
     }
 }
