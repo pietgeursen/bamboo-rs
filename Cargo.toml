@@ -9,3 +9,10 @@ edition = "2018"
 [dependencies]
 snafu = "0.4"
 varu64 = "0.6.1"
+
+[dev-dependencies]
+criterion = "0.2"
+
+[[bench]]
+name = "bench"
+harness = false
