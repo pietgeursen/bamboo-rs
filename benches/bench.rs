@@ -6,10 +6,9 @@ use bamboo_rs::entry::Entry;
 use bamboo_rs::signature::Signature;
 use bamboo_rs::yamf_hash::YamfHash;
 use varu64::{
-    decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
+    encode_write as varu64_encode_write,
 };
 
-use criterion::black_box;
 use criterion::Criterion;
 
 fn criterion_benchmark(c: &mut Criterion) {
