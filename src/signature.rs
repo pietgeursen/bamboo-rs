@@ -1,7 +1,7 @@
 use std::io::{Error, Write};
 use varu64::{decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write, DecodeError};
 
-pub struct Signature<'a>(&'a [u8]);
+pub struct Signature<'a>(pub &'a [u8]);
 
 impl<'a> Signature<'a> {
     /// Little bit of sugar to get the signature length in bytes

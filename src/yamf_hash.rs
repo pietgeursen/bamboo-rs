@@ -1,5 +1,5 @@
 use std::io::{Error, Write};
-use varu64::{decode as varu64_decode, encode as varu64_encode};
+use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
 
 pub enum YamfHash<'a> {
     Blake2b(&'a [u8]),
@@ -29,14 +29,14 @@ impl<'a> YamfHash<'a> {
         }
     }
 
-    pub fn decode(bytes: &'a [u8]) -> YamfHash<'a> {
-        match varu64_decode(&bytes).unwrap() {
-            (1, _) => {
-                let hash = &bytes[2..];
-                assert_eq!(hash.len(), 64);
-                YamfHash::Blake2b(hash)
-            }
-            _ => panic!("Unknown YamfHash type"),
+    pub fn decode(bytes: &'a [u8]) -> Result<(YamfHash<'a>, &'a[u8]), DecodeError> {
+        match varu64_decode(&bytes) {
+            Ok((1, remaining_bytes)) => {
+                let hash = &remaining_bytes[1..65];
+                Ok((YamfHash::Blake2b(hash), &remaining_bytes[65..]))
+            },
+            Err((err, _)) => Err(err),
+            _ => Err(DecodeError::NonCanonical(0))// TODO fix the errors 
         }
     }
 }
@@ -67,16 +67,19 @@ mod tests {
     }
     #[test]
     fn decode_yamf() {
-        let mut hash_bytes = vec![0xFF; 66];
+        let mut hash_bytes = vec![0xFF; 67];
         hash_bytes[0] = 1;
         hash_bytes[1] = 64;
+        hash_bytes[66] = 0xAA;
         let result = YamfHash::decode(&hash_bytes);
 
         match result {
-            YamfHash::Blake2b(vec) => {
+            Ok((YamfHash::Blake2b(vec), remaining_bytes)) => {
                 assert_eq!(vec.len(), 64);
-                assert_eq!(vec, &hash_bytes[2..]);
+                assert_eq!(vec, &hash_bytes[2..66]);
+                assert_eq!(remaining_bytes, &[0xAA]);
             }
+            _ => panic!()
         }
     }
 }
