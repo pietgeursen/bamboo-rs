@@ -1,0 +1,85 @@
+use std::io::{Error, Write};
+use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
+
+pub enum YamfSignatory<'a> {
+    Ed25519(&'a [u8]),
+}
+
+impl<'a> YamfSignatory<'a> {
+    pub fn encode(&self, out: &mut [u8]) {
+        match self {
+            YamfSignatory::Ed25519(vec) => {
+                varu64_encode(1, &mut out[0..1]);
+                varu64_encode(32, &mut out[1..2]);
+                out[2..].copy_from_slice(&vec);
+            }
+        }
+    }
+
+    pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
+        let mut out = [0; 2];
+        match self {
+            YamfSignatory::Ed25519(vec) => {
+                varu64_encode(1, &mut out[0..1]);
+                varu64_encode(32, &mut out[1..2]);
+                w.write_all(&out)?;
+                w.write_all(&vec)?;
+                Ok(())
+            }
+        }
+    }
+
+    pub fn decode(bytes: &'a [u8]) -> Result<(YamfSignatory<'a>, &'a [u8]), DecodeError> {
+        match varu64_decode(&bytes) {
+            Ok((1, remaining_bytes)) => {
+                let hash = &remaining_bytes[1..33];
+                Ok((YamfSignatory::Ed25519(hash), &remaining_bytes[33..]))
+            }
+            Err((err, _)) => Err(err),
+            _ => Err(DecodeError::NonCanonical(0)), // TODO fix the errors
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::YamfSignatory;
+
+    #[test]
+    fn encode_yamf() {
+        let hash_bytes = vec![0xFF; 4];
+        let yamf_hash = YamfSignatory::Ed25519(&hash_bytes);
+        let expected = [1, 32, 0xFF, 0xFF, 0xFF, 0xFF];
+
+        let mut encoded = vec![0; 6];
+        yamf_hash.encode(&mut encoded);
+        assert_eq!(encoded, expected);
+    }
+    #[test]
+    fn encode_yamf_write() {
+        let hash_bytes = vec![0xFF; 4];
+        let yamf_hash = YamfSignatory::Ed25519(&hash_bytes);
+        let expected = [1, 32, 0xFF, 0xFF, 0xFF, 0xFF];
+
+        let mut encoded = Vec::new();
+        yamf_hash.encode_write(&mut encoded).unwrap();
+        assert_eq!(encoded, expected);
+    }
+    #[test]
+    fn decode_yamf() {
+        let mut hash_bytes = vec![0xFF; 35];
+        hash_bytes[0] = 1;
+        hash_bytes[1] = 32;
+        hash_bytes[34] = 0xAA;
+        let result = YamfSignatory::decode(&hash_bytes);
+
+        match result {
+            Ok((YamfSignatory::Ed25519(vec), remaining_bytes)) => {
+                assert_eq!(vec.len(), 32);
+                assert_eq!(vec, &hash_bytes[2..34]);
+                assert_eq!(remaining_bytes, &[0xAA]);
+            }
+            _ => panic!(),
+        }
+    }
+}

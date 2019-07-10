@@ -5,6 +5,7 @@ use varu64::{DecodeError as varu64DecodeError};
 pub mod entry;
 pub mod signature;
 pub mod yamf_hash;
+pub mod yamf_signatory;
 
 // publish(content, getHashOfEntry) -> entry
 // add(content, getHashOfEntry)
