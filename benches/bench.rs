@@ -5,9 +5,8 @@ extern crate varu64;
 use bamboo_rs::entry::Entry;
 use bamboo_rs::signature::Signature;
 use bamboo_rs::yamf_hash::YamfHash;
-use varu64::{
-    encode_write as varu64_encode_write,
-};
+use bamboo_rs::yamf_signatory::YamfSignatory;
+use varu64::encode_write as varu64_encode_write;
 
 use criterion::Criterion;
 
@@ -23,11 +22,14 @@ fn criterion_benchmark(c: &mut Criterion) {
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];
         let sig = Signature(&sig_bytes);
+        let author_bytes = [0xEE; 32];
+        let author = YamfSignatory::Ed25519(&author_bytes);
 
         let entry = Entry {
             is_end_of_feed: false,
             payload_hash,
             payload_size,
+            author,
             seq_num,
             lipmaa_link: Some(lipmaa_link),
             backlink: Some(backlink),
@@ -50,6 +52,8 @@ fn criterion_benchmark(c: &mut Criterion) {
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];
         let sig = Signature(&sig_bytes);
+        let author_bytes = [0xEE; 32];
+        let author = YamfSignatory::Ed25519(&author_bytes);
 
         let mut entry_vec = Vec::new();
 
@@ -57,6 +61,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
         payload_hash.encode_write(&mut entry_vec).unwrap();
         varu64_encode_write(payload_size, &mut entry_vec).unwrap();
+        author.encode_write(&mut entry_vec).unwrap();
         varu64_encode_write(seq_num, &mut entry_vec).unwrap();
         backlink.encode_write(&mut entry_vec).unwrap();
         lipmaa_link.encode_write(&mut entry_vec).unwrap();

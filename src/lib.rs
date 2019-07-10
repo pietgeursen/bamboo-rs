@@ -1,6 +1,6 @@
 use snafu::Snafu;
 use std::path::PathBuf;
-use varu64::{DecodeError as varu64DecodeError};
+use varu64::DecodeError as varu64DecodeError;
 
 pub mod entry;
 pub mod signature;
@@ -36,7 +36,7 @@ pub enum Error {
     DecodeError {
         filename: PathBuf,
         source: varu64DecodeError,
-    }
+    },
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

@@ -6,11 +6,13 @@ use varu64::{
 
 use super::signature::Signature;
 use super::yamf_hash::YamfHash;
+use super::yamf_signatory::YamfSignatory;
 
 pub struct Entry<'a> {
     pub is_end_of_feed: bool,
     pub payload_hash: YamfHash<'a>,
     pub payload_size: u64,
+    pub author: YamfSignatory<'a>,
     pub seq_num: u64,
     pub backlink: Option<YamfHash<'a>>,
     pub lipmaa_link: Option<YamfHash<'a>>,
@@ -30,6 +32,7 @@ impl<'a> Entry<'a> {
         w.write_all(&is_end_of_feed_byte[..])?;
         self.payload_hash.encode_write(&mut w)?;
         varu64_encode_write(self.payload_size, &mut w)?;
+        self.author.encode_write(&mut w)?;
         varu64_encode_write(self.seq_num, &mut w)?;
 
         match (self.seq_num, &self.backlink, &self.lipmaa_link) {
@@ -51,6 +54,7 @@ impl<'a> Entry<'a> {
         let (payload_hash, remaining_bytes) = YamfHash::decode(&bytes[1..])?;
         let (payload_size, remaining_bytes) =
             varu64_decode(remaining_bytes).map_err(|(err, _)| err)?;
+        let (author, remaining_bytes) = YamfSignatory::decode(remaining_bytes)?;
         let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes).map_err(|(err, _)| err)?;
 
         let (backlink, lipmaa_link, remaining_bytes) = match seq_num {
@@ -68,6 +72,7 @@ impl<'a> Entry<'a> {
             is_end_of_feed,
             payload_hash,
             payload_size,
+            author,
             seq_num,
             backlink,
             lipmaa_link,
@@ -85,7 +90,7 @@ impl<'a> Entry<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Entry, Signature, YamfHash};
+    use super::{Entry, Signature, YamfHash, YamfSignatory};
     use varu64::{
         decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
     };
@@ -102,6 +107,8 @@ mod tests {
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];
         let sig = Signature(&sig_bytes);
+        let author_bytes = [0xEE; 32];
+        let author = YamfSignatory::Ed25519(&author_bytes);
 
         let mut entry_vec = Vec::new();
 
@@ -109,6 +116,7 @@ mod tests {
 
         payload_hash.encode_write(&mut entry_vec).unwrap();
         varu64_encode_write(payload_size, &mut entry_vec).unwrap();
+        author.encode_write(&mut entry_vec).unwrap();
         varu64_encode_write(seq_num, &mut entry_vec).unwrap();
         backlink.encode_write(&mut entry_vec).unwrap();
         lipmaa_link.encode_write(&mut entry_vec).unwrap();
@@ -142,6 +150,13 @@ mod tests {
         match entry.sig {
             Signature(sig) => {
                 assert_eq!(sig, &sig_bytes[..]);
+            }
+            _ => panic!(),
+        }
+
+        match entry.author {
+            YamfSignatory::Ed25519(auth) => {
+                assert_eq!(auth, &author_bytes[..]);
             }
             _ => panic!(),
         }
