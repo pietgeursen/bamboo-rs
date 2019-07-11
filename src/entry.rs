@@ -4,6 +4,10 @@ use varu64::{
     DecodeError,
 };
 
+use ssb_crypto::{
+    init, sign_detached, verify_detached, PublicKey, SecretKey, Signature as SsbSignature,
+};
+
 use super::signature::Signature;
 use super::yamf_hash::YamfHash;
 use super::yamf_signatory::YamfSignatory;
@@ -86,18 +90,25 @@ impl<'a> Entry<'a> {
         unimplemented!();
     }
 
-    pub fn verify_signature() {
-        //how would be verify this type ergonimcally tho?
-        //verifying means we have to get the contents of the buffer up to but not including the
-        //sig.
-        unimplemented!();
-    }
+    pub fn verify_signature(&mut self) -> bool {
+        //Pluck off the signature before we encode it
+        let sig = self.sig.take();
 
-    pub fn sign(&mut self) {
-        //how would be verify this type ergonimcally tho?
-        //verifying means we have to get the contents of the buffer up to but not including the
-        //sig.
-        unimplemented!();
+        let ssb_sig = SsbSignature::from_slice(sig.as_ref().unwrap().0).unwrap();
+
+        let mut buff = Vec::new();
+        self.encode_write(&mut buff).unwrap();
+
+        let mut result = false;
+        if let YamfSignatory::Ed25519(author, _) = self.author {
+            let pub_key = PublicKey::from_slice(author).unwrap();
+            result = verify_detached(&ssb_sig, &buff, &pub_key);
+        }
+
+        // Put the signature back on
+        self.sig = sig;
+
+        result
     }
 }
 
