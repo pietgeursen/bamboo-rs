@@ -6,11 +6,41 @@ use bamboo_rs::entry::Entry;
 use bamboo_rs::signature::Signature;
 use bamboo_rs::yamf_hash::YamfHash;
 use bamboo_rs::yamf_signatory::YamfSignatory;
+use bamboo_rs::{EntryStore, Log, MemoryEntryStore};
+
+use ssb_crypto::{
+    generate_longterm_keypair, init, sign_detached, verify_detached, PublicKey, SecretKey,
+    Signature as SsbSignature,
+};
+
 use varu64::encode_write as varu64_encode_write;
 
 use criterion::Criterion;
 
 fn criterion_benchmark(c: &mut Criterion) {
+    c.bench_function("publish", |b| {
+        init();
+        let (pub_key, secret_key) = generate_longterm_keypair();
+        let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let payload = [1, 2, 3];
+
+        b.iter(|| {
+            log.publish(&payload, false);
+            log.store.clear();
+        })
+    });
+    c.bench_function("verify", |b| {
+        init();
+        let (pub_key, secret_key) = generate_longterm_keypair();
+        let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let payload = [1, 2, 3];
+        log.publish(&payload, false);
+
+        let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
+
+        let mut entry = Entry::decode(entry_bytes).unwrap();
+        b.iter(|| assert!(entry.verify_signature()))
+    });
     c.bench_function("encode entry into writer", |b| {
         let backlink_bytes = [0xAA; 64];
         let backlink = YamfHash::Blake2b(&backlink_bytes);
@@ -23,7 +53,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         let sig_bytes = [0xDD; 128];
         let sig = Signature(&sig_bytes);
         let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519(&author_bytes);
+        let author = YamfSignatory::Ed25519(&author_bytes, None);
 
         let entry = Entry {
             is_end_of_feed: false,
@@ -33,7 +63,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             seq_num,
             lipmaa_link: Some(lipmaa_link),
             backlink: Some(backlink),
-            sig,
+            sig: Some(sig),
         };
         let mut vec = Vec::new();
         b.iter(|| {
@@ -53,7 +83,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         let sig_bytes = [0xDD; 128];
         let sig = Signature(&sig_bytes);
         let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519(&author_bytes);
+        let author = YamfSignatory::Ed25519(&author_bytes, None);
 
         let mut entry_vec = Vec::new();
 

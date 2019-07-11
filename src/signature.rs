@@ -4,6 +4,7 @@ use varu64::{
     DecodeError,
 };
 
+#[derive(Debug)]
 pub struct Signature<'a>(pub &'a [u8]);
 
 impl<'a> Signature<'a> {
@@ -41,7 +42,6 @@ impl<'a> Signature<'a> {
 #[cfg(test)]
 mod tests {
     use super::Signature;
-    use varu64::{decode as varu64_decode, encode as varu64_encode};
 
     //These tests are not great because they know a lot about how the inside of varu64 works.
     //TODO: add tests that exercise the multibyte varu64 encoding, eg signatures > 255 bytes

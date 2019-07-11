@@ -1,17 +1,13 @@
 use std::io::{Error, Write};
-use varu64::{
-    decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
-    DecodeError,
-};
+use varu64::{decode as varu64_decode, encode_write as varu64_encode_write, DecodeError};
 
-use ssb_crypto::{
-    init, sign_detached, verify_detached, PublicKey, SecretKey, Signature as SsbSignature,
-};
+use ssb_crypto::{verify_detached, PublicKey, Signature as SsbSignature};
 
 use super::signature::Signature;
 use super::yamf_hash::YamfHash;
 use super::yamf_signatory::YamfSignatory;
 
+#[derive(Debug)]
 pub struct Entry<'a> {
     pub is_end_of_feed: bool,
     pub payload_hash: YamfHash<'a>,
@@ -24,10 +20,6 @@ pub struct Entry<'a> {
 }
 
 impl<'a> Entry<'a> {
-    pub fn encode(self, out: &mut [u8]) {
-        unimplemented!();
-    }
-
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
         let mut is_end_of_feed_byte = [0];
         if self.is_end_of_feed {
@@ -95,11 +87,12 @@ impl<'a> Entry<'a> {
         let mut buff = Vec::new();
         self.encode_write(&mut buff).unwrap();
 
-        let mut result = false;
-        if let YamfSignatory::Ed25519(author, _) = self.author {
-            let pub_key = PublicKey::from_slice(author).unwrap();
-            result = verify_detached(&ssb_sig, &buff, &pub_key);
-        }
+        let result = match self.author {
+            YamfSignatory::Ed25519(author, _) => {
+                let pub_key = PublicKey::from_slice(author).unwrap();
+                verify_detached(&ssb_sig, &buff, &pub_key)
+            }
+        };
 
         // Put the signature back on
         self.sig = sig;
@@ -111,9 +104,7 @@ impl<'a> Entry<'a> {
 #[cfg(test)]
 mod tests {
     use super::{Entry, Signature, YamfHash, YamfSignatory};
-    use varu64::{
-        decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
-    };
+    use varu64::encode_write as varu64_encode_write;
 
     #[test]
     fn encode_decode_entry() {
@@ -151,7 +142,6 @@ mod tests {
             YamfHash::Blake2b(hash) => {
                 assert_eq!(hash, &payload_hash_bytes[..]);
             }
-            _ => panic!(),
         }
 
         match entry.backlink {

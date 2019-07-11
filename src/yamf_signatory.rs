@@ -1,6 +1,7 @@
 use std::io::{Error, Write};
 use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
 
+#[derive(Debug)]
 pub enum YamfSignatory<'a> {
     /// Tuple of public and optional secret key
     Ed25519(&'a [u8], Option<&'a [u8]>),

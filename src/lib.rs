@@ -1,9 +1,7 @@
 use blake2b_simd::blake2b;
 use lipmaa_link::lipmaa;
 use snafu::Snafu;
-use ssb_crypto::{
-    init, sign_detached, verify_detached, PublicKey, SecretKey, Signature as SsbSignature,
-};
+use ssb_crypto::{sign_detached, PublicKey, SecretKey};
 use std::io::Write;
 use std::path::PathBuf;
 use varu64::DecodeError as varu64DecodeError;
@@ -17,17 +15,6 @@ use entry::Entry;
 use signature::Signature;
 use yamf_hash::YamfHash;
 use yamf_signatory::YamfSignatory;
-
-// publish(content, getHashOfEntry) -> entry
-// add(content, getHashOfEntry)
-// getHashOfEntry(seq) -> hash
-// getEntry(seq) -> entry
-
-// verify(entry, getEntry)
-// verifies:
-// - signature
-// - hashes and signatures of lipmaa link dependencies
-// -
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -67,8 +54,11 @@ pub struct MemoryEntryStore {
 }
 
 impl MemoryEntryStore {
-    fn new() -> MemoryEntryStore {
+    pub fn new() -> MemoryEntryStore {
         MemoryEntryStore { store: Vec::new() }
+    }
+    pub fn clear(&mut self) {
+        self.store.clear()
     }
 }
 
@@ -191,10 +181,7 @@ impl<Store: EntryStore> Log<Store> {
 #[cfg(test)]
 mod tests {
     use crate::{Entry, EntryStore, Log, MemoryEntryStore};
-    use ssb_crypto::{
-        generate_longterm_keypair, init, sign_detached, verify_detached, PublicKey, SecretKey,
-        Signature as SsbSignature,
-    };
+    use ssb_crypto::{generate_longterm_keypair, init};
 
     #[test]
     fn publish_and_verify_signature() {
@@ -203,11 +190,11 @@ mod tests {
         let (pub_key, secret_key) = generate_longterm_keypair();
         let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
         let payload = [1, 2, 3];
-        log.publish(&payload, false);
+        log.publish(&payload, false).unwrap();
 
         let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
 
         let mut entry = Entry::decode(entry_bytes).unwrap();
-        assert!(entry.verify_signature())
+        assert!(entry.verify_signature());
     }
 }
