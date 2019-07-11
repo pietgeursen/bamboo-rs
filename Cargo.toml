@@ -9,6 +9,8 @@ edition = "2018"
 [dependencies]
 snafu = "0.4"
 varu64 = "0.6.1"
+lipmaa-link = {git = "https://github.com/pietgeursen/lipmaa-link"}
+blake2b_simd = "0.5.3"
 
 [dev-dependencies]
 criterion = "0.2"

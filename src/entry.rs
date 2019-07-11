@@ -16,7 +16,7 @@ pub struct Entry<'a> {
     pub seq_num: u64,
     pub backlink: Option<YamfHash<'a>>,
     pub lipmaa_link: Option<YamfHash<'a>>,
-    pub sig: Signature<'a>,
+    pub sig: Option<Signature<'a>>,
 }
 
 impl<'a> Entry<'a> {
@@ -43,7 +43,9 @@ impl<'a> Entry<'a> {
             _ => (), //TODO: error
         }
 
-        self.sig.encode_write(&mut w)?;
+        if let Some(ref sig) = self.sig {
+            sig.encode_write(&mut w)?;
+        }
 
         Ok(())
     }
@@ -76,11 +78,22 @@ impl<'a> Entry<'a> {
             seq_num,
             backlink,
             lipmaa_link,
-            sig,
+            sig: Some(sig),
         })
     }
 
+    fn create_signature(&self) -> YamfSignatory<'a> {
+        unimplemented!();
+    }
+
     pub fn verify_signature() {
+        //how would be verify this type ergonimcally tho?
+        //verifying means we have to get the contents of the buffer up to but not including the
+        //sig.
+        unimplemented!();
+    }
+
+    pub fn sign(&mut self) {
         //how would be verify this type ergonimcally tho?
         //verifying means we have to get the contents of the buffer up to but not including the
         //sig.
@@ -108,7 +121,7 @@ mod tests {
         let sig_bytes = [0xDD; 128];
         let sig = Signature(&sig_bytes);
         let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519(&author_bytes);
+        let author = YamfSignatory::Ed25519(&author_bytes, None);
 
         let mut entry_vec = Vec::new();
 
@@ -148,14 +161,14 @@ mod tests {
         }
 
         match entry.sig {
-            Signature(sig) => {
+            Some(Signature(sig)) => {
                 assert_eq!(sig, &sig_bytes[..]);
             }
             _ => panic!(),
         }
 
         match entry.author {
-            YamfSignatory::Ed25519(auth) => {
+            YamfSignatory::Ed25519(auth, None) => {
                 assert_eq!(auth, &author_bytes[..]);
             }
             _ => panic!(),
