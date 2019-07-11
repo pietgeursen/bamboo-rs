@@ -86,10 +86,6 @@ impl<'a> Entry<'a> {
         })
     }
 
-    fn create_signature(&self) -> YamfSignatory<'a> {
-        unimplemented!();
-    }
-
     pub fn verify_signature(&mut self) -> bool {
         //Pluck off the signature before we encode it
         let sig = self.sig.take();
