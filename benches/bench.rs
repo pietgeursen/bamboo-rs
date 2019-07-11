@@ -8,9 +8,7 @@ use bamboo_rs::yamf_hash::YamfHash;
 use bamboo_rs::yamf_signatory::YamfSignatory;
 use bamboo_rs::{EntryStore, Log, MemoryEntryStore};
 
-use ssb_crypto::{
-    generate_longterm_keypair, init,
-};
+use ssb_crypto::{generate_longterm_keypair, init};
 
 use varu64::encode_write as varu64_encode_write;
 

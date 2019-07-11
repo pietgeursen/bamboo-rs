@@ -1,99 +1,22 @@
 use blake2b_simd::blake2b;
 use lipmaa_link::lipmaa;
-use snafu::Snafu;
 use ssb_crypto::{sign_detached, PublicKey, SecretKey};
-use std::io::Write;
-use std::path::PathBuf;
-use varu64::DecodeError as varu64DecodeError;
 
 pub mod entry;
+pub mod entry_store;
+pub mod error;
+pub mod memory_entry_store;
 pub mod signature;
 pub mod yamf_hash;
 pub mod yamf_signatory;
 
 use entry::Entry;
+use entry_store::EntryStore;
+pub use error::{Error, Result};
+pub use memory_entry_store::MemoryEntryStore;
 use signature::Signature;
 use yamf_hash::YamfHash;
 use yamf_signatory::YamfSignatory;
-
-#[derive(Debug, Snafu)]
-pub enum Error {
-    #[snafu(display("Invalid sequence number {}", seq_num))]
-    GetEntrySequenceInvalid { seq_num: u64 },
-    #[snafu(display("IO error when getting entry. {}: {}", filename.display(), source))]
-    GetEntryIoError {
-        filename: PathBuf,
-        source: std::io::Error,
-    },
-    #[snafu(display("IO error when appending entry. {}: {}", filename.display(), source))]
-    AppendEntryIoError {
-        filename: PathBuf,
-        source: std::io::Error,
-    },
-    #[snafu(display("Error when decoding entry. {}: {}", filename.display(), source))]
-    DecodeError {
-        filename: PathBuf,
-        source: varu64DecodeError,
-    },
-}
-
-pub type Result<T, E = Error> = std::result::Result<T, E>;
-
-pub trait EntryStore {
-    fn get_last_seq(&self) -> u64;
-    fn get_entry(&self, seq_num: u64) -> Result<Vec<u8>>; // these are inconsistent. Should be an option?
-    fn get_entry_ref<'a>(&'a self, seq_num: u64) -> Result<Option<&'a [u8]>>;
-    fn get_last_entry(&self) -> Result<Option<Vec<u8>>>;
-    fn get_last_entry_ref<'a>(&'a self) -> Result<Option<&'a [u8]>>;
-    fn append_entry(&mut self, entry: &[u8]) -> Result<()>;
-    fn get_writer_for_next_entry<'a>(&'a mut self) -> &'a mut dyn Write;
-}
-
-pub struct MemoryEntryStore {
-    pub store: Vec<Vec<u8>>,
-}
-
-impl MemoryEntryStore {
-    pub fn new() -> MemoryEntryStore {
-        MemoryEntryStore { store: Vec::new() }
-    }
-    pub fn clear(&mut self) {
-        self.store.clear()
-    }
-}
-
-impl EntryStore for MemoryEntryStore {
-    fn get_last_seq(&self) -> u64 {
-        self.store.len() as u64
-    }
-    fn get_entry(&self, seq_num: u64) -> Result<Vec<u8>> {
-        Ok(self.store[seq_num as usize - 1].clone())
-    }
-    fn get_entry_ref<'a>(&'a self, seq_num: u64) -> Result<Option<&'a [u8]>> {
-        let result = self
-            .store
-            .get(seq_num as usize - 1)
-            .map(|vec| vec.as_slice());
-        Ok(result)
-    }
-    fn get_last_entry(&self) -> Result<Option<Vec<u8>>> {
-        Ok(self.store.last().map(|item| item.clone()))
-    }
-    fn get_last_entry_ref<'a>(&'a self) -> Result<Option<&'a [u8]>> {
-        Ok(self.store.last().map(|item| &item[..]))
-    }
-    fn append_entry(&mut self, entry: &[u8]) -> Result<()> {
-        let mut vec = Vec::with_capacity(entry.len());
-        vec.extend_from_slice(entry);
-        self.store.push(vec);
-        Ok(())
-    }
-    fn get_writer_for_next_entry(&mut self) -> &mut dyn Write {
-        let vec = Vec::new();
-        self.store.push(vec);
-        self.store.last_mut().unwrap()
-    }
-}
 
 pub struct Log<Store: EntryStore> {
     pub store: Store,
