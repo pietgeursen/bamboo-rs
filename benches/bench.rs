@@ -9,8 +9,7 @@ use bamboo_rs::yamf_signatory::YamfSignatory;
 use bamboo_rs::{EntryStore, Log, MemoryEntryStore};
 
 use ssb_crypto::{
-    generate_longterm_keypair, init, sign_detached, verify_detached, PublicKey, SecretKey,
-    Signature as SsbSignature,
+    generate_longterm_keypair, init,
 };
 
 use varu64::encode_write as varu64_encode_write;
@@ -25,7 +24,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         let payload = [1, 2, 3];
 
         b.iter(|| {
-            log.publish(&payload, false);
+            log.publish(&payload, false).unwrap();
             log.store.clear();
         })
     });
@@ -34,7 +33,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         let (pub_key, secret_key) = generate_longterm_keypair();
         let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
         let payload = [1, 2, 3];
-        log.publish(&payload, false);
+        log.publish(&payload, false).unwrap();
 
         let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
 
