@@ -40,11 +40,11 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
     c.bench_function("encode entry into writer", |b| {
         let backlink_bytes = [0xAA; 64];
-        let backlink = YamfHash::Blake2b(&backlink_bytes);
+        let backlink = YamfHash::Blake2b(backlink_bytes[..].into());
         let payload_hash_bytes = [0xAB; 64];
-        let payload_hash = YamfHash::Blake2b(&payload_hash_bytes);
+        let payload_hash = YamfHash::Blake2b(payload_hash_bytes[..].into());
         let lipmaa_link_bytes = [0xAC; 64];
-        let lipmaa_link = YamfHash::Blake2b(&lipmaa_link_bytes);
+        let lipmaa_link = YamfHash::Blake2b(lipmaa_link_bytes[..].into());
         let payload_size = 512;
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];
@@ -70,11 +70,11 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
     c.bench_function("decode entry", |b| {
         let backlink_bytes = [0xAA; 64];
-        let backlink = YamfHash::Blake2b(&backlink_bytes);
+        let backlink = YamfHash::Blake2b(backlink_bytes[..].into());
         let payload_hash_bytes = [0xAB; 64];
-        let payload_hash = YamfHash::Blake2b(&payload_hash_bytes);
+        let payload_hash = YamfHash::Blake2b(payload_hash_bytes[..].into());
         let lipmaa_link_bytes = [0xAC; 64];
-        let lipmaa_link = YamfHash::Blake2b(&lipmaa_link_bytes);
+        let lipmaa_link = YamfHash::Blake2b(lipmaa_link_bytes[..].into());
         let payload_size = 512;
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];

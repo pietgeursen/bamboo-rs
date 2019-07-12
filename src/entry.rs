@@ -109,11 +109,11 @@ mod tests {
     #[test]
     fn encode_decode_entry() {
         let backlink_bytes = [0xAA; 64];
-        let backlink = YamfHash::Blake2b(&backlink_bytes);
+        let backlink = YamfHash::Blake2b(backlink_bytes[..].into());
         let payload_hash_bytes = [0xAB; 64];
-        let payload_hash = YamfHash::Blake2b(&payload_hash_bytes);
+        let payload_hash = YamfHash::Blake2b(payload_hash_bytes[..].into());
         let lipmaa_link_bytes = [0xAC; 64];
-        let lipmaa_link = YamfHash::Blake2b(&lipmaa_link_bytes);
+        let lipmaa_link = YamfHash::Blake2b(lipmaa_link_bytes[..].into());
         let payload_size = 512;
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];
@@ -139,27 +139,27 @@ mod tests {
         assert_eq!(entry.payload_size, payload_size);
 
         match entry.payload_hash {
-            YamfHash::Blake2b(hash) => {
-                assert_eq!(hash, &payload_hash_bytes[..]);
+            YamfHash::Blake2b(ref hash) => {
+                assert_eq!(hash.as_ref(), &payload_hash_bytes[..]);
             }
         }
 
         match entry.backlink {
-            Some(YamfHash::Blake2b(hash)) => {
-                assert_eq!(hash, &backlink_bytes[..]);
+            Some(YamfHash::Blake2b(ref hash)) => {
+                assert_eq!(hash.as_ref(), &backlink_bytes[..]);
             }
             _ => panic!(),
         }
         match entry.lipmaa_link {
-            Some(YamfHash::Blake2b(hash)) => {
-                assert_eq!(hash, &lipmaa_link_bytes[..]);
+            Some(YamfHash::Blake2b(ref hash)) => {
+                assert_eq!(hash.as_ref(), &lipmaa_link_bytes[..]);
             }
             _ => panic!(),
         }
 
         match entry.sig {
-            Some(Signature(sig)) => {
-                assert_eq!(sig, &sig_bytes[..]);
+            Some(Signature(ref sig)) => {
+                assert_eq!(sig.as_ref(), &sig_bytes[..]);
             }
             _ => panic!(),
         }

@@ -1,12 +1,19 @@
+use blake2b_simd::blake2b;
+use std::borrow::Cow;
 use std::io::{Error, Write};
 use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
 
 #[derive(Debug)]
 pub enum YamfHash<'a> {
-    Blake2b(&'a [u8]),
+    Blake2b(Cow<'a, [u8]>),
 }
 
 impl<'a> YamfHash<'a> {
+    pub fn into_owned<'b>(self) -> YamfHash<'static> {
+        match self {
+            YamfHash::Blake2b(cow) => YamfHash::Blake2b(cow.into_owned().into()),
+        }
+    }
     pub fn encode(&self, out: &mut [u8]) {
         match self {
             YamfHash::Blake2b(vec) => {
@@ -34,11 +41,16 @@ impl<'a> YamfHash<'a> {
         match varu64_decode(&bytes) {
             Ok((1, remaining_bytes)) => {
                 let hash = &remaining_bytes[1..65];
-                Ok((YamfHash::Blake2b(hash), &remaining_bytes[65..]))
+                Ok((YamfHash::Blake2b(hash.into()), &remaining_bytes[65..]))
             }
             Err((err, _)) => Err(err),
             _ => Err(DecodeError::NonCanonical(0)), // TODO fix the errors
         }
+    }
+
+    pub fn new_blake2b<'b>(bytes: &'b [u8]) -> YamfHash<'static> {
+        let hash_bytes = blake2b(bytes);
+        YamfHash::Blake2b(hash_bytes.as_bytes().into()).into_owned()
     }
 }
 
@@ -49,7 +61,7 @@ mod tests {
     #[test]
     fn encode_yamf() {
         let hash_bytes = vec![0xFF; 4];
-        let yamf_hash = YamfHash::Blake2b(&hash_bytes);
+        let yamf_hash = YamfHash::Blake2b(hash_bytes.into());
         let expected = [1, 64, 0xFF, 0xFF, 0xFF, 0xFF];
 
         let mut encoded = vec![0; 6];
@@ -59,7 +71,7 @@ mod tests {
     #[test]
     fn encode_yamf_write() {
         let hash_bytes = vec![0xFF; 4];
-        let yamf_hash = YamfHash::Blake2b(&hash_bytes);
+        let yamf_hash = YamfHash::Blake2b(hash_bytes.into());
         let expected = [1, 64, 0xFF, 0xFF, 0xFF, 0xFF];
 
         let mut encoded = Vec::new();
