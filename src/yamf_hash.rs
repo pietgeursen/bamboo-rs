@@ -4,16 +4,13 @@ use std::io::{Error, Write};
 use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
 
 #[derive(Debug)]
+/// Variants of `YamfHash`
 pub enum YamfHash<'a> {
     Blake2b(Cow<'a, [u8]>),
 }
 
 impl<'a> YamfHash<'a> {
-    pub fn into_owned<'b>(self) -> YamfHash<'static> {
-        match self {
-            YamfHash::Blake2b(cow) => YamfHash::Blake2b(cow.into_owned().into()),
-        }
-    }
+    /// Encode a YamfHash into the out buffer.
     pub fn encode(&self, out: &mut [u8]) {
         match self {
             YamfHash::Blake2b(vec) => {
@@ -24,6 +21,7 @@ impl<'a> YamfHash<'a> {
         }
     }
 
+    /// Encode a YamfHash into the writer.
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
         let mut out = [0; 2];
         match self {
@@ -37,6 +35,7 @@ impl<'a> YamfHash<'a> {
         }
     }
 
+    /// Decode the `bytes` as a `YamfHash`
     pub fn decode(bytes: &'a [u8]) -> Result<(YamfHash<'a>, &'a [u8]), DecodeError> {
         match varu64_decode(&bytes) {
             Ok((1, remaining_bytes)) => {
@@ -48,9 +47,11 @@ impl<'a> YamfHash<'a> {
         }
     }
 
+    /// Create a new `YamfHash::Blake2b` by hashing the input `bytes`. The resulting `YamfHash` owns the underlying
+    /// hash bytes.
     pub fn new_blake2b<'b>(bytes: &'b [u8]) -> YamfHash<'static> {
         let hash_bytes = blake2b(bytes);
-        YamfHash::Blake2b(hash_bytes.as_bytes().into()).into_owned()
+        YamfHash::Blake2b(Cow::Owned(hash_bytes.as_bytes().to_owned()))
     }
 }
 
