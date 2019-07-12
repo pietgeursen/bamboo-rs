@@ -14,8 +14,8 @@ use super::yamf_signatory::YamfSignatory;
 pub enum Error {
     #[snafu(display("Error when decoding entry. {}", source))]
     DecodeError { source: varu64DecodeError },
-    #[snafu(display("Error when encoding entry. {}", source))]
-    EncodeError { source: IoError },
+    #[snafu(display("Error when encoding field: {} of entry. {}", field, source))]
+    EncodeFieldError { source: IoError, field: String },
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -37,24 +37,33 @@ impl<'a> Entry<'a> {
         if self.is_end_of_feed {
             is_end_of_feed_byte[0] = 1;
         }
-        w.write_all(&is_end_of_feed_byte[..]).context(EncodeError)?;
+        w.write_all(&is_end_of_feed_byte[..])
+            .context(EncodeFieldError{field: "is_end_of_feed"})?;
+
         self.payload_hash
             .encode_write(&mut w)
-            .context(EncodeError)?;
-        varu64_encode_write(self.payload_size, &mut w).context(EncodeError)?;
-        self.author.encode_write(&mut w).context(EncodeError)?;
-        varu64_encode_write(self.seq_num, &mut w).context(EncodeError)?;
+            .context(EncodeFieldError{field: "payload_hash"})?;
+
+        varu64_encode_write(self.payload_size, &mut w)
+            .context(EncodeFieldError{field: "payload_size"})?;
+        self.author.encode_write(&mut w)
+            .context(EncodeFieldError{field: "author"})?;
+        varu64_encode_write(self.seq_num, &mut w)
+            .context(EncodeFieldError{field: "seq_num"})?;
 
         match (self.seq_num, &self.backlink, &self.lipmaa_link) {
             (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
-                backlink.encode_write(&mut w).context(EncodeError)?;
-                lipmaa_link.encode_write(&mut w).context(EncodeError)?;
+                backlink.encode_write(&mut w)
+                    .context(EncodeFieldError{field: "backlink"})?;
+                lipmaa_link.encode_write(&mut w)
+                    .context(EncodeFieldError{field: "lipmaa_link"})?;
             }
             _ => (), //TODO: error
         }
 
         if let Some(ref sig) = self.sig {
-            sig.encode_write(&mut w).context(EncodeError)?;
+            sig.encode_write(&mut w)
+                    .context(EncodeFieldError{field: "sig"})?;
         }
 
         Ok(())

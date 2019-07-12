@@ -113,16 +113,16 @@ impl<Store: EntryStore> Log<Store> {
             .secret_key
             .as_ref()
             .ok_or(Error::TriedToPublishWithoutSecretKey)?;
+
         let signature = sign_detached(&buff, secret);
         let signature = Signature(signature.as_ref());
 
         entry.sig = Some(signature);
 
-        let mut vec = Vec::new();
+        let mut writer = self.store.get_writer_for_next_entry();
         entry
-            .encode_write(&mut vec)
-            .context(EncodingForStoringFailed)?;
-        self.store.append_entry(&vec).context(AppendFailed)
+            .encode_write(&mut writer)
+            .context(EncodingForStoringFailed)
     }
 }
 

@@ -33,7 +33,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         let payload = [1, 2, 3];
         log.publish(&payload, false).unwrap();
 
-        let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
+        let entry_bytes = log.store.get_entry_ref(1).unwrap();
 
         let mut entry = Entry::decode(entry_bytes).unwrap();
         b.iter(|| assert!(entry.verify_signature()))
