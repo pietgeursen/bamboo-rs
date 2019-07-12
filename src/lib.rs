@@ -3,19 +3,42 @@ use ssb_crypto::{sign_detached, PublicKey, SecretKey};
 
 pub mod entry;
 pub mod entry_store;
-pub mod error;
 pub mod memory_entry_store;
 pub mod signature;
 pub mod yamf_hash;
 pub mod yamf_signatory;
 
-use entry::Entry;
-pub use entry_store::EntryStore;
-pub use error::{Error, Result};
+use entry::{Entry, Error as EntryError};
+pub use entry_store::{EntryStore, Error as EntryStoreError};
 pub use memory_entry_store::MemoryEntryStore;
 use signature::Signature;
+use snafu::{ResultExt, Snafu};
 use yamf_hash::YamfHash;
 use yamf_signatory::YamfSignatory;
+
+#[derive(Debug, Snafu)]
+pub enum Error {
+    #[snafu(display(
+        "Invalid sequence number, sequences start at 1, got sequence: {}",
+        seq_num
+    ))]
+    GetEntryFailed {
+        seq_num: u64,
+        source: EntryStoreError,
+    },
+    #[snafu(display(
+        "Error unwrapping a None value of the secret key, it must be provided in the constructor"
+    ))]
+    TriedToPublishWithoutSecretKey,
+    #[snafu(display("Failed to encode the entry for signing"))]
+    EncodingForSigningFailed { source: EntryError },
+    #[snafu(display("Failed to encode the entry for storing in the log"))]
+    EncodingForStoringFailed { source: EntryError },
+    #[snafu(display("Failed to append the entry to the log"))]
+    AppendFailed { source: EntryStoreError },
+}
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub struct Log<Store: EntryStore> {
     pub store: Store,
@@ -58,10 +81,23 @@ impl<Store: EntryStore> Log<Store> {
         if seq_num > 1 {
             let lipmaa_link_seq = lipmaa(seq_num as u32) as u64;
 
-            let lipmaa_entry_bytes = self.store.get_entry_ref(lipmaa_link_seq)?.unwrap();
+            let lipmaa_entry_bytes =
+                self.store
+                    .get_entry_ref(lipmaa_link_seq)
+                    .context(GetEntryFailed {
+                        seq_num: lipmaa_link_seq,
+                    })?;
+
             let lipmaa_link = YamfHash::new_blake2b(lipmaa_entry_bytes);
 
-            let backlink_bytes = self.store.get_last_entry_ref()?.unwrap();
+            let backlink_bytes = self
+                .store
+                .get_last_entry_ref()
+                .context(GetEntryFailed {
+                    seq_num: lipmaa_link_seq,
+                })?
+                .unwrap();
+
             let backlink = YamfHash::new_blake2b(backlink_bytes);
 
             entry.backlink = Some(backlink);
@@ -69,16 +105,24 @@ impl<Store: EntryStore> Log<Store> {
         }
 
         let mut buff = Vec::new();
-        entry.encode_write(&mut buff).unwrap();
+        entry
+            .encode_write(&mut buff)
+            .context(EncodingForSigningFailed)?;
 
-        let signature = sign_detached(&buff, self.secret_key.as_ref().unwrap());
+        let secret = self
+            .secret_key
+            .as_ref()
+            .ok_or(Error::TriedToPublishWithoutSecretKey)?;
+        let signature = sign_detached(&buff, secret);
         let signature = Signature(signature.as_ref());
 
         entry.sig = Some(signature);
 
         let mut vec = Vec::new();
-        entry.encode_write(&mut vec).unwrap(); //TODO: error
-        self.store.append_entry(&vec)
+        entry
+            .encode_write(&mut vec)
+            .context(EncodingForStoringFailed)?;
+        self.store.append_entry(&vec).context(AppendFailed)
     }
 }
 
@@ -96,7 +140,7 @@ mod tests {
         let payload = [1, 2, 3];
         log.publish(&payload, false).unwrap();
 
-        let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
+        let entry_bytes = log.store.get_entry_ref(1).unwrap();
 
         let mut entry = Entry::decode(entry_bytes).unwrap();
         assert!(entry.verify_signature());

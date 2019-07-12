@@ -1,5 +1,8 @@
-use std::io::{Error, Write};
-use varu64::{decode as varu64_decode, encode_write as varu64_encode_write, DecodeError};
+use snafu::{ResultExt, Snafu};
+use std::io::{Error as IoError, Write};
+use varu64::{
+    decode as varu64_decode, encode_write as varu64_encode_write, DecodeError as varu64DecodeError,
+};
 
 use ssb_crypto::{verify_detached, PublicKey, Signature as SsbSignature};
 
@@ -7,6 +10,15 @@ use super::signature::Signature;
 use super::yamf_hash::YamfHash;
 use super::yamf_signatory::YamfSignatory;
 
+#[derive(Debug, Snafu)]
+pub enum Error {
+    #[snafu(display("Error when decoding entry. {}", source))]
+    DecodeError { source: varu64DecodeError },
+    #[snafu(display("Error when encoding entry. {}", source))]
+    EncodeError { source: IoError },
+}
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug)]
 pub struct Entry<'a> {
     pub is_end_of_feed: bool,
@@ -25,46 +37,56 @@ impl<'a> Entry<'a> {
         if self.is_end_of_feed {
             is_end_of_feed_byte[0] = 1;
         }
-        w.write_all(&is_end_of_feed_byte[..])?;
-        self.payload_hash.encode_write(&mut w)?;
-        varu64_encode_write(self.payload_size, &mut w)?;
-        self.author.encode_write(&mut w)?;
-        varu64_encode_write(self.seq_num, &mut w)?;
+        w.write_all(&is_end_of_feed_byte[..]).context(EncodeError)?;
+        self.payload_hash
+            .encode_write(&mut w)
+            .context(EncodeError)?;
+        varu64_encode_write(self.payload_size, &mut w).context(EncodeError)?;
+        self.author.encode_write(&mut w).context(EncodeError)?;
+        varu64_encode_write(self.seq_num, &mut w).context(EncodeError)?;
 
         match (self.seq_num, &self.backlink, &self.lipmaa_link) {
             (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
-                backlink.encode_write(&mut w)?;
-                lipmaa_link.encode_write(&mut w)?;
+                backlink.encode_write(&mut w).context(EncodeError)?;
+                lipmaa_link.encode_write(&mut w).context(EncodeError)?;
             }
             _ => (), //TODO: error
         }
 
         if let Some(ref sig) = self.sig {
-            sig.encode_write(&mut w)?;
+            sig.encode_write(&mut w).context(EncodeError)?;
         }
 
         Ok(())
     }
 
-    pub fn decode(bytes: &'a [u8]) -> Result<Entry<'a>, DecodeError> {
+    pub fn decode(bytes: &'a [u8]) -> Result<Entry<'a>, Error> {
         let is_end_of_feed = bytes[0] == 1;
 
-        let (payload_hash, remaining_bytes) = YamfHash::decode(&bytes[1..])?;
-        let (payload_size, remaining_bytes) =
-            varu64_decode(remaining_bytes).map_err(|(err, _)| err)?;
-        let (author, remaining_bytes) = YamfSignatory::decode(remaining_bytes)?;
-        let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes).map_err(|(err, _)| err)?;
+        let (payload_hash, remaining_bytes) = YamfHash::decode(&bytes[1..]).context(DecodeError)?;
+
+        let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
+            .map_err(|(err, _)| err)
+            .context(DecodeError)?;
+
+        let (author, remaining_bytes) =
+            YamfSignatory::decode(remaining_bytes).context(DecodeError)?;
+        let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
+            .map_err(|(err, _)| err)
+            .context(DecodeError)?;
 
         let (backlink, lipmaa_link, remaining_bytes) = match seq_num {
             1 => (None, None, remaining_bytes),
             _ => {
-                let (backlink, remaining_bytes) = YamfHash::decode(remaining_bytes)?;
-                let (lipmaa_link, remaining_bytes) = YamfHash::decode(remaining_bytes)?;
+                let (backlink, remaining_bytes) =
+                    YamfHash::decode(remaining_bytes).context(DecodeError)?;
+                let (lipmaa_link, remaining_bytes) =
+                    YamfHash::decode(remaining_bytes).context(DecodeError)?;
                 (Some(backlink), Some(lipmaa_link), remaining_bytes)
             }
         };
 
-        let (sig, _) = Signature::decode(remaining_bytes)?;
+        let (sig, _) = Signature::decode(remaining_bytes).context(DecodeError)?;
 
         Ok(Entry {
             is_end_of_feed,

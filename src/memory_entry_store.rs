@@ -1,5 +1,5 @@
-use super::EntryStore;
-use super::Result;
+use super::entry_store::{EntryStore, Error, GetEntrySequenceInvalid, Result};
+use snafu::ensure;
 use std::io::Write;
 
 pub struct MemoryEntryStore {
@@ -20,14 +20,18 @@ impl EntryStore for MemoryEntryStore {
         self.store.len() as u64
     }
     fn get_entry(&self, seq_num: u64) -> Result<Vec<u8>> {
-        Ok(self.store[seq_num as usize - 1].clone())
-    }
-    fn get_entry_ref<'a>(&'a self, seq_num: u64) -> Result<Option<&'a [u8]>> {
-        let result = self
-            .store
+        ensure!(seq_num > 0, GetEntrySequenceInvalid { seq_num });
+        self.store
             .get(seq_num as usize - 1)
-            .map(|vec| vec.as_slice());
-        Ok(result)
+            .map(|vec| vec.to_vec())
+            .ok_or(Error::GetEntrySequenceInvalid { seq_num })
+    }
+    fn get_entry_ref<'a>(&'a self, seq_num: u64) -> Result<&'a [u8]> {
+        ensure!(seq_num != 0, GetEntrySequenceInvalid { seq_num });
+        self.store
+            .get(seq_num as usize - 1)
+            .map(|vec| vec.as_slice())
+            .ok_or(Error::GetEntrySequenceInvalid { seq_num })
     }
     fn get_last_entry(&self) -> Result<Option<Vec<u8>>> {
         Ok(self.store.last().map(|item| item.clone()))
