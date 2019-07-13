@@ -42,7 +42,7 @@ impl<'a> Signature<'a> {
 
     pub fn decode(bytes: &'a [u8]) -> Result<(Signature<'a>, &'a [u8]), Error> {
         match varu64_decode(&bytes) {
-            Ok((size, remaining_bytes)) if remaining_bytes.len() > size as usize => Ok((
+            Ok((size, remaining_bytes)) if remaining_bytes.len() >= size as usize => Ok((
                 Signature(&remaining_bytes[..size as usize]),
                 &remaining_bytes[size as usize..],
             )),
