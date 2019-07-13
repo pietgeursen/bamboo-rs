@@ -33,7 +33,7 @@ impl<'a> YamfSignatory<'a> {
 
     pub fn decode(bytes: &'a [u8]) -> Result<(YamfSignatory<'a>, &'a [u8]), DecodeError> {
         match varu64_decode(&bytes) {
-            Ok((1, remaining_bytes)) => {
+            Ok((1, remaining_bytes)) if remaining_bytes.len() >= 33 => {
                 let hash = &remaining_bytes[1..33];
                 Ok((YamfSignatory::Ed25519(hash, None), &remaining_bytes[33..]))
             }

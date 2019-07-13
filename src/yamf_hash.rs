@@ -38,7 +38,7 @@ impl<'a> YamfHash<'a> {
     /// Decode the `bytes` as a `YamfHash`
     pub fn decode(bytes: &'a [u8]) -> Result<(YamfHash<'a>, &'a [u8]), DecodeError> {
         match varu64_decode(&bytes) {
-            Ok((1, remaining_bytes)) => {
+            Ok((1, remaining_bytes)) if remaining_bytes.len() >= 65 => {
                 let hash = &remaining_bytes[1..65];
                 Ok((YamfHash::Blake2b(hash.into()), &remaining_bytes[65..]))
             }

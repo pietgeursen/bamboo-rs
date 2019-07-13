@@ -6,7 +6,7 @@ use varu64::{
 
 use ssb_crypto::{verify_detached, PublicKey, Signature as SsbSignature};
 
-use super::signature::Signature;
+use super::signature::{Signature, Error as SigError};
 use super::yamf_hash::YamfHash;
 use super::yamf_signatory::YamfSignatory;
 
@@ -16,6 +16,10 @@ pub enum Error {
     DecodeError { source: varu64DecodeError },
     #[snafu(display("Error when encoding field: {} of entry. {}", field, source))]
     EncodeFieldError { source: IoError, field: String },
+    #[snafu(display("Error when encoding signature of entry. {}", source))]
+    EncodeSigError { source: SigError },
+    #[snafu(display("Error when decoding signature of entry. {}", source))]
+    DecodeSigError { source: SigError },
     #[snafu(display("Error when decoding, input had length 0"))]
     DecodeInputIsLengthZero,
 }
@@ -65,7 +69,7 @@ impl<'a> Entry<'a> {
 
         if let Some(ref sig) = self.sig {
             sig.encode_write(&mut w)
-                    .context(EncodeFieldError{field: "sig"})?;
+                    .context(EncodeSigError)?;
         }
 
         Ok(())
@@ -100,7 +104,7 @@ impl<'a> Entry<'a> {
             }
         };
 
-        let (sig, _) = Signature::decode(remaining_bytes).context(DecodeError)?;
+        let (sig, _) = Signature::decode(remaining_bytes).context(DecodeSigError)?;
 
         Ok(Entry {
             is_end_of_feed,

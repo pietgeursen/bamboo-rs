@@ -1,8 +1,20 @@
-use std::io::{Error, Write};
+use snafu::{ResultExt, Snafu};
+use std::io::{Error as IoError, Write};
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
-    DecodeError,
+    DecodeError as varu64DecodeError,
 };
+
+#[derive(Debug, Snafu)]
+pub enum Error {
+    #[snafu(display("Error when decoding var64 for signature. {}", source))]
+    DecodeVaru64Error{source: varu64DecodeError} ,
+    #[snafu(display("Error when decoding signature."))]
+    DecodeError,
+    #[snafu(display("IO Error when encoding signature to writer. {}", source))]
+    EncodeWriteError{source: IoError} ,
+}
+
 
 #[derive(Debug)]
 pub struct Signature<'a>(pub &'a [u8]);
@@ -23,18 +35,19 @@ impl<'a> Signature<'a> {
 
     /// Encodes signature into a writer.
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
-        varu64_encode_write(self.len() as u64, &mut w)?;
-        w.write_all(&self.0)?;
+        varu64_encode_write(self.len() as u64, &mut w).context(EncodeWriteError)?;
+        w.write_all(&self.0).context(EncodeWriteError)?;
         Ok(())
     }
 
-    pub fn decode(bytes: &'a [u8]) -> Result<(Signature<'a>, &'a [u8]), DecodeError> {
+    pub fn decode(bytes: &'a [u8]) -> Result<(Signature<'a>, &'a [u8]), Error> {
         match varu64_decode(&bytes) {
-            Ok((size, remaining_bytes)) => Ok((
+            Ok((size, remaining_bytes)) if remaining_bytes.len() > size as usize => Ok((
                 Signature(&remaining_bytes[..size as usize]),
                 &remaining_bytes[size as usize..],
             )),
-            Err((err, _)) => Err(err),
+            Err((err, _)) => Err(Error::DecodeVaru64Error{source: err}),
+            _ => Err(Error::DecodeError)
         }
     }
 }
