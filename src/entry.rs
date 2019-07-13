@@ -16,6 +16,8 @@ pub enum Error {
     DecodeError { source: varu64DecodeError },
     #[snafu(display("Error when encoding field: {} of entry. {}", field, source))]
     EncodeFieldError { source: IoError, field: String },
+    #[snafu(display("Error when decoding, input had length 0"))]
+    DecodeInputIsLengthZero,
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -70,6 +72,9 @@ impl<'a> Entry<'a> {
     }
 
     pub fn decode(bytes: &'a [u8]) -> Result<Entry<'a>, Error> {
+        if bytes.len() == 0 {
+            return Err(Error::DecodeInputIsLengthZero)
+        }
         let is_end_of_feed = bytes[0] == 1;
 
         let (payload_hash, remaining_bytes) = YamfHash::decode(&bytes[1..]).context(DecodeError)?;
