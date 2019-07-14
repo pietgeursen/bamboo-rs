@@ -10,7 +10,7 @@ pub fn main() {
 
     let jsn = json!({
         "validFirstEntry": valid_first_entry(),
-        "threeValidEntries": n_valid_entries(3),
+        "fiveValidEntries": n_valid_entries(5),
     });
 
     let json_string = serde_json::to_string_pretty(&jsn).unwrap();
