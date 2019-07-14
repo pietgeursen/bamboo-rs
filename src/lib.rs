@@ -12,10 +12,10 @@ pub mod signature;
 pub mod yamf_hash;
 pub mod yamf_signatory;
 
-use entry::{Entry, Error as EntryError};
+pub use entry::{Entry, Error as EntryError};
 pub use entry_store::{EntryStore, Error as EntryStoreError};
 pub use memory_entry_store::MemoryEntryStore;
-use signature::Signature;
+pub use signature::Signature;
 use snafu::{ResultExt, Snafu};
 use yamf_hash::YamfHash;
 use yamf_signatory::YamfSignatory;

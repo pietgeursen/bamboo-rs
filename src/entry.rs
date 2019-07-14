@@ -60,8 +60,8 @@ impl AsRef<[u8]> for EntryBytes {
 
 #[derive(Serialize, Deserialize)]
 pub struct EncodedEntry {
-    #[serde(with = "HexForm::<EntryBytes>")]
-    buffer: EntryBytes,
+    #[serde(with = "HexForm::<EntryBytes>", rename(serialize = "hexBytes", deserialize = "hexBytes") )]
+    hex_bytes: EntryBytes,
     // other fields...
 }
 
@@ -69,7 +69,7 @@ impl<'a> Entry<'a> {
     pub fn encode(&self) -> EncodedEntry{
         let mut buff = Vec::new();
         self.encode_write(&mut buff).unwrap();
-        EncodedEntry{buffer: EntryBytes(buff)}
+        EncodedEntry{hex_bytes: EntryBytes(buff)}
     }
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
         let mut is_end_of_feed_byte = [0];
