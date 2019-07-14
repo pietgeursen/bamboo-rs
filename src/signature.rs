@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use snafu::{ResultExt, Snafu};
 use std::io::{Error as IoError, Write};
 use varu64::{
@@ -17,7 +18,8 @@ pub enum Error {
 
 
 #[derive(Debug)]
-pub struct Signature<'a>(pub &'a [u8]);
+#[derive(Serialize, Deserialize)]
+pub struct Signature<'a>(pub Cow<'a, [u8]>);
 
 impl<'a> Signature<'a> {
     /// Little bit of sugar to get the signature length in bytes
@@ -43,7 +45,7 @@ impl<'a> Signature<'a> {
     pub fn decode(bytes: &'a [u8]) -> Result<(Signature<'a>, &'a [u8]), Error> {
         match varu64_decode(&bytes) {
             Ok((size, remaining_bytes)) if remaining_bytes.len() >= size as usize => Ok((
-                Signature(&remaining_bytes[..size as usize]),
+                Signature(remaining_bytes[..size as usize].into()),
                 &remaining_bytes[size as usize..],
             )),
             Err((err, _)) => Err(Error::DecodeVaru64Error{source: err}),
@@ -64,14 +66,14 @@ mod tests {
         let bytes = vec![0x05, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xAA];
         let (sig, remaining) = Signature::decode(&bytes).unwrap();
 
-        assert_eq!(sig.0, &[0xFF; 5]);
+        assert_eq!(sig.0.as_ref(), &[0xFF; 5]);
         assert_eq!(remaining, [0xAA]);
     }
 
     #[test]
     fn encode_signature() {
         let bytes = vec![0xFF; 5];
-        let sig = Signature(&bytes);
+        let sig = Signature(bytes[..].into());
         let mut out = vec![0; 6];
         sig.encode(&mut out);
 
@@ -81,7 +83,7 @@ mod tests {
     #[test]
     fn encode_write_signature() {
         let bytes = vec![0xFF; 5];
-        let sig = Signature(&bytes);
+        let sig = Signature(bytes[..].into());
 
         let mut out = Vec::new();
         sig.encode_write(&mut out).unwrap();

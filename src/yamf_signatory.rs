@@ -1,10 +1,12 @@
 use std::io::{Error, Write};
+use std::borrow::Cow;
 use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub enum YamfSignatory<'a> {
     /// Tuple of public and optional secret key
-    Ed25519(&'a [u8], Option<&'a [u8]>),
+    Ed25519(Cow<'a, [u8]>, Option<Cow<'a, [u8]>>),
 }
 
 impl<'a> YamfSignatory<'a> {
@@ -35,7 +37,7 @@ impl<'a> YamfSignatory<'a> {
         match varu64_decode(&bytes) {
             Ok((1, remaining_bytes)) if remaining_bytes.len() >= 33 => {
                 let hash = &remaining_bytes[1..33];
-                Ok((YamfSignatory::Ed25519(hash, None), &remaining_bytes[33..]))
+                Ok((YamfSignatory::Ed25519(hash.into(), None), &remaining_bytes[33..]))
             }
             Err((err, _)) => Err(err),
             _ => Err(DecodeError::NonCanonical(0)), // TODO fix the errors
@@ -50,7 +52,7 @@ mod tests {
     #[test]
     fn encode_yamf() {
         let hash_bytes = vec![0xFF; 4];
-        let yamf_hash = YamfSignatory::Ed25519(&hash_bytes, None);
+        let yamf_hash = YamfSignatory::Ed25519(hash_bytes.into(), None);
         let expected = [1, 32, 0xFF, 0xFF, 0xFF, 0xFF];
 
         let mut encoded = vec![0; 6];
@@ -60,7 +62,7 @@ mod tests {
     #[test]
     fn encode_yamf_write() {
         let hash_bytes = vec![0xFF; 4];
-        let yamf_hash = YamfSignatory::Ed25519(&hash_bytes, None);
+        let yamf_hash = YamfSignatory::Ed25519(hash_bytes.into(), None);
         let expected = [1, 32, 0xFF, 0xFF, 0xFF, 0xFF];
 
         let mut encoded = Vec::new();

@@ -1,11 +1,14 @@
-use blake2b_simd::{blake2b, OUTBYTES};
 use std::borrow::Cow;
 use std::io::{Error, Write};
+
+use blake2b_simd::{blake2b, OUTBYTES};
+
 use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
 
 const BLAKE2B_HASH_SIZE: usize = OUTBYTES;
 
 /// Variants of `YamfHash`
+#[derive(Serialize, Deserialize)]
 pub enum YamfHash<'a> {
     Blake2b(Cow<'a, [u8]>),
 }

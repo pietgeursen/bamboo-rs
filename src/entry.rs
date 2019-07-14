@@ -1,3 +1,5 @@
+use hex_buffer_serde::{Hex, HexForm};
+use core::{array::TryFromSliceError, convert::TryFrom};
 use snafu::{ResultExt, Snafu};
 use std::io::{Error as IoError, Write};
 use varu64::{
@@ -26,6 +28,7 @@ pub enum Error {
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
+#[derive(Serialize, Deserialize)]
 pub struct Entry<'a> {
     pub is_end_of_feed: bool,
     pub payload_hash: YamfHash<'a>,
@@ -37,7 +40,37 @@ pub struct Entry<'a> {
     pub sig: Option<Signature<'a>>,
 }
 
+
+pub struct EntryBytes(Vec<u8>);
+
+impl TryFrom<&[u8]> for EntryBytes {
+    type Error = TryFromSliceError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        // snip
+        Ok(EntryBytes(slice.to_vec()))
+    }
+}
+
+impl AsRef<[u8]> for EntryBytes {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct EncodedEntry {
+    #[serde(with = "HexForm::<EntryBytes>")]
+    buffer: EntryBytes,
+    // other fields...
+}
+
 impl<'a> Entry<'a> {
+    pub fn encode(&self) -> EncodedEntry{
+        let mut buff = Vec::new();
+        self.encode_write(&mut buff).unwrap();
+        EncodedEntry{buffer: EntryBytes(buff)}
+    }
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
         let mut is_end_of_feed_byte = [0];
         if self.is_end_of_feed {
@@ -81,14 +114,16 @@ impl<'a> Entry<'a> {
         }
         let is_end_of_feed = bytes[0] == 1;
 
-        let (payload_hash, remaining_bytes) = YamfHash::decode(&bytes[1..]).context(DecodeError)?;
+        let (payload_hash, remaining_bytes) = YamfHash::decode(&bytes[1..])
+            .context(DecodeError)?;
 
         let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
             .map_err(|(err, _)| err)
             .context(DecodeError)?;
 
         let (author, remaining_bytes) =
-            YamfSignatory::decode(remaining_bytes).context(DecodeError)?;
+            YamfSignatory::decode(remaining_bytes)
+            .context(DecodeError)?;
         let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
             .map_err(|(err, _)| err)
             .context(DecodeError)?;
@@ -122,14 +157,14 @@ impl<'a> Entry<'a> {
         //Pluck off the signature before we encode it
         let sig = self.sig.take();
 
-        let ssb_sig = SsbSignature::from_slice(sig.as_ref().unwrap().0).unwrap();
+        let ssb_sig = SsbSignature::from_slice(sig.as_ref().unwrap().0.as_ref()).unwrap();
 
         let mut buff = Vec::new();
         self.encode_write(&mut buff).unwrap();
 
         let result = match self.author {
-            YamfSignatory::Ed25519(author, _) => {
-                let pub_key = PublicKey::from_slice(author).unwrap();
+            YamfSignatory::Ed25519(ref author, _) => {
+                let pub_key = PublicKey::from_slice(author.as_ref()).unwrap();
                 verify_detached(&ssb_sig, &buff, &pub_key)
             }
         };
@@ -157,9 +192,9 @@ mod tests {
         let payload_size = 512;
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];
-        let sig = Signature(&sig_bytes);
+        let sig = Signature(sig_bytes[..].into());
         let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519(&author_bytes, None);
+        let author = YamfSignatory::Ed25519((&author_bytes[..]).into(), None);
 
         let mut entry_vec = Vec::new();
 
@@ -174,9 +209,6 @@ mod tests {
         sig.encode_write(&mut entry_vec).unwrap();
 
         let entry = Entry::decode(&entry_vec).unwrap();
-
-        assert_eq!(entry.is_end_of_feed, true);
-        assert_eq!(entry.payload_size, payload_size);
 
         match entry.payload_hash {
             YamfHash::Blake2b(ref hash) => {
@@ -205,8 +237,8 @@ mod tests {
         }
 
         match entry.author {
-            YamfSignatory::Ed25519(auth, None) => {
-                assert_eq!(auth, &author_bytes[..]);
+            YamfSignatory::Ed25519(ref auth, None) => {
+                assert_eq!(auth.as_ref(), &author_bytes[..]);
             }
             _ => panic!(),
         }
