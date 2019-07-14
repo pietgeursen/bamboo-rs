@@ -1,9 +1,10 @@
-use blake2b_simd::blake2b;
+use blake2b_simd::{blake2b, OUTBYTES};
 use std::borrow::Cow;
 use std::io::{Error, Write};
 use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
 
-#[derive(Debug)]
+const BLAKE2B_HASH_SIZE: usize = OUTBYTES;
+
 /// Variants of `YamfHash`
 pub enum YamfHash<'a> {
     Blake2b(Cow<'a, [u8]>),
@@ -15,7 +16,7 @@ impl<'a> YamfHash<'a> {
         match self {
             YamfHash::Blake2b(vec) => {
                 varu64_encode(1, &mut out[0..1]);
-                varu64_encode(64, &mut out[1..2]);
+                varu64_encode(BLAKE2B_HASH_SIZE as u64, &mut out[1..2]);
                 out[2..].copy_from_slice(&vec);
             }
         }
@@ -27,7 +28,7 @@ impl<'a> YamfHash<'a> {
         match self {
             YamfHash::Blake2b(vec) => {
                 varu64_encode(1, &mut out[0..1]);
-                varu64_encode(64, &mut out[1..2]);
+                varu64_encode(BLAKE2B_HASH_SIZE as u64, &mut out[1..2]);
                 w.write_all(&out)?;
                 w.write_all(&vec)?;
                 Ok(())

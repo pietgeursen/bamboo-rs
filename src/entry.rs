@@ -25,7 +25,7 @@ pub enum Error {
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
-#[derive(Debug)]
+
 pub struct Entry<'a> {
     pub is_end_of_feed: bool,
     pub payload_hash: YamfHash<'a>,
