@@ -19,14 +19,14 @@ pub use entry::{Entry, Error as EntryError};
 pub use entry_store::{EntryStore, Error as EntryStoreError};
 pub use memory_entry_store::MemoryEntryStore;
 pub use signature::Signature;
-use snafu::{ResultExt, Snafu};
+use snafu::{ensure, Backtrace, ResultExt, Snafu};
 use yamf_hash::YamfHash;
 use yamf_signatory::YamfSignatory;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
     #[snafu(display(
-        "Invalid sequence number, sequences start at 1, got sequence: {}",
+        "Invalid sequence number, it might not exist or it might be 0. Sequences start at 1. Got sequence: {}",
         seq_num
     ))]
     GetEntryFailed {
@@ -43,6 +43,12 @@ pub enum Error {
     EncodingForStoringFailed { source: EntryError },
     #[snafu(display("Failed to append the entry to the log"))]
     AppendFailed { source: EntryStoreError },
+    #[snafu(display(
+        "Attempted to publish a message on a feed that has published an end of feed message"
+    ))]
+    PublishAfterEndOfFeed { backtrace: Backtrace },
+    #[snafu(display("Failed to decode the previous message as an entry"))]
+    PreviousDecodeFailed { source: EntryError },
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -106,6 +112,11 @@ impl<Store: EntryStore> Log<Store> {
                 })?
                 .unwrap();
 
+            //Make sure we're not trying to publish after the end of a feed.
+            let backlink_entry =
+                Entry::decode(&backlink_bytes[..]).context(PreviousDecodeFailed)?;
+            ensure!(!backlink_entry.is_end_of_feed, PublishAfterEndOfFeed);
+
             let backlink = YamfHash::new_blake2b(backlink_bytes);
 
             entry.backlink = Some(backlink);
@@ -136,7 +147,7 @@ impl<Store: EntryStore> Log<Store> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Entry, EntryStore, Log, MemoryEntryStore};
+    use crate::{Entry, EntryStore, Error, Log, MemoryEntryStore};
     use ssb_crypto::{generate_longterm_keypair, init};
 
     #[test]
@@ -152,5 +163,21 @@ mod tests {
 
         let mut entry = Entry::decode(entry_bytes).unwrap();
         assert!(entry.verify_signature());
+    }
+    #[test]
+    fn publish_after_an_end_of_feed_message_errors() {
+        init();
+
+        let (pub_key, secret_key) = generate_longterm_keypair();
+        let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let payload = [1, 2, 3];
+
+        //publish an end of feed message.
+        log.publish(&payload, true).unwrap();
+
+        match log.publish(&payload, false) {
+            Err(Error::PublishAfterEndOfFeed { backtrace: _ }) => {}
+            _ => panic!("expected publish to fail with an error"),
+        }
     }
 }
