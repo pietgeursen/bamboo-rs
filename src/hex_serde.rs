@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use serde::{Deserialize, Deserializer, Serializer};
+use serde::de::Error;
 
 pub fn cow_from_hex<'de, D>(deserializer: D) -> Result<Cow<'static, [u8]>, D::Error>
 where
@@ -7,7 +8,7 @@ where
 {
     if deserializer.is_human_readable(){
         let s: &str = Deserialize::deserialize(deserializer)?;
-        let bytes = hex::decode(s).unwrap();
+        let bytes = hex::decode(s).map_err(Error::custom)?;
         Ok(Cow::Owned(bytes.to_owned()))
     }else{
         let bytes: &[u8] = Deserialize::deserialize(deserializer)?;
