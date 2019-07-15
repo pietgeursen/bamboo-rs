@@ -1,5 +1,8 @@
-#[macro_use] 
+#[macro_use]
 extern crate serde_derive;
+
+#[cfg_attr(test, macro_use)]
+extern crate serde_json;
 
 use lipmaa_link::lipmaa;
 use ssb_crypto::{sign_detached, PublicKey, SecretKey};
@@ -11,6 +14,7 @@ pub mod memory_entry_store;
 pub mod signature;
 pub mod yamf_hash;
 pub mod yamf_signatory;
+mod hex_serde;
 
 pub use entry::{Entry, Error as EntryError};
 pub use entry_store::{EntryStore, Error as EntryStoreError};
@@ -50,7 +54,6 @@ pub struct Log<Store: EntryStore> {
     secret_key: Option<SecretKey>,
 }
 
-
 impl<Store: EntryStore> Log<Store> {
     pub fn new(store: Store, public_key: PublicKey, secret_key: Option<SecretKey>) -> Log<Store> {
         Log {
@@ -63,7 +66,8 @@ impl<Store: EntryStore> Log<Store> {
     pub fn publish(&mut self, payload: &[u8], is_end_of_feed: bool) -> Result<()> {
         // get the last seq number
         let last_seq_num = self.store.get_last_seq();
-        let author: YamfSignatory = YamfSignatory::Ed25519(Cow::Owned(self.public_key.as_ref().to_vec()), None);
+        let author: YamfSignatory =
+            YamfSignatory::Ed25519(Cow::Owned(self.public_key.as_ref().to_vec()), None);
 
         // calc the payload hash
         let payload_hash = YamfHash::new_blake2b(payload);

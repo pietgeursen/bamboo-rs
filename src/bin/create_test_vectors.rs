@@ -3,11 +3,10 @@ extern crate serde_json;
 extern crate bamboo_rs;
 
 use bamboo_rs::{Entry, EntryStore, Log, MemoryEntryStore};
-use ssb_crypto::{generate_longterm_keypair, init};
 use serde_json::Value;
+use ssb_crypto::{generate_longterm_keypair, init};
 
 pub fn main() {
-
     let jsn = json!({
         "validFirstEntry": valid_first_entry(),
         "fiveValidEntries": n_valid_entries(5),
@@ -18,7 +17,6 @@ pub fn main() {
 }
 
 fn valid_first_entry() -> Value {
-
     init();
 
     let (pub_key, secret_key) = generate_longterm_keypair();
@@ -37,12 +35,11 @@ fn valid_first_entry() -> Value {
         "description": "A valid first entry. Note that the previous and limpaa links are None / null. And that the seq_num starts at 1.",
         "payload": payload,
         "decoded": entry,
-        "encoded": encoded_entry 
+        "encoded": encoded_entry
     })
 }
 
 fn n_valid_entries(n: u64) -> Value {
-
     init();
 
     let (pub_key, secret_key) = generate_longterm_keypair();
@@ -50,7 +47,7 @@ fn n_valid_entries(n: u64) -> Value {
 
     let vals: Vec<Value> = (1..n)
         .into_iter()
-        .map(|i|{
+        .map(|i| {
             let payload = format!("message number {}", i);
             log.publish(&payload.as_bytes(), false).unwrap();
             let entry_bytes = log.store.get_entry_ref(i).unwrap();
@@ -60,7 +57,7 @@ fn n_valid_entries(n: u64) -> Value {
             json!({
                 "payload": payload,
                 "decoded": entry,
-                "encoded": encoded_entry 
+                "encoded": encoded_entry
             })
         })
         .collect();

@@ -1,12 +1,17 @@
-use std::io::{Error, Write};
 use std::borrow::Cow;
+use std::io::{Error, Write};
 use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
+use super::hex_serde::{hex_from_cow, cow_from_hex};
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum YamfSignatory<'a> {
     /// Tuple of public and optional secret key
-    Ed25519(Cow<'a, [u8]>, Option<Cow<'a, [u8]>>),
+    Ed25519(
+        #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")]
+        Cow<'a, [u8]>, 
+        #[serde(skip)]
+        Option<Cow<'a, [u8]>>
+        ),
 }
 
 impl<'a> YamfSignatory<'a> {
@@ -37,7 +42,10 @@ impl<'a> YamfSignatory<'a> {
         match varu64_decode(&bytes) {
             Ok((1, remaining_bytes)) if remaining_bytes.len() >= 33 => {
                 let hash = &remaining_bytes[1..33];
-                Ok((YamfSignatory::Ed25519(hash.into(), None), &remaining_bytes[33..]))
+                Ok((
+                    YamfSignatory::Ed25519(hash.into(), None),
+                    &remaining_bytes[33..],
+                ))
             }
             Err((err, _)) => Err(err),
             _ => Err(DecodeError::NonCanonical(0)), // TODO fix the errors

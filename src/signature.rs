@@ -1,6 +1,7 @@
-use std::borrow::Cow;
 use snafu::{ResultExt, Snafu};
+use std::borrow::Cow;
 use std::io::{Error as IoError, Write};
+use super::hex_serde::{hex_from_cow, cow_from_hex};
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
     DecodeError as varu64DecodeError,
@@ -9,17 +10,18 @@ use varu64::{
 #[derive(Debug, Snafu)]
 pub enum Error {
     #[snafu(display("Error when decoding var64 for signature. {}", source))]
-    DecodeVaru64Error{source: varu64DecodeError} ,
+    DecodeVaru64Error { source: varu64DecodeError },
     #[snafu(display("Error when decoding signature."))]
     DecodeError,
     #[snafu(display("IO Error when encoding signature to writer. {}", source))]
-    EncodeWriteError{source: IoError} ,
+    EncodeWriteError { source: IoError },
 }
 
-
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-pub struct Signature<'a>(pub Cow<'a, [u8]>);
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Signature<'a>(
+    #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")]
+    pub Cow<'a, [u8]>
+);
 
 impl<'a> Signature<'a> {
     /// Little bit of sugar to get the signature length in bytes
@@ -48,8 +50,8 @@ impl<'a> Signature<'a> {
                 Signature(remaining_bytes[..size as usize].into()),
                 &remaining_bytes[size as usize..],
             )),
-            Err((err, _)) => Err(Error::DecodeVaru64Error{source: err}),
-            _ => Err(Error::DecodeError)
+            Err((err, _)) => Err(Error::DecodeVaru64Error { source: err }),
+            _ => Err(Error::DecodeError),
         }
     }
 }

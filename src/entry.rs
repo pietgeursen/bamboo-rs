@@ -1,5 +1,5 @@
-use hex_buffer_serde::{Hex, HexForm};
 use core::{array::TryFromSliceError, convert::TryFrom};
+use hex_buffer_serde::{Hex, HexForm};
 use snafu::{ResultExt, Snafu};
 use std::io::{Error as IoError, Write};
 use varu64::{
@@ -8,7 +8,7 @@ use varu64::{
 
 use ssb_crypto::{verify_detached, PublicKey, Signature as SsbSignature};
 
-use super::signature::{Signature, Error as SigError};
+use super::signature::{Error as SigError, Signature};
 use super::yamf_hash::YamfHash;
 use super::yamf_signatory::YamfSignatory;
 
@@ -28,7 +28,7 @@ pub enum Error {
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct Entry<'a> {
     pub is_end_of_feed: bool,
     pub payload_hash: YamfHash<'a>,
@@ -39,7 +39,6 @@ pub struct Entry<'a> {
     pub lipmaa_link: Option<YamfHash<'a>>,
     pub sig: Option<Signature<'a>>,
 }
-
 
 pub struct EntryBytes(Vec<u8>);
 
@@ -60,16 +59,20 @@ impl AsRef<[u8]> for EntryBytes {
 
 #[derive(Serialize, Deserialize)]
 pub struct EncodedEntry {
-    #[serde(with = "HexForm::<EntryBytes>", rename(serialize = "hexBytes", deserialize = "hexBytes") )]
+    #[serde(
+        with = "HexForm::<EntryBytes>",
+        rename(serialize = "hexBytes", deserialize = "hexBytes")
+    )]
     hex_bytes: EntryBytes,
-    // other fields...
 }
 
 impl<'a> Entry<'a> {
-    pub fn encode(&self) -> EncodedEntry{
+    pub fn encode(&self) -> EncodedEntry {
         let mut buff = Vec::new();
         self.encode_write(&mut buff).unwrap();
-        EncodedEntry{hex_bytes: EntryBytes(buff)}
+        EncodedEntry {
+            hex_bytes: EntryBytes(buff),
+        }
     }
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
         let mut is_end_of_feed_byte = [0];
@@ -77,32 +80,38 @@ impl<'a> Entry<'a> {
             is_end_of_feed_byte[0] = 1;
         }
         w.write_all(&is_end_of_feed_byte[..])
-            .context(EncodeFieldError{field: "is_end_of_feed"})?;
+            .context(EncodeFieldError {
+                field: "is_end_of_feed",
+            })?;
 
         self.payload_hash
             .encode_write(&mut w)
-            .context(EncodeFieldError{field: "payload_hash"})?;
+            .context(EncodeFieldError {
+                field: "payload_hash",
+            })?;
 
-        varu64_encode_write(self.payload_size, &mut w)
-            .context(EncodeFieldError{field: "payload_size"})?;
-        self.author.encode_write(&mut w)
-            .context(EncodeFieldError{field: "author"})?;
-        varu64_encode_write(self.seq_num, &mut w)
-            .context(EncodeFieldError{field: "seq_num"})?;
+        varu64_encode_write(self.payload_size, &mut w).context(EncodeFieldError {
+            field: "payload_size",
+        })?;
+        self.author
+            .encode_write(&mut w)
+            .context(EncodeFieldError { field: "author" })?;
+        varu64_encode_write(self.seq_num, &mut w).context(EncodeFieldError { field: "seq_num" })?;
 
         match (self.seq_num, &self.backlink, &self.lipmaa_link) {
             (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
-                backlink.encode_write(&mut w)
-                    .context(EncodeFieldError{field: "backlink"})?;
-                lipmaa_link.encode_write(&mut w)
-                    .context(EncodeFieldError{field: "lipmaa_link"})?;
+                backlink
+                    .encode_write(&mut w)
+                    .context(EncodeFieldError { field: "backlink" })?;
+                lipmaa_link.encode_write(&mut w).context(EncodeFieldError {
+                    field: "lipmaa_link",
+                })?;
             }
             _ => (), //TODO: error
         }
 
         if let Some(ref sig) = self.sig {
-            sig.encode_write(&mut w)
-                    .context(EncodeSigError)?;
+            sig.encode_write(&mut w).context(EncodeSigError)?;
         }
 
         Ok(())
@@ -110,20 +119,18 @@ impl<'a> Entry<'a> {
 
     pub fn decode(bytes: &'a [u8]) -> Result<Entry<'a>, Error> {
         if bytes.len() == 0 {
-            return Err(Error::DecodeInputIsLengthZero)
+            return Err(Error::DecodeInputIsLengthZero);
         }
         let is_end_of_feed = bytes[0] == 1;
 
-        let (payload_hash, remaining_bytes) = YamfHash::decode(&bytes[1..])
-            .context(DecodeError)?;
+        let (payload_hash, remaining_bytes) = YamfHash::decode(&bytes[1..]).context(DecodeError)?;
 
         let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
             .map_err(|(err, _)| err)
             .context(DecodeError)?;
 
         let (author, remaining_bytes) =
-            YamfSignatory::decode(remaining_bytes)
-            .context(DecodeError)?;
+            YamfSignatory::decode(remaining_bytes).context(DecodeError)?;
         let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
             .map_err(|(err, _)| err)
             .context(DecodeError)?;
