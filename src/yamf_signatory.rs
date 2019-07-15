@@ -1,17 +1,15 @@
+use super::hex_serde::{cow_from_hex, hex_from_cow};
 use std::borrow::Cow;
 use std::io::{Error, Write};
 use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
-use super::hex_serde::{hex_from_cow, cow_from_hex};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum YamfSignatory<'a> {
     /// Tuple of public and optional secret key
     Ed25519(
-        #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")]
-        Cow<'a, [u8]>, 
-        #[serde(skip)]
-        Option<Cow<'a, [u8]>>
-        ),
+        #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
+        #[serde(skip)] Option<Cow<'a, [u8]>>,
+    ),
 }
 
 impl<'a> YamfSignatory<'a> {

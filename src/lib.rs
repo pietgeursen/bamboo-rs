@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate serde_derive;
 
-#[cfg_attr(test, macro_use)]
 extern crate serde_json;
 
 use lipmaa_link::lipmaa;
@@ -10,11 +9,11 @@ use std::borrow::Cow;
 
 pub mod entry;
 pub mod entry_store;
+mod hex_serde;
 pub mod memory_entry_store;
 pub mod signature;
 pub mod yamf_hash;
 pub mod yamf_signatory;
-mod hex_serde;
 
 pub use entry::{Entry, Error as EntryError};
 pub use entry_store::{EntryStore, Error as EntryStoreError};

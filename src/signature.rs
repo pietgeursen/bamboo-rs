@@ -1,7 +1,7 @@
+use super::hex_serde::{cow_from_hex, hex_from_cow};
 use snafu::{ResultExt, Snafu};
 use std::borrow::Cow;
 use std::io::{Error as IoError, Write};
-use super::hex_serde::{hex_from_cow, cow_from_hex};
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
     DecodeError as varu64DecodeError,
@@ -17,10 +17,9 @@ pub enum Error {
     EncodeWriteError { source: IoError },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Signature<'a>(
-    #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")]
-    pub Cow<'a, [u8]>
+    #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] pub Cow<'a, [u8]>,
 );
 
 impl<'a> Signature<'a> {

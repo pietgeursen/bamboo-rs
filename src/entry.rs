@@ -1,6 +1,6 @@
-use core::{array::TryFromSliceError, convert::TryFrom};
-use hex_buffer_serde::{Hex, HexForm};
+use super::hex_serde::{cow_from_hex, hex_from_cow};
 use snafu::{ResultExt, Snafu};
+use std::borrow::Cow;
 use std::io::{Error as IoError, Write};
 use varu64::{
     decode as varu64_decode, encode_write as varu64_encode_write, DecodeError as varu64DecodeError,
@@ -28,7 +28,7 @@ pub enum Error {
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Entry<'a> {
     pub is_end_of_feed: bool,
     pub payload_hash: YamfHash<'a>,
@@ -40,39 +40,16 @@ pub struct Entry<'a> {
     pub sig: Option<Signature<'a>>,
 }
 
-pub struct EntryBytes(Vec<u8>);
-
-impl TryFrom<&[u8]> for EntryBytes {
-    type Error = TryFromSliceError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        // snip
-        Ok(EntryBytes(slice.to_vec()))
-    }
-}
-
-impl AsRef<[u8]> for EntryBytes {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
 #[derive(Serialize, Deserialize)]
-pub struct EncodedEntry {
-    #[serde(
-        with = "HexForm::<EntryBytes>",
-        rename(serialize = "hexBytes", deserialize = "hexBytes")
-    )]
-    hex_bytes: EntryBytes,
-}
+pub struct EntryBytes<'a>(
+    #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
+);
 
 impl<'a> Entry<'a> {
-    pub fn encode(&self) -> EncodedEntry {
+    pub fn encode(&self) -> EntryBytes {
         let mut buff = Vec::new();
         self.encode_write(&mut buff).unwrap();
-        EncodedEntry {
-            hex_bytes: EntryBytes(buff),
-        }
+        EntryBytes(Cow::Owned(buff))
     }
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
         let mut is_end_of_feed_byte = [0];
@@ -186,6 +163,8 @@ impl<'a> Entry<'a> {
 #[cfg(test)]
 mod tests {
     use super::{Entry, Signature, YamfHash, YamfSignatory};
+    use crate::{EntryStore, Log, MemoryEntryStore};
+    use ssb_crypto::{generate_longterm_keypair, init};
     use varu64::encode_write as varu64_encode_write;
 
     #[test]
@@ -255,5 +234,24 @@ mod tests {
         entry.encode_write(&mut encoded).unwrap();
 
         assert_eq!(encoded, entry_vec);
+    }
+
+    #[test]
+    fn serde_entry() {
+        init();
+
+        let (pub_key, secret_key) = generate_longterm_keypair();
+        let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let payload = "hello bamboo!";
+        log.publish(payload.as_bytes(), false).unwrap();
+
+        let entry_bytes = log.store.get_entry_ref(1).unwrap();
+
+        let entry = Entry::decode(entry_bytes).unwrap();
+
+        let string = serde_json::to_string(&entry).unwrap();
+        let parsed: Entry = serde_json::from_str(&string).unwrap();
+
+        assert_eq!(parsed, entry);
     }
 }

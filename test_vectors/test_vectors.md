@@ -2,8 +2,6 @@
 
 > [Vectors](./test_vectors.json) for testing your own implementation of bamboo
 
-TODO: Include the keys used for signing.
-
 ## Byte encodings in the json.
 
 Binary representations are stored as lower case base16 (hexadecimal) strings.

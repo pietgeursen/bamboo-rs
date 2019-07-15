@@ -2,13 +2,13 @@ use blake2b_simd::{blake2b, OUTBYTES};
 use std::borrow::Cow;
 use std::io::{Error, Write};
 
+use super::hex_serde::{cow_from_hex, hex_from_cow};
 use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
-use super::hex_serde::{hex_from_cow, cow_from_hex};
 
 const BLAKE2B_HASH_SIZE: usize = OUTBYTES;
 
 /// Variants of `YamfHash`
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
 pub enum YamfHash<'a> {
     #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")]
     Blake2b(Cow<'a, [u8]>),
@@ -99,28 +99,6 @@ mod tests {
                 assert_eq!(remaining_bytes, &[0xAA]);
             }
             _ => panic!(),
-        }
-    }
-
-    #[derive(Deserialize)]
-    struct ObjHash<'a> {
-        hash: YamfHash<'a>,
-    }
-
-    #[test]
-    fn serde_yamf() {
-        let hash_bytes = vec![0xFE; 4];
-        let yamf_hash = YamfHash::Blake2b(hash_bytes.into());
-
-        let val = json!({ "hash": yamf_hash });
-
-        let string = serde_json::to_string(&val).unwrap();
-        let parsed: ObjHash = serde_json::from_str(&string).unwrap();
-
-        match (parsed.hash, yamf_hash) {
-            (YamfHash::Blake2b(decoded_bytes), YamfHash::Blake2b(expected_bytes)) => {
-                assert_eq!(decoded_bytes, expected_bytes)
-            }
         }
     }
 }
