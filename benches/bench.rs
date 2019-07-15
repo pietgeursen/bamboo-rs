@@ -48,9 +48,9 @@ fn criterion_benchmark(c: &mut Criterion) {
         let payload_size = 512;
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];
-        let sig = Signature(&sig_bytes);
+        let sig = Signature(sig_bytes[..].into());
         let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519(&author_bytes, None);
+        let author = YamfSignatory::Ed25519(author_bytes[..].into(), None);
 
         let entry = Entry {
             is_end_of_feed: false,
@@ -78,9 +78,9 @@ fn criterion_benchmark(c: &mut Criterion) {
         let payload_size = 512;
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];
-        let sig = Signature(&sig_bytes);
+        let sig = Signature(sig_bytes[..].into());
         let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519(&author_bytes, None);
+        let author = YamfSignatory::Ed25519(author_bytes[..].into(), None);
 
         let mut entry_vec = Vec::new();
 
