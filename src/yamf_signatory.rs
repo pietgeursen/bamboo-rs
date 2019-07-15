@@ -8,7 +8,7 @@ pub enum YamfSignatory<'a> {
     /// Tuple of public and optional secret key
     Ed25519(
         #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
-        #[serde(skip)] Option<Cow<'a, [u8]>>,
+        #[serde(skip)] Option<&'a[u8]>,
     ),
 }
 
