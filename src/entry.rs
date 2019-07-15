@@ -30,13 +30,19 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Entry<'a> {
+    #[serde(rename = "isEndOfFeed")]
     pub is_end_of_feed: bool,
+    #[serde(rename = "payloadHash")]
     pub payload_hash: YamfHash<'a>,
+    #[serde(rename = "payloadSize")]
     pub payload_size: u64,
     pub author: YamfSignatory<'a>,
+    #[serde(rename = "seqNum")]
     pub seq_num: u64,
     pub backlink: Option<YamfHash<'a>>,
+    #[serde(rename = "lipmaaLink")]
     pub lipmaa_link: Option<YamfHash<'a>>,
+    #[serde(rename = "signature")]
     pub sig: Option<Signature<'a>>,
 }
 
