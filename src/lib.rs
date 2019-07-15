@@ -180,4 +180,17 @@ mod tests {
             _ => panic!("expected publish to fail with an error"),
         }
     }
+    #[test]
+    fn publish_without_secret_key_errors() {
+        init();
+
+        let (pub_key, _) = generate_longterm_keypair();
+        let mut log = Log::new(MemoryEntryStore::new(), pub_key, None);
+        let payload = [1, 2, 3];
+
+        match log.publish(&payload, false) {
+            Err(Error::TriedToPublishWithoutSecretKey) => {}
+            _ => panic!("expected publish to fail with an error"),
+        }
+    }
 }
