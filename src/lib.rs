@@ -87,7 +87,7 @@ impl<Store: EntryStore> Log<Store> {
 
         // if the seq is larger than 1, we need to append the lipmaa and backlink hashes.
         if seq_num > 1 {
-            let lipmaa_link_seq = lipmaa(seq_num as u32) as u64;
+            let lipmaa_link_seq = lipmaa(seq_num);
 
             let lipmaa_entry_bytes =
                 self.store

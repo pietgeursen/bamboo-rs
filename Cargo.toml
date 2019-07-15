@@ -13,7 +13,7 @@ serde_json = "1.0.40"
 hex = "0.3.2"
 snafu = "0.4.1"
 varu64 = "0.6.1"
-lipmaa-link = {git = "https://github.com/pietgeursen/lipmaa-link"}
+lipmaa-link = {git = "https://github.com/pietgeursen/lipmaa-link", rev = "08ed5525587e93a9f986792102de58dba0e9d684"}
 blake2b_simd = "0.5.3"
 ssb-crypto = "0.1.3"
 
