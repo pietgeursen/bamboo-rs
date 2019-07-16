@@ -1,16 +1,20 @@
 use super::hex_serde::{cow_from_hex, hex_from_cow};
-use snafu::{ResultExt, Snafu};
+use snafu::{ResultExt};
 use std::borrow::Cow;
-use std::io::{Error as IoError, Write};
+use std::io::{Write};
 use varu64::{
-    decode as varu64_decode, encode_write as varu64_encode_write, DecodeError as varu64DecodeError,
+    decode as varu64_decode, encode_write as varu64_encode_write, 
 };
 
 use ssb_crypto::{verify_detached, PublicKey, Signature as SsbSignature};
 
-use super::signature::{Error as SigError, Signature};
-use super::yamf_hash::{Error as HashError, YamfHash};
-use super::yamf_signatory::{Error as SignatoryError, YamfSignatory};
+use super::signature::{Signature};
+use super::yamf_hash::{YamfHash};
+use super::yamf_signatory::{YamfSignatory};
+
+pub mod error;
+pub use error::*;
+
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Entry<'a> {
     #[serde(rename = "isEndOfFeed")]
@@ -41,6 +45,7 @@ impl<'a> Entry<'a> {
         self.encode_write(&mut buff).unwrap();
         EntryBytes(Cow::Owned(buff))
     }
+
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<()> {
         // Encode the end of feed.
         let mut is_end_of_feed_byte = [0];
@@ -156,54 +161,7 @@ impl<'a> Entry<'a> {
         result
     }
 }
-
-#[derive(Debug, Snafu)]
-pub enum Error {
-    //All the ways encoding an entry can fail
-    #[snafu(display("Error when encoding is_end_of_feed: {}", source))]
-    EncodeIsEndOfFeedError { source: IoError },
-    #[snafu(display("Error when encoding payload hash: {}", source))]
-    EncodePayloadHashError { source: HashError },
-    #[snafu(display("Error when encoding payload size: {}", source))]
-    EncodePayloadSizeError { source: IoError },
-    #[snafu(display("Error when encoding author pub key: {}", source))]
-    EncodeAuthorError { source: SignatoryError },
-    #[snafu(display("Error when encoding sequence number: {}", source))]
-    EncodeSeqError { source: IoError },
-    #[snafu(display("Error when encoding backlink: {}", source))]
-    EncodeBacklinkError { source: HashError },
-    #[snafu(display("Error when encoding lipmaa link: {}", source))]
-    EncodeLipmaaError { source: HashError },
-    #[snafu(display("Error when encoding signature of entry. {}", source))]
-    EncodeSigError { source: SigError },
-    #[snafu(display("Error when encoding entry with seq 0 that has backlinks or lipmaalinks"))]
-    EncodeEntryHasBacklinksWhenSeqZero,
-
-    //All the ways decoding an entry can fail
-    #[snafu(display("Error when decoding is_end_of_feed: {}", source))]
-    DecodeIsEndOfFeedError { source: IoError },
-    #[snafu(display("Error when decoding payload hash: {}", source))]
-    DecodePayloadHashError { source: HashError },
-    #[snafu(display("Error when decoding payload size: {}", source))]
-    DecodePayloadSizeError { source: varu64DecodeError },
-    #[snafu(display("Error when decoding author pub key: {}", source))]
-    DecodeAuthorError { source: SignatoryError },
-    #[snafu(display("Error when decoding sequence number: {}", source))]
-    DecodeSeqError { source: varu64DecodeError },
-    #[snafu(display("Error when decoding backlink: {}", source))]
-    DecodeBacklinkError { source: HashError },
-    #[snafu(display("Error when decoding lipmaa link: {}", source))]
-    DecodeLipmaaError { source: HashError },
-    #[snafu(display("Error when decoding signature of entry. {}", source))]
-    DecodeSigError { source: SigError },
-
-    #[snafu(display("Error when decoding, input had length 0"))]
-    DecodeInputIsLengthZero,
-}
-
-pub type Result<T, E = Error> = std::result::Result<T, E>;
-
-
+#[cfg_attr(tarpaulin, skip)]
 #[cfg(test)]
 mod tests {
     use super::{Entry, Signature, YamfHash, YamfSignatory};

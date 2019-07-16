@@ -56,8 +56,9 @@ impl<'a> Signature<'a> {
 }
 
 #[cfg(test)]
+#[cfg_attr(tarpaulin, skip)]
 mod tests {
-    use super::Signature;
+    use super::{Signature, Error};
 
     //These tests are not great because they know a lot about how the inside of varu64 works.
     //TODO: add tests that exercise the multibyte varu64 encoding, eg signatures > 255 bytes
@@ -69,6 +70,27 @@ mod tests {
 
         assert_eq!(sig.0.as_ref(), &[0xFF; 5]);
         assert_eq!(remaining, [0xAA]);
+    }
+
+    #[test]
+    fn decode_signature_non_canonical() {
+        let bytes = vec![248, 0x05, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xAA];
+        match Signature::decode(&bytes) {
+            Err(Error::DecodeVaru64Error{source: _}) => {},
+            e => {
+                println!("{:?}", e);
+                panic!("expected an error")
+            }
+        }
+    }
+
+    #[test]
+    fn decode_signature_not_enough_bytes() {
+        let bytes = vec![0x05, 0xFF, 0xFF, 0xFF, 0xAA];
+        match Signature::decode(&bytes) {
+            Err(Error::DecodeError) => {},
+            _ => panic!("expected an error")
+        }
     }
 
     #[test]
