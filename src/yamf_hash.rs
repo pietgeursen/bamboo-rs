@@ -72,9 +72,8 @@ impl<'a> YamfHash<'a> {
 }
 
 #[cfg(test)]
-#[cfg_attr(tarpaulin, skip)]
 mod tests {
-    use super::YamfHash;
+    use super::{Error, YamfHash};
 
     #[test]
     fn encode_yamf() {
@@ -97,6 +96,28 @@ mod tests {
         assert_eq!(encoded, expected);
     }
     #[test]
+    fn encode_yamf_not_enough_bytes_for_varu() {
+        let hash_bytes = vec![0xFF; 4];
+        let yamf_hash = YamfHash::Blake2b(hash_bytes.into());
+
+        let mut encoded = [0; 2];
+        match yamf_hash.encode_write(&mut encoded[..]) {
+            Err(Error::EncodeWriteError { source: _ }) => {}
+            _ => panic!("Go ok, expected error"),
+        }
+    }
+    #[test]
+    fn encode_yamf_not_enough_bytes_for_hash() {
+        let hash_bytes = vec![0xFF; 4];
+        let yamf_hash = YamfHash::Blake2b(hash_bytes.into());
+
+        let mut encoded = [0; 4];
+        match yamf_hash.encode_write(&mut encoded[..]) {
+            Err(Error::EncodeWriteError { source: _ }) => {}
+            _ => panic!("Go ok, expected error"),
+        }
+    }
+    #[test]
     fn decode_yamf() {
         let mut hash_bytes = vec![0xFF; 67];
         hash_bytes[0] = 1;
@@ -110,6 +131,32 @@ mod tests {
                 assert_eq!(vec, &hash_bytes[2..66]);
                 assert_eq!(remaining_bytes, &[0xAA]);
             }
+            _ => panic!(),
+        }
+    }
+    #[test]
+    fn decode_yamf_varu_error() {
+        let mut hash_bytes = vec![0xFF; 67];
+        hash_bytes[0] = 248;
+        hash_bytes[1] = 1;
+        hash_bytes[2] = 64;
+        hash_bytes[66] = 0xAA;
+        let result = YamfHash::decode(&hash_bytes);
+
+        match result {
+            Err(Error::DecodeVaru64Error { source: _ }) => {}
+            _ => panic!(),
+        }
+    }
+    #[test]
+    fn decode_yamf_not_enough_bytes_error() {
+        let mut hash_bytes = vec![0xFF; 64];
+        hash_bytes[0] = 1;
+        hash_bytes[1] = 64;
+        let result = YamfHash::decode(&hash_bytes);
+
+        match result {
+            Err(Error::DecodeError {}) => {}
             _ => panic!(),
         }
     }

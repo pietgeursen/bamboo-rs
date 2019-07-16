@@ -145,7 +145,6 @@ impl<Store: EntryStore> Log<Store> {
     }
 }
 
-#[cfg_attr(tarpaulin, skip)]
 #[cfg(test)]
 mod tests {
     use crate::{Entry, EntryStore, Error, Log, MemoryEntryStore};

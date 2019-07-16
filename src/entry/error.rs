@@ -1,12 +1,10 @@
-use snafu::{Snafu};
-use std::io::{Error as IoError };
-use varu64::{
-    DecodeError as varu64DecodeError,
-};
+use snafu::Snafu;
+use std::io::Error as IoError;
+use varu64::DecodeError as varu64DecodeError;
 
-use crate::signature::{Error as SigError };
-use crate::yamf_hash::{Error as HashError };
-use crate::yamf_signatory::{Error as SignatoryError};
+use crate::signature::Error as SigError;
+use crate::yamf_hash::Error as HashError;
+use crate::yamf_signatory::Error as SignatoryError;
 
 #[derive(Debug, Snafu)]
 #[snafu(visibility = "pub(in crate::entry)")]
@@ -54,6 +52,3 @@ pub enum Error {
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
-
-
-

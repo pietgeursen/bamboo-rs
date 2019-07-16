@@ -1,16 +1,14 @@
 use super::hex_serde::{cow_from_hex, hex_from_cow};
-use snafu::{ResultExt};
+use snafu::ResultExt;
 use std::borrow::Cow;
-use std::io::{Write};
-use varu64::{
-    decode as varu64_decode, encode_write as varu64_encode_write, 
-};
+use std::io::Write;
+use varu64::{decode as varu64_decode, encode_write as varu64_encode_write};
 
 use ssb_crypto::{verify_detached, PublicKey, Signature as SsbSignature};
 
-use super::signature::{Signature};
-use super::yamf_hash::{YamfHash};
-use super::yamf_signatory::{YamfSignatory};
+use super::signature::Signature;
+use super::yamf_hash::YamfHash;
+use super::yamf_signatory::YamfSignatory;
 
 pub mod error;
 pub use error::*;
@@ -66,10 +64,10 @@ impl<'a> Entry<'a> {
             .encode_write(&mut w)
             .context(EncodeAuthorError)?;
 
-        // Encode the sequence number 
+        // Encode the sequence number
         varu64_encode_write(self.seq_num, &mut w).context(EncodeSeqError)?;
 
-        // Encode the backlink and lipmaa links if its not the first sequence 
+        // Encode the backlink and lipmaa links if its not the first sequence
         match (self.seq_num, &self.backlink, &self.lipmaa_link) {
             (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
                 backlink.encode_write(&mut w).context(EncodeBacklinkError)?;
@@ -161,7 +159,6 @@ impl<'a> Entry<'a> {
         result
     }
 }
-#[cfg_attr(tarpaulin, skip)]
 #[cfg(test)]
 mod tests {
     use super::{Entry, Signature, YamfHash, YamfSignatory};
