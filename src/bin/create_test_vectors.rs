@@ -6,6 +6,7 @@ use bamboo_rs::{Entry, EntryStore, Log, MemoryEntryStore};
 use serde_json::Value;
 use ssb_crypto::{generate_longterm_keypair, init};
 
+#[cfg_attr(tarpaulin, skip)]
 pub fn main() {
     let jsn = json!({
         "validFirstEntry": valid_first_entry(),
@@ -16,6 +17,7 @@ pub fn main() {
     println!("{}", json_string);
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn valid_first_entry() -> Value {
     init();
 
@@ -39,6 +41,7 @@ fn valid_first_entry() -> Value {
     })
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn n_valid_entries(n: u64) -> Value {
     init();
 
