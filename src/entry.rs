@@ -11,6 +11,151 @@ use ssb_crypto::{verify_detached, PublicKey, Signature as SsbSignature};
 use super::signature::{Error as SigError, Signature};
 use super::yamf_hash::{Error as HashError, YamfHash};
 use super::yamf_signatory::{Error as SignatoryError, YamfSignatory};
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct Entry<'a> {
+    #[serde(rename = "isEndOfFeed")]
+    pub is_end_of_feed: bool,
+    #[serde(rename = "payloadHash")]
+    pub payload_hash: YamfHash<'a>,
+    #[serde(rename = "payloadSize")]
+    pub payload_size: u64,
+    pub author: YamfSignatory<'a>,
+    #[serde(rename = "sequenceNumber")]
+    pub seq_num: u64,
+    #[serde(rename = "backLink")]
+    pub backlink: Option<YamfHash<'a>>,
+    #[serde(rename = "lipmaaLink")]
+    pub lipmaa_link: Option<YamfHash<'a>>,
+    #[serde(rename = "signature")]
+    pub sig: Option<Signature<'a>>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct EntryBytes<'a>(
+    #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
+);
+
+impl<'a> Entry<'a> {
+    pub fn encode(&self) -> EntryBytes {
+        let mut buff = Vec::new();
+        self.encode_write(&mut buff).unwrap();
+        EntryBytes(Cow::Owned(buff))
+    }
+    pub fn encode_write<W: Write>(&self, mut w: W) -> Result<()> {
+        // Encode the end of feed.
+        let mut is_end_of_feed_byte = [0];
+        if self.is_end_of_feed {
+            is_end_of_feed_byte[0] = 1;
+        }
+        w.write_all(&is_end_of_feed_byte[..])
+            .context(EncodeIsEndOfFeedError)?;
+
+        // Encode the payload hash
+        self.payload_hash
+            .encode_write(&mut w)
+            .context(EncodePayloadHashError)?;
+
+        // Encode the payload size
+        varu64_encode_write(self.payload_size, &mut w).context(EncodePayloadSizeError)?;
+        self.author
+            .encode_write(&mut w)
+            .context(EncodeAuthorError)?;
+
+        // Encode the sequence number 
+        varu64_encode_write(self.seq_num, &mut w).context(EncodeSeqError)?;
+
+        // Encode the backlink and lipmaa links if its not the first sequence 
+        match (self.seq_num, &self.backlink, &self.lipmaa_link) {
+            (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
+                backlink.encode_write(&mut w).context(EncodeBacklinkError)?;
+                lipmaa_link.encode_write(&mut w).context(EncodeLipmaaError)
+            }
+            (n, Some(_), Some(_)) if n < 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
+            _ => Ok(()),
+        }?;
+
+        // Encode the signature
+        if let Some(ref sig) = self.sig {
+            sig.encode_write(&mut w).context(EncodeSigError)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn decode(bytes: &'a [u8]) -> Result<Entry<'a>, Error> {
+        // Decode is end of feed
+        if bytes.len() == 0 {
+            return Err(Error::DecodeInputIsLengthZero);
+        }
+        let is_end_of_feed = bytes[0] == 1;
+
+        // Decode the payload hash
+        let (payload_hash, remaining_bytes) =
+            YamfHash::decode(&bytes[1..]).context(DecodePayloadHashError)?;
+
+        // Decode the payload size
+        let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
+            .map_err(|(err, _)| err)
+            .context(DecodePayloadSizeError)?;
+
+        // Decode the author
+        let (author, remaining_bytes) =
+            YamfSignatory::decode(remaining_bytes).context(DecodeAuthorError)?;
+
+        // Decode the sequence number
+        let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
+            .map_err(|(err, _)| err)
+            .context(DecodeSeqError)?;
+
+        // Decode the backlink and lipmaa links if its not the first sequence
+        let (backlink, lipmaa_link, remaining_bytes) = match seq_num {
+            1 => (None, None, remaining_bytes),
+            _ => {
+                let (backlink, remaining_bytes) =
+                    YamfHash::decode(remaining_bytes).context(DecodeBacklinkError)?;
+                let (lipmaa_link, remaining_bytes) =
+                    YamfHash::decode(remaining_bytes).context(DecodeLipmaaError)?;
+                (Some(backlink), Some(lipmaa_link), remaining_bytes)
+            }
+        };
+
+        // Decode the signature
+        let (sig, _) = Signature::decode(remaining_bytes).context(DecodeSigError)?;
+
+        Ok(Entry {
+            is_end_of_feed,
+            payload_hash,
+            payload_size,
+            author,
+            seq_num,
+            backlink,
+            lipmaa_link,
+            sig: Some(sig),
+        })
+    }
+
+    pub fn verify_signature(&mut self) -> bool {
+        //Pluck off the signature before we encode it
+        let sig = self.sig.take();
+
+        let ssb_sig = SsbSignature::from_slice(sig.as_ref().unwrap().0.as_ref()).unwrap();
+
+        let mut buff = Vec::new();
+        self.encode_write(&mut buff).unwrap();
+
+        let result = match self.author {
+            YamfSignatory::Ed25519(ref author, _) => {
+                let pub_key = PublicKey::from_slice(author.as_ref()).unwrap();
+                verify_detached(&ssb_sig, &buff, &pub_key)
+            }
+        };
+
+        // Put the signature back on
+        self.sig = sig;
+
+        result
+    }
+}
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -58,137 +203,6 @@ pub enum Error {
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct Entry<'a> {
-    #[serde(rename = "isEndOfFeed")]
-    pub is_end_of_feed: bool,
-    #[serde(rename = "payloadHash")]
-    pub payload_hash: YamfHash<'a>,
-    #[serde(rename = "payloadSize")]
-    pub payload_size: u64,
-    pub author: YamfSignatory<'a>,
-    #[serde(rename = "sequenceNumber")]
-    pub seq_num: u64,
-    #[serde(rename = "backLink")]
-    pub backlink: Option<YamfHash<'a>>,
-    #[serde(rename = "lipmaaLink")]
-    pub lipmaa_link: Option<YamfHash<'a>>,
-    #[serde(rename = "signature")]
-    pub sig: Option<Signature<'a>>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct EntryBytes<'a>(
-    #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
-);
-
-impl<'a> Entry<'a> {
-    pub fn encode(&self) -> EntryBytes {
-        let mut buff = Vec::new();
-        self.encode_write(&mut buff).unwrap();
-        EntryBytes(Cow::Owned(buff))
-    }
-    pub fn encode_write<W: Write>(&self, mut w: W) -> Result<()> {
-        let mut is_end_of_feed_byte = [0];
-        if self.is_end_of_feed {
-            is_end_of_feed_byte[0] = 1;
-        }
-        w.write_all(&is_end_of_feed_byte[..])
-            .context(EncodeIsEndOfFeedError)?;
-
-        self.payload_hash
-            .encode_write(&mut w)
-            .context(EncodePayloadHashError)?;
-
-        varu64_encode_write(self.payload_size, &mut w).context(EncodePayloadSizeError)?;
-        self.author
-            .encode_write(&mut w)
-            .context(EncodeAuthorError)?;
-
-        varu64_encode_write(self.seq_num, &mut w).context(EncodeSeqError)?;
-
-        match (self.seq_num, &self.backlink, &self.lipmaa_link) {
-            (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
-                backlink.encode_write(&mut w).context(EncodeBacklinkError)?;
-                lipmaa_link.encode_write(&mut w).context(EncodeLipmaaError)
-            }
-            (n, Some(_), Some(_)) if n < 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
-            _ => Ok(()),
-        }?;
-
-        if let Some(ref sig) = self.sig {
-            sig.encode_write(&mut w).context(EncodeSigError)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn decode(bytes: &'a [u8]) -> Result<Entry<'a>, Error> {
-        if bytes.len() == 0 {
-            return Err(Error::DecodeInputIsLengthZero);
-        }
-        let is_end_of_feed = bytes[0] == 1;
-
-        let (payload_hash, remaining_bytes) =
-            YamfHash::decode(&bytes[1..]).context(DecodePayloadHashError)?;
-
-        let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
-            .map_err(|(err, _)| err)
-            .context(DecodePayloadSizeError)?;
-
-        let (author, remaining_bytes) =
-            YamfSignatory::decode(remaining_bytes).context(DecodeAuthorError)?;
-        let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
-            .map_err(|(err, _)| err)
-            .context(DecodeSeqError)?;
-
-        let (backlink, lipmaa_link, remaining_bytes) = match seq_num {
-            1 => (None, None, remaining_bytes),
-            _ => {
-                let (backlink, remaining_bytes) =
-                    YamfHash::decode(remaining_bytes).context(DecodeBacklinkError)?;
-                let (lipmaa_link, remaining_bytes) =
-                    YamfHash::decode(remaining_bytes).context(DecodeLipmaaError)?;
-                (Some(backlink), Some(lipmaa_link), remaining_bytes)
-            }
-        };
-
-        let (sig, _) = Signature::decode(remaining_bytes).context(DecodeSigError)?;
-
-        Ok(Entry {
-            is_end_of_feed,
-            payload_hash,
-            payload_size,
-            author,
-            seq_num,
-            backlink,
-            lipmaa_link,
-            sig: Some(sig),
-        })
-    }
-
-    pub fn verify_signature(&mut self) -> bool {
-        //Pluck off the signature before we encode it
-        let sig = self.sig.take();
-
-        let ssb_sig = SsbSignature::from_slice(sig.as_ref().unwrap().0.as_ref()).unwrap();
-
-        let mut buff = Vec::new();
-        self.encode_write(&mut buff).unwrap();
-
-        let result = match self.author {
-            YamfSignatory::Ed25519(ref author, _) => {
-                let pub_key = PublicKey::from_slice(author.as_ref()).unwrap();
-                verify_detached(&ssb_sig, &buff, &pub_key)
-            }
-        };
-
-        // Put the signature back on
-        self.sig = sig;
-
-        result
-    }
-}
 
 #[cfg(test)]
 mod tests {
