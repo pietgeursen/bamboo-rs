@@ -1,24 +1,23 @@
 # Todos
-- entry should be able to hash itself
-- tidy signature of entry store
-- tidy errors of yamf* and signature
-- yamf_signatory has a ref to some secret bytes. They should be zeroed when dropped. The secret
-should be wrapped in a type that implements drop.
+- tidy errors of yamf and signature
+- test coverage.
 - verify entry
   - lipmma links to correct seq
   - previous links to correct seq
   - payload length is correct
   - signing verifies ok
-  - the author is the correct author for that feed
+  - the author is the correct author for that feed (same author as the previous entry)
   - we have a complete chain of lipmaa links that get back to the first entry.
+  - is not after an end of feed message.
 - cli tool?
-  - if we use an offset file per log, partial replication will not work.
+  - if we use an offset file for a log, partial replication will not work. offset files expect sequential data. Or there would need to be a mapping from flume_seq to actual seq? 
   - sqlite file?
   - functions
       - publish
       - add
       - verify
-- test vectors
+- [ ] test vectors
+  - 
 - sql table
   - author_id
   - message_id
@@ -27,13 +26,9 @@ should be wrapped in a type that implements drop.
   - payload_id
   - payload_size
   - signature 
-- sizing yamf_* types / find some way to be able to use arrays on the stack rather than
+- sizing yamf types / find some way to be able to use arrays on the stack rather than
 allocating. One way would be to 
-  - have yamf_* and signature provide constants for encoded size. This would be kinda gross as
+  - have yamf and signature provide constants for encoded size. This would be kinda gross as
   the yamfs get more vairants.
   - have encode_write return number of bytes written and
-- no_std
 - replication
-  - 
-
-

@@ -1,11 +1,22 @@
 use blake2b_simd::{blake2b, OUTBYTES};
+use snafu::{ResultExt, Snafu};
 use std::borrow::Cow;
-use std::io::{Error, Write};
+use std::io::{Error as IoError, Write};
 
 use super::hex_serde::{cow_from_hex, hex_from_cow};
-use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
+use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError as varu64DecodeError};
 
 const BLAKE2B_HASH_SIZE: usize = OUTBYTES;
+
+#[derive(Debug, Snafu)]
+pub enum Error {
+    #[snafu(display("Error when decoding var64 for hash. {}", source))]
+    DecodeVaru64Error { source: varu64DecodeError },
+    #[snafu(display("Error when decoding hash."))]
+    DecodeError,
+    #[snafu(display("IO Error when encoding hash to writer. {}", source))]
+    EncodeWriteError { source: IoError },
+}
 
 /// Variants of `YamfHash`
 #[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
@@ -33,22 +44,22 @@ impl<'a> YamfHash<'a> {
             YamfHash::Blake2b(vec) => {
                 varu64_encode(1, &mut out[0..1]);
                 varu64_encode(BLAKE2B_HASH_SIZE as u64, &mut out[1..2]);
-                w.write_all(&out)?;
-                w.write_all(&vec)?;
+                w.write_all(&out).context(EncodeWriteError)?;
+                w.write_all(&vec).context(EncodeWriteError)?;
                 Ok(())
             }
         }
     }
 
     /// Decode the `bytes` as a `YamfHash`
-    pub fn decode(bytes: &'a [u8]) -> Result<(YamfHash<'a>, &'a [u8]), DecodeError> {
+    pub fn decode(bytes: &'a [u8]) -> Result<(YamfHash<'a>, &'a [u8]), Error> {
         match varu64_decode(&bytes) {
             Ok((1, remaining_bytes)) if remaining_bytes.len() >= 65 => {
                 let hash = &remaining_bytes[1..65];
                 Ok((YamfHash::Blake2b(hash.into()), &remaining_bytes[65..]))
             }
-            Err((err, _)) => Err(err),
-            _ => Err(DecodeError::NonCanonical(0)), // TODO fix the errors
+            Err((err, _)) => Err(Error::DecodeVaru64Error { source: err }),
+            _ => Err(Error::DecodeError {}),
         }
     }
 

@@ -1,7 +1,18 @@
 use super::hex_serde::{cow_from_hex, hex_from_cow};
+use snafu::{ResultExt, Snafu};
 use std::borrow::Cow;
-use std::io::{Error, Write};
-use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError};
+use std::io::{Error as IoError, Write};
+use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError as varu64DecodeError};
+
+#[derive(Debug, Snafu)]
+pub enum Error {
+    #[snafu(display("Error when decoding var64 for signatory. {}", source))]
+    DecodeVaru64Error { source: varu64DecodeError },
+    #[snafu(display("Error when decoding signatory."))]
+    DecodeError,
+    #[snafu(display("IO Error when encoding signatory to writer. {}", source))]
+    EncodeWriteError { source: IoError },
+}
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum YamfSignatory<'a> {
@@ -29,14 +40,14 @@ impl<'a> YamfSignatory<'a> {
             YamfSignatory::Ed25519(vec, _) => {
                 varu64_encode(1, &mut out[0..1]);
                 varu64_encode(32, &mut out[1..2]);
-                w.write_all(&out)?;
-                w.write_all(&vec)?;
+                w.write_all(&out).context(EncodeWriteError)?;
+                w.write_all(&vec).context(EncodeWriteError)?;
                 Ok(())
             }
         }
     }
 
-    pub fn decode(bytes: &'a [u8]) -> Result<(YamfSignatory<'a>, &'a [u8]), DecodeError> {
+    pub fn decode(bytes: &'a [u8]) -> Result<(YamfSignatory<'a>, &'a [u8]), Error> {
         match varu64_decode(&bytes) {
             Ok((1, remaining_bytes)) if remaining_bytes.len() >= 33 => {
                 let hash = &remaining_bytes[1..33];
@@ -45,8 +56,8 @@ impl<'a> YamfSignatory<'a> {
                     &remaining_bytes[33..],
                 ))
             }
-            Err((err, _)) => Err(err),
-            _ => Err(DecodeError::NonCanonical(0)), // TODO fix the errors
+            Err((err, _)) => Err(Error::DecodeVaru64Error { source: err }),
+            _ => Err(Error::DecodeError {}),
         }
     }
 }

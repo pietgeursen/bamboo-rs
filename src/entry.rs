@@ -9,19 +9,49 @@ use varu64::{
 use ssb_crypto::{verify_detached, PublicKey, Signature as SsbSignature};
 
 use super::signature::{Error as SigError, Signature};
-use super::yamf_hash::YamfHash;
-use super::yamf_signatory::YamfSignatory;
+use super::yamf_hash::{Error as HashError, YamfHash};
+use super::yamf_signatory::{Error as SignatoryError, YamfSignatory};
 
 #[derive(Debug, Snafu)]
 pub enum Error {
-    #[snafu(display("Error when decoding entry. {}", source))]
-    DecodeError { source: varu64DecodeError },
-    #[snafu(display("Error when encoding field: {} of entry. {}", field, source))]
-    EncodeFieldError { source: IoError, field: String },
+    //All the ways encoding an entry can fail
+    #[snafu(display("Error when encoding is_end_of_feed: {}", source))]
+    EncodeIsEndOfFeedError { source: IoError },
+    #[snafu(display("Error when encoding payload hash: {}", source))]
+    EncodePayloadHashError { source: HashError },
+    #[snafu(display("Error when encoding payload size: {}", source))]
+    EncodePayloadSizeError { source: IoError },
+    #[snafu(display("Error when encoding author pub key: {}", source))]
+    EncodeAuthorError { source: SignatoryError },
+    #[snafu(display("Error when encoding sequence number: {}", source))]
+    EncodeSeqError { source: IoError },
+    #[snafu(display("Error when encoding backlink: {}", source))]
+    EncodeBacklinkError { source: HashError },
+    #[snafu(display("Error when encoding lipmaa link: {}", source))]
+    EncodeLipmaaError { source: HashError },
     #[snafu(display("Error when encoding signature of entry. {}", source))]
     EncodeSigError { source: SigError },
+    #[snafu(display("Error when encoding entry with seq 0 that has backlinks or lipmaalinks"))]
+    EncodeEntryHasBacklinksWhenSeqZero,
+
+    //All the ways decoding an entry can fail
+    #[snafu(display("Error when decoding is_end_of_feed: {}", source))]
+    DecodeIsEndOfFeedError { source: IoError },
+    #[snafu(display("Error when decoding payload hash: {}", source))]
+    DecodePayloadHashError { source: HashError },
+    #[snafu(display("Error when decoding payload size: {}", source))]
+    DecodePayloadSizeError { source: varu64DecodeError },
+    #[snafu(display("Error when decoding author pub key: {}", source))]
+    DecodeAuthorError { source: SignatoryError },
+    #[snafu(display("Error when decoding sequence number: {}", source))]
+    DecodeSeqError { source: varu64DecodeError },
+    #[snafu(display("Error when decoding backlink: {}", source))]
+    DecodeBacklinkError { source: HashError },
+    #[snafu(display("Error when decoding lipmaa link: {}", source))]
+    DecodeLipmaaError { source: HashError },
     #[snafu(display("Error when decoding signature of entry. {}", source))]
     DecodeSigError { source: SigError },
+
     #[snafu(display("Error when decoding, input had length 0"))]
     DecodeInputIsLengthZero,
 }
@@ -37,8 +67,9 @@ pub struct Entry<'a> {
     #[serde(rename = "payloadSize")]
     pub payload_size: u64,
     pub author: YamfSignatory<'a>,
-    #[serde(rename = "seqNum")]
+    #[serde(rename = "sequenceNumber")]
     pub seq_num: u64,
+    #[serde(rename = "backLink")]
     pub backlink: Option<YamfHash<'a>>,
     #[serde(rename = "lipmaaLink")]
     pub lipmaa_link: Option<YamfHash<'a>>,
@@ -57,41 +88,33 @@ impl<'a> Entry<'a> {
         self.encode_write(&mut buff).unwrap();
         EntryBytes(Cow::Owned(buff))
     }
-    pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
+    pub fn encode_write<W: Write>(&self, mut w: W) -> Result<()> {
         let mut is_end_of_feed_byte = [0];
         if self.is_end_of_feed {
             is_end_of_feed_byte[0] = 1;
         }
         w.write_all(&is_end_of_feed_byte[..])
-            .context(EncodeFieldError {
-                field: "is_end_of_feed",
-            })?;
+            .context(EncodeIsEndOfFeedError)?;
 
         self.payload_hash
             .encode_write(&mut w)
-            .context(EncodeFieldError {
-                field: "payload_hash",
-            })?;
+            .context(EncodePayloadHashError)?;
 
-        varu64_encode_write(self.payload_size, &mut w).context(EncodeFieldError {
-            field: "payload_size",
-        })?;
+        varu64_encode_write(self.payload_size, &mut w).context(EncodePayloadSizeError)?;
         self.author
             .encode_write(&mut w)
-            .context(EncodeFieldError { field: "author" })?;
-        varu64_encode_write(self.seq_num, &mut w).context(EncodeFieldError { field: "seq_num" })?;
+            .context(EncodeAuthorError)?;
+
+        varu64_encode_write(self.seq_num, &mut w).context(EncodeSeqError)?;
 
         match (self.seq_num, &self.backlink, &self.lipmaa_link) {
             (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
-                backlink
-                    .encode_write(&mut w)
-                    .context(EncodeFieldError { field: "backlink" })?;
-                lipmaa_link.encode_write(&mut w).context(EncodeFieldError {
-                    field: "lipmaa_link",
-                })?;
+                backlink.encode_write(&mut w).context(EncodeBacklinkError)?;
+                lipmaa_link.encode_write(&mut w).context(EncodeLipmaaError)
             }
-            _ => (), //TODO: error
-        }
+            (n, Some(_), Some(_)) if n < 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
+            _ => Ok(()),
+        }?;
 
         if let Some(ref sig) = self.sig {
             sig.encode_write(&mut w).context(EncodeSigError)?;
@@ -106,25 +129,26 @@ impl<'a> Entry<'a> {
         }
         let is_end_of_feed = bytes[0] == 1;
 
-        let (payload_hash, remaining_bytes) = YamfHash::decode(&bytes[1..]).context(DecodeError)?;
+        let (payload_hash, remaining_bytes) =
+            YamfHash::decode(&bytes[1..]).context(DecodePayloadHashError)?;
 
         let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
             .map_err(|(err, _)| err)
-            .context(DecodeError)?;
+            .context(DecodePayloadSizeError)?;
 
         let (author, remaining_bytes) =
-            YamfSignatory::decode(remaining_bytes).context(DecodeError)?;
+            YamfSignatory::decode(remaining_bytes).context(DecodeAuthorError)?;
         let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
             .map_err(|(err, _)| err)
-            .context(DecodeError)?;
+            .context(DecodeSeqError)?;
 
         let (backlink, lipmaa_link, remaining_bytes) = match seq_num {
             1 => (None, None, remaining_bytes),
             _ => {
                 let (backlink, remaining_bytes) =
-                    YamfHash::decode(remaining_bytes).context(DecodeError)?;
+                    YamfHash::decode(remaining_bytes).context(DecodeBacklinkError)?;
                 let (lipmaa_link, remaining_bytes) =
-                    YamfHash::decode(remaining_bytes).context(DecodeError)?;
+                    YamfHash::decode(remaining_bytes).context(DecodeLipmaaError)?;
                 (Some(backlink), Some(lipmaa_link), remaining_bytes)
             }
         };
