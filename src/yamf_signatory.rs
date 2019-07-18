@@ -14,6 +14,11 @@ pub enum Error {
     EncodeWriteError { source: IoError },
 }
 
+/// A Yamf Signatory holds a public key and a ref to an optional private key.
+///
+/// The [yamf-signatory](https://github.com/AljoschaMeyer/yamf-signatory) spec only supports
+/// Ed25519 keys at the moment but more will be added in time.
+///
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum YamfSignatory<'a> {
     /// Tuple of public and optional secret key
@@ -24,6 +29,7 @@ pub enum YamfSignatory<'a> {
 }
 
 impl<'a> YamfSignatory<'a> {
+    /// Encode this signatory into the `out` byte slice.
     pub fn encode(&self, out: &mut [u8]) {
         match self {
             YamfSignatory::Ed25519(vec, _) => {
@@ -34,6 +40,9 @@ impl<'a> YamfSignatory<'a> {
         }
     }
 
+    /// Encode this signatory into a Write.
+    ///
+    /// Returns errors if the Writer errors.
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
         let mut out = [0; 2];
         match self {
@@ -47,6 +56,10 @@ impl<'a> YamfSignatory<'a> {
         }
     }
 
+    /// Attempt to decode a byte slice as a YamfSignatory.
+    ///
+    /// Returns errors if the provided byte slice was not long enough or if the incoding was
+    /// invalid.
     pub fn decode(bytes: &'a [u8]) -> Result<(YamfSignatory<'a>, &'a [u8]), Error> {
         match varu64_decode(&bytes) {
             Ok((1, remaining_bytes)) if remaining_bytes.len() >= 33 => {
