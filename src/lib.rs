@@ -138,10 +138,12 @@ impl<Store: EntryStore> Log<Store> {
 
         entry.sig = Some(signature);
 
-        let mut writer = self.store.get_writer_for_next_entry();
+        let mut buff = Vec::new();
         entry
-            .encode_write(&mut writer)
-            .context(EncodingForStoringFailed)
+            .encode_write(&mut buff)
+            .context(EncodingForStoringFailed)?;
+
+        self.store.add_entry(&buff, seq_num).context(AppendFailed)
     }
 }
 
