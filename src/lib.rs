@@ -12,6 +12,6 @@ pub mod yamf_signatory;
 
 mod hex_serde;
 
-pub use entry::{Entry};
-pub use entry_store::{EntryStore};
+pub use entry::Entry;
+pub use entry_store::EntryStore;
 pub use log::Log;

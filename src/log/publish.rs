@@ -98,7 +98,8 @@ impl<Store: EntryStore> Log<Store> {
 #[cfg(test)]
 mod tests {
     use crate::log::{Error, Log};
-    use crate::{Entry, EntryStore, MemoryEntryStore};
+    use crate::memory_entry_store::MemoryEntryStore;
+    use crate::{Entry, EntryStore};
     use ssb_crypto::{generate_longterm_keypair, init};
 
     #[test]

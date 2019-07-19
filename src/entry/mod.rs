@@ -162,7 +162,8 @@ impl<'a> Entry<'a> {
 #[cfg(test)]
 mod tests {
     use super::{Entry, Signature, YamfHash, YamfSignatory};
-    use crate::{EntryStore, Log, MemoryEntryStore};
+    use crate::memory_entry_store::MemoryEntryStore;
+    use crate::{EntryStore, Log};
     use ssb_crypto::{generate_longterm_keypair, init};
     use varu64::encode_write as varu64_encode_write;
 
