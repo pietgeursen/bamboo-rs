@@ -26,7 +26,7 @@ fn valid_first_entry() -> Value {
     let payload = "hello bamboo!";
     log.publish(payload.as_bytes(), false).unwrap();
 
-    let entry_bytes = log.store.get_entry_ref(1).unwrap();
+    let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
 
     let mut entry = Entry::decode(entry_bytes).unwrap();
     assert!(entry.verify_signature());
@@ -53,7 +53,7 @@ fn n_valid_entries(n: u64) -> Value {
         .map(|i| {
             let payload = format!("message number {}", i);
             log.publish(&payload.as_bytes(), false).unwrap();
-            let entry_bytes = log.store.get_entry_ref(i).unwrap();
+            let entry_bytes = log.store.get_entry_ref(i).unwrap().unwrap();
             let entry = Entry::decode(entry_bytes).unwrap();
             let encoded_entry = entry.encode();
 
