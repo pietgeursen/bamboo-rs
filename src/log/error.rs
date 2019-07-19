@@ -1,6 +1,6 @@
-use snafu::{Backtrace, Snafu};
 pub use crate::entry::{Entry, Error as EntryError};
 pub use crate::entry_store::{EntryStore, Error as EntryStoreError};
+use snafu::{Backtrace, Snafu};
 
 #[derive(Debug, Snafu)]
 #[snafu(visibility = "pub(in crate::log)")]
@@ -13,13 +13,8 @@ pub enum Error {
         seq_num: u64,
         source: EntryStoreError,
     },
-    #[snafu(display(
-        "Entry at seq_num {} not found",
-        seq_num
-    ))]
-    EntryNotFound {
-        seq_num: u64,
-    },
+    #[snafu(display("Entry at seq_num {} not found", seq_num))]
+    EntryNotFound { seq_num: u64 },
     #[snafu(display(
         "Error unwrapping a None value of the secret key, it must be provided in the constructor"
     ))]
@@ -39,5 +34,3 @@ pub enum Error {
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
-
-

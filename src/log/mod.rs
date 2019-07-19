@@ -2,11 +2,11 @@ pub use crate::entry_store::{EntryStore, Error as EntryStoreError};
 use ssb_crypto::{PublicKey, SecretKey};
 
 pub mod add;
-pub mod publish;
 pub mod error;
+pub mod publish;
 
-pub use error::*;
 pub use add::*;
+pub use error::*;
 pub use publish::*;
 
 pub struct Log<Store: EntryStore> {

@@ -1,21 +1,18 @@
 use lipmaa_link::lipmaa;
-use ssb_crypto::{sign_detached};
+use ssb_crypto::sign_detached;
 use std::borrow::Cow;
 
-pub use crate::entry::{Entry, Error as EntryError};
-pub use crate::entry_store::{EntryStore, Error as EntryStoreError};
-pub use crate::memory_entry_store::MemoryEntryStore;
-pub use crate::signature::Signature;
-use snafu::{ensure, ResultExt };
+use super::error::*;
+use crate::entry::Entry;
+use crate::entry_store::EntryStore;
+use crate::signature::Signature;
 use crate::yamf_hash::YamfHash;
 use crate::yamf_signatory::YamfSignatory;
-use super::error::*;
+use snafu::{ensure, ResultExt};
 
 use super::Log;
 
-
 impl<Store: EntryStore> Log<Store> {
-
     pub fn publish(&mut self, payload: &[u8], is_end_of_feed: bool) -> Result<()> {
         // get the last seq number
         let last_seq_num = self.store.get_last_seq();
@@ -43,13 +40,15 @@ impl<Store: EntryStore> Log<Store> {
         if seq_num > 1 {
             let lipmaa_link_seq = lipmaa(seq_num);
 
-            let lipmaa_entry_bytes =
-                self.store
-                    .get_entry_ref(lipmaa_link_seq)
-                    .context(GetEntryFailed {
-                        seq_num: lipmaa_link_seq,
-                    })?
-                    .ok_or(Error::EntryNotFound{seq_num: lipmaa_link_seq})?;
+            let lipmaa_entry_bytes = self
+                .store
+                .get_entry_ref(lipmaa_link_seq)
+                .context(GetEntryFailed {
+                    seq_num: lipmaa_link_seq,
+                })?
+                .ok_or(Error::EntryNotFound {
+                    seq_num: lipmaa_link_seq,
+                })?;
 
             let lipmaa_link = YamfHash::new_blake2b(lipmaa_entry_bytes);
 
@@ -98,8 +97,8 @@ impl<Store: EntryStore> Log<Store> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Entry, EntryStore, MemoryEntryStore};
     use crate::log::{Error, Log};
+    use crate::{Entry, EntryStore, MemoryEntryStore};
     use ssb_crypto::{generate_longterm_keypair, init};
 
     #[test]

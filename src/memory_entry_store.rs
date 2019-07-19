@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use super::entry_store::{EntryStore, GetEntrySequenceInvalid, Result};
 use snafu::ensure;
+use std::collections::HashMap;
 
 pub struct MemoryEntryStore {
     pub store: HashMap<u64, Vec<u8>>,
@@ -8,7 +8,9 @@ pub struct MemoryEntryStore {
 
 impl MemoryEntryStore {
     pub fn new() -> MemoryEntryStore {
-        MemoryEntryStore { store: HashMap::new() }
+        MemoryEntryStore {
+            store: HashMap::new(),
+        }
     }
     pub fn clear(&mut self) {
         self.store.clear()
@@ -17,24 +19,16 @@ impl MemoryEntryStore {
 
 impl EntryStore for MemoryEntryStore {
     fn get_last_seq(&self) -> u64 {
-        self.store
-            .keys()
-            .max()
-            .map(|max| *max)
-            .unwrap_or(0)
+        self.store.keys().max().map(|max| *max).unwrap_or(0)
     }
     fn get_entry(&self, seq_num: u64) -> Result<Option<Vec<u8>>> {
         ensure!(seq_num > 0, GetEntrySequenceInvalid { seq_num });
-        let result = self.store
-            .get(&seq_num)
-            .map(|vec| vec.to_vec());
+        let result = self.store.get(&seq_num).map(|vec| vec.to_vec());
         Ok(result)
     }
     fn get_entry_ref<'a>(&'a self, seq_num: u64) -> Result<Option<&'a [u8]>> {
         ensure!(seq_num != 0, GetEntrySequenceInvalid { seq_num });
-        let result = self.store
-            .get(&seq_num)
-            .map(|vec| vec.as_slice());
+        let result = self.store.get(&seq_num).map(|vec| vec.as_slice());
         Ok(result)
     }
     fn get_last_entry(&self) -> Result<Option<Vec<u8>>> {

@@ -1,11 +1,11 @@
-pub use crate::entry_store::{EntryStore, Error as EntryStoreError};
-use super::Log;
 use super::error::*;
+use super::Log;
+pub use crate::entry_store::{EntryStore, Error as EntryStoreError};
 
 impl<Store: EntryStore> Log<Store> {
     /// Add a valid message to the Log.
     ///
-    /// Caveats:
+    /// Caveat:
     /// - the lipmaa link that this message references must already exist in the Log. That means if you
     /// are doing partial replication, you must sort your messages by sequence number and add them
     /// from oldest to newest.
@@ -30,6 +30,4 @@ impl<Store: EntryStore> Log<Store> {
         // Verify the signature.
         unimplemented!()
     }
-
-
 }
