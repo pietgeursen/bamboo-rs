@@ -73,7 +73,7 @@ impl<'a> Entry<'a> {
                 backlink.encode_write(&mut w).context(EncodeBacklinkError)?;
                 lipmaa_link.encode_write(&mut w).context(EncodeLipmaaError)
             }
-            (n, Some(_), Some(_)) if n < 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
+            (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
             _ => Ok(()),
         }?;
 

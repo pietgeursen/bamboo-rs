@@ -39,6 +39,10 @@ pub enum Error {
     ))]
     AddEntryPayloadLengthDidNotMatch { backtrace: Backtrace },
     #[snafu(display(
+        "The provided lipmaa hash did not match the payload hash encoded in the entry"
+    ))]
+    AddEntryLipmaaHashDidNotMatch { backtrace: Backtrace },
+    #[snafu(display(
         "The provided payload hash did not match the payload hash encoded in the entry"
     ))]
     AddEntryPayloadHashDidNotMatch { backtrace: Backtrace },
