@@ -56,8 +56,6 @@ pub enum Error {
     AddEntryGetLipmaalinkError { source: EntryStoreError },
     #[snafu(display("There is lipmaalink entry in the store with that seq num"))]
     AddEntryNoLipmaalinkInStore,
-    #[snafu(display("The entry did not encode a lipmaa link when it should have"))]
-    AddEntryNoLipmaalinkOnEntry,
     #[snafu(display("The author in the entry did not match the author in the lipmaa link"))]
     AddEntryAuthorDidNotMatchLipmaaEntry { backtrace: Backtrace },
     #[snafu(display("The entry store failed to get the last entry"))]

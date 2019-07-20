@@ -66,10 +66,6 @@ impl<Store: EntryStore> Log<Store> {
             (Ok(None), None, seq_num) if seq_num == 1 => {
 
             }
-            (_, None, seq_num) if seq_num > 1 => {
-                // The entry did not have a lipmaa link encoded when it should
-                ensure!(false, AddEntryNoLipmaalinkOnEntry)
-            }
             (_, _, _) => {
                 ensure!(false, AddEntryNoLipmaalinkInStore)
             }
@@ -121,7 +117,7 @@ impl<Store: EntryStore> Log<Store> {
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
-    use std::convert::{TryFrom, TryInto};
+    use std::convert::{TryInto};
     use crate::log::{Error, Log};
     use crate::memory_entry_store::MemoryEntryStore;
     use crate::{EntryStore, Entry};
@@ -327,27 +323,92 @@ mod tests {
             _ => panic!("Expected err")
         }
     } 
-    // TODO, this is hard to test. 
-    #[cfg(ignore_unused)]
+    #[test]
     fn add_checks_lipmaa_link_is_present(){
-        let remote_log = n_valid_entries(3);
+        let (pub_key, secret_key) = generate_longterm_keypair();
+        let cloned_secret = SecretKey::from_slice(secret_key.as_ref()).unwrap();
+        let mut remote_log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+
+        let payload = format!("message number {}", 1);
+        remote_log.publish(&payload.as_bytes(), false).unwrap();
+
+        let first_entry = remote_log.store.get_entry_ref(1).unwrap().unwrap();
+
+        let backlink = YamfHash::new_blake2b(first_entry);
+
+        let mut second_entry = Entry{
+            is_end_of_feed: false,
+            payload_hash: YamfHash::new_blake2b(&payload.as_bytes()),
+            payload_size: payload.len() as u64,
+            author: YamfSignatory::Ed25519(pub_key.as_ref().into(), None),
+            seq_num: 2,
+            backlink: Some(backlink),
+            lipmaa_link: None,
+            sig: None
+        };
+
+        let mut second_entry_bytes = Vec::new();
+        second_entry.encode_write(&mut second_entry_bytes).unwrap(); 
+
+        let signature = sign_detached(&second_entry_bytes, &cloned_secret); 
+        let signature = Signature(signature.as_ref().into());
+
+        second_entry.sig = Some(signature);
+
+        let mut second_entry_bytes = Vec::new();
+        second_entry.encode_write(&mut second_entry_bytes).unwrap(); 
 
         let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
-        let second_entry_bytes = remote_log.store.get_entry(2).unwrap().unwrap();
+        log.add(&first_entry, None).unwrap();
 
-        log.add(&first_entry_bytes, None).expect("error adding first entry, this is not normal");
+        match log.add(&second_entry_bytes, None) {
+            Err(Error::AddEntryDecodeFailed{source: _}) => {},
+            e => panic!("Expected err, {:?}", e)
+        }
+    } 
+    #[test]
+    fn add_checks_back_link_is_present(){
+        let (pub_key, secret_key) = generate_longterm_keypair();
+        let cloned_secret = SecretKey::from_slice(secret_key.as_ref()).unwrap();
+        let mut remote_log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
 
-        let mut second_entry = Entry::decode(&second_entry_bytes).unwrap(); 
-        second_entry.lipmaa_link = None; //set the lipmaa link to be zero 
+        let payload = format!("message number {}", 1);
+        remote_log.publish(&payload.as_bytes(), false).unwrap();
 
-        let mut entry_bytes: Vec<_> = second_entry.try_into().unwrap();
-        second_entry.encode_write(&mut entry_bytes).unwrap(); 
-        
-        match log.add(&entry_bytes, None) {
-            Err(Error::AddEntryNoLipmaalinkOnEntry) => {},
-            _ => panic!("Expected err")
+        let first_entry = remote_log.store.get_entry_ref(1).unwrap().unwrap();
+
+        let lipmaa_link = YamfHash::new_blake2b(first_entry);
+
+        let mut second_entry = Entry{
+            is_end_of_feed: false,
+            payload_hash: YamfHash::new_blake2b(&payload.as_bytes()),
+            payload_size: payload.len() as u64,
+            author: YamfSignatory::Ed25519(pub_key.as_ref().into(), None),
+            seq_num: 2,
+            backlink: None,
+            lipmaa_link: Some(lipmaa_link),
+            sig: None
+        };
+
+        let mut second_entry_bytes = Vec::new();
+        second_entry.encode_write(&mut second_entry_bytes).unwrap(); 
+
+        let signature = sign_detached(&second_entry_bytes, &cloned_secret); 
+        let signature = Signature(signature.as_ref().into());
+
+        second_entry.sig = Some(signature);
+
+        let mut second_entry_bytes = Vec::new();
+        second_entry.encode_write(&mut second_entry_bytes).unwrap(); 
+
+        let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
+
+        log.add(&first_entry, None).unwrap();
+
+        match log.add(&second_entry_bytes, None) {
+            Err(Error::AddEntryDecodeFailed{source: _}) => {},
+            e => panic!("Expected err, {:?}", e)
         }
     } 
 }
