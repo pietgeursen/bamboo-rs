@@ -31,6 +31,37 @@ pub enum Error {
     PublishAfterEndOfFeed { backtrace: Backtrace },
     #[snafu(display("Failed to decode the previous message as an entry"))]
     PreviousDecodeFailed { source: EntryError },
+
+    #[snafu(display("Failed to decode the entry message as an entry"))]
+    AddEntryDecodeFailed { source: EntryError },
+    #[snafu(display(
+        "The provided payload length did not match the payload length encoded in the entry"
+    ))]
+    AddEntryPayloadLengthDidNotMatch { backtrace: Backtrace },
+    #[snafu(display(
+        "The provided payload hash did not match the payload hash encoded in the entry"
+    ))]
+    AddEntryPayloadHashDidNotMatch { backtrace: Backtrace },
+    #[snafu(display(
+        "The backlink hash in the store did not match the backlink hash encoded in the entry"
+    ))]
+    AddEntryBacklinkHashDidNotMatch { backtrace: Backtrace },
+    #[snafu(display("The entry store failed to get the backlink"))]
+    AddEntryGetBacklinkError { source: EntryStoreError },
+    #[snafu(display("The entry store failed to get the lipmaalink"))]
+    AddEntryGetLipmaalinkError { source: EntryStoreError },
+    #[snafu(display("There is lipmaalink entry in the store with that seq num"))]
+    AddEntryNoLipmaalinkInStore,
+    #[snafu(display("The entry did not encode a lipmaa link when it should have"))]
+    AddEntryNoLipmaalinkOnEntry,
+    #[snafu(display("The author in the entry did not match the author in the lipmaa link"))]
+    AddEntryAuthorDidNotMatchLipmaaEntry { backtrace: Backtrace },
+    #[snafu(display("The entry store failed to get the last entry"))]
+    AddEntryGetLastEntryError { source: EntryStoreError },
+    #[snafu(display("Attempted to add an entry to a feed that has published an end of feed message"))]
+    AddEntryToFeedThatHasEnded { backtrace: Backtrace },
+    #[snafu(display("Attempted to add an entry with invalid signature"))]
+    AddEntryWithInvalidSignature { backtrace: Backtrace },
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
