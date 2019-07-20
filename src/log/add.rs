@@ -121,6 +121,7 @@ impl<Store: EntryStore> Log<Store> {
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
+    use std::convert::{TryFrom, TryInto};
     use crate::log::{Error, Log};
     use crate::memory_entry_store::MemoryEntryStore;
     use crate::{EntryStore, Entry};
@@ -151,12 +152,15 @@ mod tests {
 
         let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
-        let mut first_entry = Entry::decode(&first_entry_bytes).unwrap(); 
+        let mut first_entry: Entry = remote_log.store.get_entry_ref(1)
+            .unwrap()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
         first_entry.payload_size = 1; //Set an invalid payload length. Zero tolerance etc ;)
 
-        let mut entry_bytes = Vec::new();
-        first_entry.encode_write(&mut entry_bytes).unwrap(); 
+        let entry_bytes: Vec<_> = first_entry.try_into().unwrap();
         
         match log.add(&entry_bytes, Some(b"message number 1")) {
             Err(Error::AddEntryPayloadLengthDidNotMatch{backtrace: _}) => {},
@@ -244,8 +248,11 @@ mod tests {
 
         let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
-        let mut first_entry = Entry::decode(&first_entry_bytes).unwrap(); 
+        let mut first_entry: Entry = remote_log.store.get_entry_ref(1)
+            .unwrap()
+            .unwrap()
+            .try_into()
+            .unwrap();
 
         first_entry.sig = match first_entry.sig {
             Some(Signature(mut bytes)) => {
@@ -256,10 +263,9 @@ mod tests {
             link => link
         }; 
 
-        let mut first_entry_bytes = Vec::new();
-        first_entry.encode_write(&mut first_entry_bytes).unwrap();
+        let entry_bytes: Vec<_> = first_entry.try_into().unwrap();
 
-        match log.add(&first_entry_bytes, None) {
+        match log.add(&entry_bytes, None) {
             Err(Error::AddEntryWithInvalidSignature{backtrace: _}) => {},
             _ => panic!("Expected err")
         }
@@ -272,18 +278,20 @@ mod tests {
         let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
         let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
-        let second_entry_bytes = remote_log.store.get_entry(2).unwrap().unwrap();
+        let mut second_entry: Entry = remote_log.store.get_entry_ref(2)
+            .unwrap()
+            .unwrap()
+            .try_into()
+            .unwrap();
 
         log.add(&first_entry_bytes, None).expect("error adding first entry, this is not normal");
 
-        let mut second_entry = Entry::decode(&second_entry_bytes).unwrap(); 
         second_entry.lipmaa_link = match second_entry.lipmaa_link {
             Some(YamfHash::Blake2b(_)) => Some(YamfHash::new_blake2b(b"noooo")),
             link => link
         }; //set the lipmaa link to be zero 
 
-        let mut entry_bytes = Vec::new();
-        second_entry.encode_write(&mut entry_bytes).unwrap(); 
+        let entry_bytes: Vec<_> = second_entry.try_into().unwrap();
         
         match log.add(&entry_bytes, None) {
             Err(Error::AddEntryLipmaaHashDidNotMatch{backtrace: _}) => {},
@@ -298,19 +306,22 @@ mod tests {
         let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
         let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
-        let second_entry_bytes = remote_log.store.get_entry(2).unwrap().unwrap();
+
+        let mut second_entry: Entry = remote_log.store.get_entry_ref(2)
+            .unwrap()
+            .unwrap()
+            .try_into()
+            .unwrap();
 
         log.add(&first_entry_bytes, None).expect("error adding first entry, this is not normal");
 
-        let mut second_entry = Entry::decode(&second_entry_bytes).unwrap(); 
         second_entry.backlink = match second_entry.backlink {
             Some(YamfHash::Blake2b(_)) => Some(YamfHash::new_blake2b(b"noooo")),
             link => link
         }; //set the lipmaa link to be zero 
 
-        let mut entry_bytes = Vec::new();
-        second_entry.encode_write(&mut entry_bytes).unwrap(); 
-        
+        let entry_bytes: Vec<_> = second_entry.try_into().unwrap();
+
         match log.add(&entry_bytes, None) {
             Err(Error::AddEntryBacklinkHashDidNotMatch{backtrace: _}) => {},
             _ => panic!("Expected err")
@@ -331,7 +342,7 @@ mod tests {
         let mut second_entry = Entry::decode(&second_entry_bytes).unwrap(); 
         second_entry.lipmaa_link = None; //set the lipmaa link to be zero 
 
-        let mut entry_bytes = Vec::new();
+        let mut entry_bytes: Vec<_> = second_entry.try_into().unwrap();
         second_entry.encode_write(&mut entry_bytes).unwrap(); 
         
         match log.add(&entry_bytes, None) {

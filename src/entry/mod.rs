@@ -1,5 +1,6 @@
 use super::hex_serde::{cow_from_hex, hex_from_cow};
 use snafu::ResultExt;
+use std::convert::TryFrom;
 use std::borrow::Cow;
 use std::io::Write;
 use varu64::{decode as varu64_decode, encode_write as varu64_encode_write};
@@ -36,6 +37,23 @@ pub struct Entry<'a> {
 pub struct EntryBytes<'a>(
     #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
 );
+
+impl<'a> TryFrom<&'a[u8]> for Entry<'a>{
+    type Error = Error;
+
+    fn try_from(bytes: &'a[u8]) -> Result<Entry<'a>, Self::Error>{
+        Entry::decode(bytes)
+    }
+}
+impl<'a> TryFrom<Entry<'a>> for Vec<u8>{
+    type Error = Error;
+
+    fn try_from(entry: Entry<'a>) -> Result<Vec<u8>, Self::Error>{
+        let mut buff = Vec::new();
+        entry.encode_write(&mut buff)?;
+        Ok(buff)
+    }
+}
 
 impl<'a> Entry<'a> {
     pub fn encode(&self) -> EntryBytes {
