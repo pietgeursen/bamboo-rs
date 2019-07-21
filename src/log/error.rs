@@ -41,7 +41,7 @@ pub enum Error {
     #[snafu(display(
         "The provided lipmaa hash did not match the payload hash encoded in the entry"
     ))]
-    AddEntryLipmaaHashDidNotMatch { backtrace: Backtrace },
+    AddEntryLipmaaHashDidNotMatch,
     #[snafu(display(
         "The provided payload hash did not match the payload hash encoded in the entry"
     ))]
@@ -54,10 +54,12 @@ pub enum Error {
     AddEntryGetBacklinkError { source: EntryStoreError },
     #[snafu(display("The entry store failed to get the lipmaalink"))]
     AddEntryGetLipmaalinkError { source: EntryStoreError },
-    #[snafu(display("There is lipmaalink entry in the store with that seq num"))]
+    #[snafu(display("There is no lipmaalink entry in the store with that seq num"))]
     AddEntryNoLipmaalinkInStore,
+    #[snafu(display("Couldn't decode the lipmaa link from the store"))]
+    AddEntryDecodeLipmaalinkFromStore{source: EntryError },
     #[snafu(display("The author in the entry did not match the author in the lipmaa link"))]
-    AddEntryAuthorDidNotMatchLipmaaEntry { backtrace: Backtrace },
+    AddEntryAuthorDidNotMatchLipmaaEntry,
     #[snafu(display("The entry store failed to get the last entry"))]
     AddEntryGetLastEntryError { source: EntryStoreError },
     #[snafu(display("Attempted to add an entry to a feed that has published an end of feed message"))]

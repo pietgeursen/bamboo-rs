@@ -52,24 +52,26 @@ impl<Store: EntryStore> Log<Store> {
                 // Hash the lipmaa entry
                 let lipmaa_hash = YamfHash::new_blake2b(lipmaa);
                 // Make sure the lipmaa entry hash matches what's in the entry.
-                ensure!(lipmaa_hash == *entry_lipmaa, AddEntryLipmaaHashDidNotMatch);
+                if lipmaa_hash != *entry_lipmaa {
+                    return Err(Error::AddEntryLipmaaHashDidNotMatch)
+                }
+
                 // Verify the author of the entry is the same as the author in the lipmaa link entry
-                ensure!(
-                    entry.author
-                        == Entry::decode(lipmaa)
-                            .expect("Error decoding entry from store, maybe the store is corrupt")
-                            .author,
-                    AddEntryAuthorDidNotMatchLipmaaEntry
-                );
+                let lipmaa_entry = Entry::decode(lipmaa).context(AddEntryDecodeLipmaalinkFromStore)?;
+
+                if entry.author != lipmaa_entry.author {
+                    return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry)
+                }
+                Ok(())
             }
             // Happy path 2: this is the first entry, so we won't find a lipmaa link in the store
             (Ok(None), None, seq_num) if seq_num == 1 => {
-
+                Ok(())
             }
             (_, _, _) => {
-                ensure!(false, AddEntryNoLipmaalinkInStore)
+                Err(Error::AddEntryNoLipmaalinkInStore)
             }
-        };
+        }?;
 
         // Try and get the backlink entry. If we have it, hash it and check it is correct.
         let backlink = self
@@ -290,7 +292,7 @@ mod tests {
         let entry_bytes: Vec<_> = second_entry.try_into().unwrap();
         
         match log.add(&entry_bytes, None) {
-            Err(Error::AddEntryLipmaaHashDidNotMatch{backtrace: _}) => {},
+            Err(Error::AddEntryLipmaaHashDidNotMatch) => {},
             _ => panic!("Expected err")
         }
     } 
