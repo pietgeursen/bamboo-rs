@@ -47,7 +47,11 @@ impl<Store: EntryStore> Log<Store> {
             .get_entry_ref(lipmaa_seq);
 
         match (lipmaa, entry.lipmaa_link, entry.seq_num) {
-            // Happy path 1: seq is larger than one and we can find the lipmaa link in the store
+            // Happy path 1: this is the first entry, so we won't find a lipmaa link in the store
+            (Ok(None), None, seq_num) if seq_num == 1 => {
+                Ok(())
+            }
+            // Happy path 2: seq is larger than one and we can find the lipmaa link in the store
             (Ok(Some(lipmaa)), Some(ref entry_lipmaa), seq_num) if seq_num > 1 => {
                 // Hash the lipmaa entry
                 let lipmaa_hash = YamfHash::new_blake2b(lipmaa);
@@ -64,10 +68,6 @@ impl<Store: EntryStore> Log<Store> {
                 }
                 Ok(())
             }
-            // Happy path 2: this is the first entry, so we won't find a lipmaa link in the store
-            (Ok(None), None, seq_num) if seq_num == 1 => {
-                Ok(())
-            }
             (_, _, _) => {
                 Err(Error::AddEntryNoLipmaalinkInStore)
             }
@@ -78,20 +78,25 @@ impl<Store: EntryStore> Log<Store> {
             .store
             .get_entry_ref(entry.seq_num - 1);
             
+            
 
         match (backlink, entry.backlink, entry.seq_num) {
+            // Happy path 1: This is the first entry and doesn't have a backlink.
+            (_, None, seq_num) if seq_num == 1 => {Ok(())},
+
+            //Happy path 2: This does have a backlink and we found it.
             (Ok(Some(backlink)), Some(ref entry_backlink), seq_num) if seq_num > 1 => {
                 let backlink_hash = YamfHash::new_blake2b(backlink);
-                ensure!(
-                    backlink_hash == *entry_backlink,
-                    AddEntryBacklinkHashDidNotMatch
-                )
+
+                if backlink_hash != *entry_backlink {
+                    return Err(Error::AddEntryBacklinkHashDidNotMatch)
+                }
+                Ok(())
             }
-            (_, None, seq_num) if seq_num == 1 => {},
             (_, _, _) => {
-                ensure!(false, AddEntryBacklinkHashDidNotMatch)
+                Err(Error::AddEntryBacklinkHashDidNotMatch)
             }
-        }
+        }?;
 
         // Get the last entry in the log and make sure it's not an end of feed message.
         // Only do this check if the store isn't empty.
@@ -100,15 +105,15 @@ impl<Store: EntryStore> Log<Store> {
                 .store
                 .get_last_entry_ref()
                 .context(AddEntryGetLastEntryError)?
-                .expect("couldn't get last entry, is the store corrupt?");
+                .ok_or(Error::AddEntryGetLastEntryNotFound)?;
 
-            let last_entry = Entry::decode(last_entry_bytes).expect("Unable to decode last entry in store, is it corrupt?");
+            let last_entry = Entry::decode(last_entry_bytes).context(AddEntryDecodeLastEntry)?;
             ensure!(!last_entry.is_end_of_feed, AddEntryToFeedThatHasEnded)
         }
         
         // Verify the signature.
         let entry_bytes_to_verify = entry_bytes.to_owned();
-        let mut entry_to_verify = Entry::decode(&entry_bytes_to_verify).unwrap(); 
+        let mut entry_to_verify = Entry::decode(&entry_bytes_to_verify).context(AddEntryDecodeEntryBytesForSigning)?; 
         ensure!(entry_to_verify.verify_signature(), AddEntryWithInvalidSignature);
 
         //Ok, store it!
@@ -321,7 +326,7 @@ mod tests {
         let entry_bytes: Vec<_> = second_entry.try_into().unwrap();
 
         match log.add(&entry_bytes, None) {
-            Err(Error::AddEntryBacklinkHashDidNotMatch{backtrace: _}) => {},
+            Err(Error::AddEntryBacklinkHashDidNotMatch) => {},
             _ => panic!("Expected err")
         }
     } 

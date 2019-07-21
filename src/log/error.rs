@@ -49,7 +49,7 @@ pub enum Error {
     #[snafu(display(
         "The backlink hash in the store did not match the backlink hash encoded in the entry"
     ))]
-    AddEntryBacklinkHashDidNotMatch { backtrace: Backtrace },
+    AddEntryBacklinkHashDidNotMatch,
     #[snafu(display("The entry store failed to get the backlink"))]
     AddEntryGetBacklinkError { source: EntryStoreError },
     #[snafu(display("The entry store failed to get the lipmaalink"))]
@@ -62,10 +62,16 @@ pub enum Error {
     AddEntryAuthorDidNotMatchLipmaaEntry,
     #[snafu(display("The entry store failed to get the last entry"))]
     AddEntryGetLastEntryError { source: EntryStoreError },
+    #[snafu(display("The entry store couldn't find the last entry"))]
+    AddEntryGetLastEntryNotFound,
+    #[snafu(display("Couldn't decode the last entry from the store"))]
+    AddEntryDecodeLastEntry{source: EntryError },
     #[snafu(display("Attempted to add an entry to a feed that has published an end of feed message"))]
     AddEntryToFeedThatHasEnded { backtrace: Backtrace },
     #[snafu(display("Attempted to add an entry with invalid signature"))]
     AddEntryWithInvalidSignature { backtrace: Backtrace },
+    #[snafu(display("Attempted to decode entry bytes as an entry before signing but it failed"))]
+    AddEntryDecodeEntryBytesForSigning { source: EntryError },
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
