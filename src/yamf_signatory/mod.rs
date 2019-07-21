@@ -1,4 +1,4 @@
-use super::hex_serde::{cow_from_hex, hex_from_cow};
+use crate::util::hex_serde::{cow_from_hex, hex_from_cow};
 use snafu::{ResultExt, Snafu};
 use std::borrow::Cow;
 use std::io::{Error as IoError, Write};

@@ -1,6 +1,6 @@
 pub use crate::entry::{Entry, Error as EntryError};
 pub use crate::entry_store::{EntryStore, Error as EntryStoreError};
-use snafu::{AsErrorSource, Backtrace, IntoError, ResultExt, Snafu};
+use snafu::{Backtrace, Snafu};
 
 #[derive(Debug, Snafu)]
 #[snafu(visibility = "pub(in crate::log)")]

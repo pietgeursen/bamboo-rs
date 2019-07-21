@@ -1,4 +1,4 @@
-use super::hex_serde::{cow_from_hex, hex_from_cow};
+use crate::util::hex_serde::{cow_from_hex, hex_from_cow};
 use snafu::{OptionExt, ResultExt};
 use std::borrow::Cow;
 use std::convert::TryFrom;
@@ -186,7 +186,7 @@ impl<'a> Entry<'a> {
 #[cfg(test)]
 mod tests {
     use super::{Entry, Signature, YamfHash, YamfSignatory};
-    use crate::memory_entry_store::MemoryEntryStore;
+    use crate::entry_store::MemoryEntryStore;
     use crate::{EntryStore, Log};
     use ssb_crypto::{generate_longterm_keypair, init};
     use varu64::encode_write as varu64_encode_write;

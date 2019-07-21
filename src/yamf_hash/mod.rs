@@ -3,7 +3,7 @@ use snafu::{ResultExt, Snafu};
 use std::borrow::Cow;
 use std::io::{Error as IoError, Write};
 
-use super::hex_serde::{cow_from_hex, hex_from_cow};
+use crate::util::hex_serde::{cow_from_hex, hex_from_cow};
 use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError as varu64DecodeError};
 
 const BLAKE2B_HASH_SIZE: usize = OUTBYTES;

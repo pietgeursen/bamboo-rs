@@ -117,8 +117,8 @@ impl<Store: EntryStore> Log<Store> {
 
 #[cfg(test)]
 mod tests {
+    use crate::entry_store::MemoryEntryStore;
     use crate::log::{Error, Log};
-    use crate::memory_entry_store::MemoryEntryStore;
     use crate::signature::Signature;
     use crate::yamf_hash::YamfHash;
     use crate::yamf_signatory::YamfSignatory;

@@ -1,4 +1,4 @@
-use super::entry_store::*;
+use super::*;
 use std::collections::HashMap;
 
 pub struct MemoryEntryStore {
