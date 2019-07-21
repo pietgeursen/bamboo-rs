@@ -1,5 +1,4 @@
-use super::entry_store::{EntryStore, GetEntrySequenceInvalid, Result};
-use snafu::ensure;
+use super::entry_store::*;
 use std::collections::HashMap;
 
 pub struct MemoryEntryStore {
@@ -22,12 +21,16 @@ impl EntryStore for MemoryEntryStore {
         self.store.keys().max().map(|max| *max).unwrap_or(0)
     }
     fn get_entry(&self, seq_num: u64) -> Result<Option<Vec<u8>>> {
-        ensure!(seq_num > 0, GetEntrySequenceInvalid { seq_num });
+        if seq_num == 0 {
+            return Err(Error::GetEntrySequenceInvalid{seq_num})
+        }
         let result = self.store.get(&seq_num).map(|vec| vec.to_vec());
         Ok(result)
     }
     fn get_entry_ref<'a>(&'a self, seq_num: u64) -> Result<Option<&'a [u8]>> {
-        ensure!(seq_num != 0, GetEntrySequenceInvalid { seq_num });
+        if seq_num == 0 {
+            return Err(Error::GetEntrySequenceInvalid{seq_num})
+        }
         let result = self.store.get(&seq_num).map(|vec| vec.as_slice());
         Ok(result)
     }

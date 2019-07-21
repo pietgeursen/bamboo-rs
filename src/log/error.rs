@@ -1,6 +1,6 @@
 pub use crate::entry::{Entry, Error as EntryError};
 pub use crate::entry_store::{EntryStore, Error as EntryStoreError};
-use snafu::{Backtrace, Snafu};
+use snafu::{Backtrace, Snafu, ResultExt, AsErrorSource, IntoError};
 
 #[derive(Debug, Snafu)]
 #[snafu(visibility = "pub(in crate::log)")]
@@ -72,6 +72,8 @@ pub enum Error {
     AddEntryWithInvalidSignature { backtrace: Backtrace },
     #[snafu(display("Attempted to decode entry bytes as an entry before signing but it failed"))]
     AddEntryDecodeEntryBytesForSigning { source: EntryError },
+    #[snafu(display("Error trying to verify sig"))]
+    AddEntrySigNotValidError { source: EntryError },
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

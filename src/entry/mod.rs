@@ -1,5 +1,5 @@
 use super::hex_serde::{cow_from_hex, hex_from_cow};
-use snafu::ResultExt;
+use snafu::{ResultExt, OptionExt};
 use std::convert::TryFrom;
 use std::borrow::Cow;
 use std::io::Write;
@@ -128,6 +128,10 @@ impl<'a> Entry<'a> {
             .map_err(|(err, _)| err)
             .context(DecodeSeqError)?;
 
+        if seq_num == 0 {
+            return Err(Error::DecodeSeqIsZero)
+        }
+
         // Decode the backlink and lipmaa links if its not the first sequence
         let (backlink, lipmaa_link, remaining_bytes) = match seq_num {
             1 => (None, None, remaining_bytes),
@@ -155,18 +159,18 @@ impl<'a> Entry<'a> {
         })
     }
 
-    pub fn verify_signature(&mut self) -> bool {
+    pub fn verify_signature(&mut self) -> Result<bool> {
         //Pluck off the signature before we encode it
         let sig = self.sig.take();
 
-        let ssb_sig = SsbSignature::from_slice(sig.as_ref().unwrap().0.as_ref()).unwrap();
+        let ssb_sig = SsbSignature::from_slice(sig.as_ref().unwrap().0.as_ref()).context(DecodeSsbSigError)?;
 
         let mut buff = Vec::new();
         self.encode_write(&mut buff).unwrap();
 
         let result = match self.author {
             YamfSignatory::Ed25519(ref author, _) => {
-                let pub_key = PublicKey::from_slice(author.as_ref()).unwrap();
+                let pub_key = PublicKey::from_slice(author.as_ref()).context(DecodeSsbPubKeyError)?;
                 verify_detached(&ssb_sig, &buff, &pub_key)
             }
         };
@@ -174,7 +178,7 @@ impl<'a> Entry<'a> {
         // Put the signature back on
         self.sig = sig;
 
-        result
+        Ok(result)
     }
 }
 #[cfg(test)]

@@ -77,8 +77,6 @@ impl<Store: EntryStore> Log<Store> {
         let backlink = self
             .store
             .get_entry_ref(entry.seq_num - 1);
-            
-            
 
         match (backlink, entry.backlink, entry.seq_num) {
             // Happy path 1: This is the first entry and doesn't have a backlink.
@@ -114,7 +112,8 @@ impl<Store: EntryStore> Log<Store> {
         // Verify the signature.
         let entry_bytes_to_verify = entry_bytes.to_owned();
         let mut entry_to_verify = Entry::decode(&entry_bytes_to_verify).context(AddEntryDecodeEntryBytesForSigning)?; 
-        ensure!(entry_to_verify.verify_signature(), AddEntryWithInvalidSignature);
+        let is_valid = entry_to_verify.verify_signature().context(AddEntrySigNotValidError)?;
+        ensure!(is_valid, AddEntryWithInvalidSignature);
 
         //Ok, store it!
         self.store.add_entry(&entry_bytes, entry.seq_num).context(AppendFailed)

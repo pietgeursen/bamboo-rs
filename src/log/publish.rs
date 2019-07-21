@@ -114,7 +114,7 @@ mod tests {
         let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
 
         let mut entry = Entry::decode(entry_bytes).unwrap();
-        assert!(entry.verify_signature());
+        assert!(entry.verify_signature().unwrap());
     }
     #[test]
     fn publish_after_an_end_of_feed_message_errors() {

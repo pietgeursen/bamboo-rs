@@ -40,12 +40,18 @@ pub enum Error {
     DecodeAuthorError { source: SignatoryError },
     #[snafu(display("Error when decoding sequence number: {}", source))]
     DecodeSeqError { source: varu64DecodeError },
+    #[snafu(display("Error when decoding sequence, it was zero"))]
+    DecodeSeqIsZero,
     #[snafu(display("Error when decoding backlink: {}", source))]
     DecodeBacklinkError { source: HashError },
     #[snafu(display("Error when decoding lipmaa link: {}", source))]
     DecodeLipmaaError { source: HashError },
     #[snafu(display("Error when decoding signature of entry. {}", source))]
     DecodeSigError { source: SigError },
+    #[snafu(display("Error when decoding signature as a ssb sig"))]
+    DecodeSsbSigError,
+    #[snafu(display("Error when decoding pubkey as a ssb pubkey"))]
+    DecodeSsbPubKeyError,
 
     #[snafu(display("Error when decoding, input had length 0"))]
     DecodeInputIsLengthZero,
