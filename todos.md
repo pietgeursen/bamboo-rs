@@ -1,14 +1,5 @@
 # Todos
-- tidy errors of yamf and signature
 - test coverage.
-- verify entry
-  - lipmma links to correct seq
-  - previous links to correct seq
-  - payload length is correct
-  - signing verifies ok
-  - the author is the correct author for that feed (same author as the previous entry)
-  - we have a complete chain of lipmaa links that get back to the first entry.
-  - is not after an end of feed message.
 - cli tool?
   - if we use an offset file for a log, partial replication will not work. offset files expect sequential data. Or there would need to be a mapping from flume_seq to actual seq? 
   - sqlite file?
@@ -32,3 +23,29 @@ allocating. One way would be to
   the yamfs get more vairants.
   - have encode_write return number of bytes written and
 - replication
+
+
+## Brain dump on how to get this into mobile
+
+- how to do storage
+  - maybe go with the flume arch where we have an append only log _and_ a db. The downside with this that an append only log doesn't quite fit once we get partial replication. A kv store might be better?
+
+- how to do replication?
+  - 
+
+- how to publish and add messages
+  - what does bamboo need to be able to
+    - publish:
+        - needs to be able to ask for a message by seq number
+        - needs to be able to insert a message by seq number
+        - find the next valid seq number
+    - add an already published message (assuming partial replication):
+        - assume we get a packet of lipmaaLinks spanning back to seq 1.
+          - for each message
+            - check the lipmaa is valid
+            - check the previous (if we have it)
+            - check the sig
+            
+        - needs to be able to ask for a message by seq number
+
+
