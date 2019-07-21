@@ -1,6 +1,6 @@
 use super::error::*;
 use super::Log;
-use crate::entry_store::{EntryStore};
+use crate::entry_store::EntryStore;
 use crate::yamf_hash::YamfHash;
 use crate::Entry;
 use lipmaa_link::lipmaa;
@@ -18,7 +18,6 @@ impl<Store: EntryStore> Log<Store> {
     /// are doing partial replication, you must sort your messages by sequence number and add them
     /// from oldest to newest.
     pub fn add(&mut self, entry_bytes: &[u8], payload: Option<&[u8]>) -> Result<()> {
-
         // Decode the entry that we want to add.
         let entry = Entry::decode(entry_bytes).context(AddEntryDecodeFailed)?;
 
@@ -38,62 +37,53 @@ impl<Store: EntryStore> Log<Store> {
 
         let lipmaa_seq = match lipmaa(entry.seq_num) {
             0 => 1,
-            n => n
+            n => n,
         };
 
         // Get the lipmaa entry.
-        let lipmaa = self
-            .store
-            .get_entry_ref(lipmaa_seq);
+        let lipmaa = self.store.get_entry_ref(lipmaa_seq);
 
         match (lipmaa, entry.lipmaa_link, entry.seq_num) {
             // Happy path 1: this is the first entry, so we won't find a lipmaa link in the store
-            (Ok(None), None, seq_num) if seq_num == 1 => {
-                Ok(())
-            }
+            (Ok(None), None, seq_num) if seq_num == 1 => Ok(()),
             // Happy path 2: seq is larger than one and we can find the lipmaa link in the store
             (Ok(Some(lipmaa)), Some(ref entry_lipmaa), seq_num) if seq_num > 1 => {
                 // Hash the lipmaa entry
                 let lipmaa_hash = YamfHash::new_blake2b(lipmaa);
                 // Make sure the lipmaa entry hash matches what's in the entry.
                 if lipmaa_hash != *entry_lipmaa {
-                    return Err(Error::AddEntryLipmaaHashDidNotMatch)
+                    return Err(Error::AddEntryLipmaaHashDidNotMatch);
                 }
 
                 // Verify the author of the entry is the same as the author in the lipmaa link entry
-                let lipmaa_entry = Entry::decode(lipmaa).context(AddEntryDecodeLipmaalinkFromStore)?;
+                let lipmaa_entry =
+                    Entry::decode(lipmaa).context(AddEntryDecodeLipmaalinkFromStore)?;
 
                 if entry.author != lipmaa_entry.author {
-                    return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry)
+                    return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry);
                 }
                 Ok(())
             }
-            (_, _, _) => {
-                Err(Error::AddEntryNoLipmaalinkInStore)
-            }
+            (_, _, _) => Err(Error::AddEntryNoLipmaalinkInStore),
         }?;
 
         // Try and get the backlink entry. If we have it, hash it and check it is correct.
-        let backlink = self
-            .store
-            .get_entry_ref(entry.seq_num - 1);
+        let backlink = self.store.get_entry_ref(entry.seq_num - 1);
 
         match (backlink, entry.backlink, entry.seq_num) {
             // Happy path 1: This is the first entry and doesn't have a backlink.
-            (_, None, seq_num) if seq_num == 1 => {Ok(())},
+            (_, None, seq_num) if seq_num == 1 => Ok(()),
 
             //Happy path 2: This does have a backlink and we found it.
             (Ok(Some(backlink)), Some(ref entry_backlink), seq_num) if seq_num > 1 => {
                 let backlink_hash = YamfHash::new_blake2b(backlink);
 
                 if backlink_hash != *entry_backlink {
-                    return Err(Error::AddEntryBacklinkHashDidNotMatch)
+                    return Err(Error::AddEntryBacklinkHashDidNotMatch);
                 }
                 Ok(())
             }
-            (_, _, _) => {
-                Err(Error::AddEntryBacklinkHashDidNotMatch)
-            }
+            (_, _, _) => Err(Error::AddEntryBacklinkHashDidNotMatch),
         }?;
 
         // Get the last entry in the log and make sure it's not an end of feed message.
@@ -108,29 +98,34 @@ impl<Store: EntryStore> Log<Store> {
             let last_entry = Entry::decode(last_entry_bytes).context(AddEntryDecodeLastEntry)?;
             ensure!(!last_entry.is_end_of_feed, AddEntryToFeedThatHasEnded)
         }
-        
+
         // Verify the signature.
         let entry_bytes_to_verify = entry_bytes.to_owned();
-        let mut entry_to_verify = Entry::decode(&entry_bytes_to_verify).context(AddEntryDecodeEntryBytesForSigning)?; 
-        let is_valid = entry_to_verify.verify_signature().context(AddEntrySigNotValidError)?;
+        let mut entry_to_verify =
+            Entry::decode(&entry_bytes_to_verify).context(AddEntryDecodeEntryBytesForSigning)?;
+        let is_valid = entry_to_verify
+            .verify_signature()
+            .context(AddEntrySigNotValidError)?;
         ensure!(is_valid, AddEntryWithInvalidSignature);
 
         //Ok, store it!
-        self.store.add_entry(&entry_bytes, entry.seq_num).context(AppendFailed)
+        self.store
+            .add_entry(&entry_bytes, entry.seq_num)
+            .context(AppendFailed)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
-    use std::convert::{TryInto};
     use crate::log::{Error, Log};
     use crate::memory_entry_store::MemoryEntryStore;
-    use crate::{EntryStore, Entry};
-    use ssb_crypto::{generate_longterm_keypair, init, sign_detached, SecretKey};
+    use crate::signature::Signature;
     use crate::yamf_hash::YamfHash;
     use crate::yamf_signatory::YamfSignatory;
-    use crate::signature::Signature;
+    use crate::{Entry, EntryStore};
+    use ssb_crypto::{generate_longterm_keypair, init, sign_detached, SecretKey};
+    use std::borrow::Cow;
+    use std::convert::TryInto;
 
     fn n_valid_entries(n: u64) -> Log<MemoryEntryStore> {
         init();
@@ -138,23 +133,24 @@ mod tests {
         let (pub_key, secret_key) = generate_longterm_keypair();
         let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
 
-        (1..n)
-            .into_iter()
-            .for_each(|i| {
-                let payload = format!("message number {}", i);
-                log.publish(&payload.as_bytes(), false).unwrap();
-            });
+        (1..n).into_iter().for_each(|i| {
+            let payload = format!("message number {}", i);
+            log.publish(&payload.as_bytes(), false).unwrap();
+        });
 
         log
     }
 
     #[test]
-    fn add_checks_payload_is_correct_length(){
+    fn add_checks_payload_is_correct_length() {
         let remote_log = n_valid_entries(3);
 
-        let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
+        let mut log: Log<MemoryEntryStore> =
+            Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let mut first_entry: Entry = remote_log.store.get_entry_ref(1)
+        let mut first_entry: Entry = remote_log
+            .store
+            .get_entry_ref(1)
             .unwrap()
             .unwrap()
             .try_into()
@@ -163,29 +159,30 @@ mod tests {
         first_entry.payload_size = 1; //Set an invalid payload length. Zero tolerance etc ;)
 
         let entry_bytes: Vec<_> = first_entry.try_into().unwrap();
-        
+
         match log.add(&entry_bytes, Some(b"message number 1")) {
-            Err(Error::AddEntryPayloadLengthDidNotMatch{backtrace: _}) => {},
-            _ => panic!("Expected err")
+            Err(Error::AddEntryPayloadLengthDidNotMatch { backtrace: _ }) => {}
+            _ => panic!("Expected err"),
         }
-    } 
+    }
 
     #[test]
-    fn add_checks_payload_is_correct_hash(){
+    fn add_checks_payload_is_correct_hash() {
         let remote_log = n_valid_entries(3);
 
-        let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
+        let mut log: Log<MemoryEntryStore> =
+            Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
         let first_entry = remote_log.store.get_entry(1).unwrap().unwrap();
 
-        match log.add(&first_entry, Some(&[0,1])) {
-            Err(Error::AddEntryPayloadHashDidNotMatch{backtrace: _}) => {},
-            _ => panic!("Expected err")
+        match log.add(&first_entry, Some(&[0, 1])) {
+            Err(Error::AddEntryPayloadHashDidNotMatch { backtrace: _ }) => {}
+            _ => panic!("Expected err"),
         }
-    } 
+    }
 
     #[test]
-    fn add_checks_entry_not_after_end_of_feed(){
+    fn add_checks_entry_not_after_end_of_feed() {
         let (pub_key, secret_key) = generate_longterm_keypair();
         let cloned_secret = SecretKey::from_slice(secret_key.as_ref()).unwrap();
         let mut remote_log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
@@ -198,7 +195,7 @@ mod tests {
         let backlink = YamfHash::new_blake2b(first_entry);
         let lipmaa_link = YamfHash::new_blake2b(first_entry);
 
-        let mut second_entry = Entry{
+        let mut second_entry = Entry {
             is_end_of_feed: false,
             payload_hash: YamfHash::new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
@@ -206,51 +203,56 @@ mod tests {
             seq_num: 2,
             backlink: Some(backlink),
             lipmaa_link: Some(lipmaa_link),
-            sig: None
+            sig: None,
         };
 
         let mut second_entry_bytes = Vec::new();
-        second_entry.encode_write(&mut second_entry_bytes).unwrap(); 
+        second_entry.encode_write(&mut second_entry_bytes).unwrap();
 
-        let signature = sign_detached(&second_entry_bytes, &cloned_secret); 
+        let signature = sign_detached(&second_entry_bytes, &cloned_secret);
         let signature = Signature(signature.as_ref().into());
 
         second_entry.sig = Some(signature);
 
         let mut second_entry_bytes = Vec::new();
-        second_entry.encode_write(&mut second_entry_bytes).unwrap(); 
+        second_entry.encode_write(&mut second_entry_bytes).unwrap();
 
-        let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
+        let mut log: Log<MemoryEntryStore> =
+            Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
         log.add(&first_entry, None).unwrap();
 
         match log.add(&second_entry_bytes, None) {
-            Err(Error::AddEntryToFeedThatHasEnded{backtrace: _}) => {},
-            _ => panic!("Expected err")
+            Err(Error::AddEntryToFeedThatHasEnded { backtrace: _ }) => {}
+            _ => panic!("Expected err"),
         }
-    } 
+    }
 
     #[test]
-    fn add_needs_lipmaa_link_in_store(){
+    fn add_needs_lipmaa_link_in_store() {
         let remote_log = n_valid_entries(3);
 
-        let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
+        let mut log: Log<MemoryEntryStore> =
+            Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
         let second_entry = remote_log.store.get_entry(2).unwrap().unwrap();
 
         match log.add(&second_entry, None) {
-            Err(Error::AddEntryNoLipmaalinkInStore) => {},
-            _ => panic!("Expected err")
+            Err(Error::AddEntryNoLipmaalinkInStore) => {}
+            _ => panic!("Expected err"),
         }
-    } 
+    }
 
     #[test]
-    fn add_needs_valid_signature(){
+    fn add_needs_valid_signature() {
         let remote_log = n_valid_entries(3);
 
-        let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
+        let mut log: Log<MemoryEntryStore> =
+            Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let mut first_entry: Entry = remote_log.store.get_entry_ref(1)
+        let mut first_entry: Entry = remote_log
+            .store
+            .get_entry_ref(1)
             .unwrap()
             .unwrap()
             .try_into()
@@ -261,76 +263,84 @@ mod tests {
                 let mut_bytes = bytes.to_mut();
                 mut_bytes[0] ^= mut_bytes[0];
                 Some(Signature(Cow::Owned(mut_bytes.to_owned())))
-            },
-            link => link
-        }; 
+            }
+            link => link,
+        };
 
         let entry_bytes: Vec<_> = first_entry.try_into().unwrap();
 
         match log.add(&entry_bytes, None) {
-            Err(Error::AddEntryWithInvalidSignature{backtrace: _}) => {},
-            _ => panic!("Expected err")
+            Err(Error::AddEntryWithInvalidSignature { backtrace: _ }) => {}
+            _ => panic!("Expected err"),
         }
-    } 
+    }
 
     #[test]
-    fn add_checks_lipmaa_link_is_valid(){
+    fn add_checks_lipmaa_link_is_valid() {
         let remote_log = n_valid_entries(3);
 
-        let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
+        let mut log: Log<MemoryEntryStore> =
+            Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
         let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
-        let mut second_entry: Entry = remote_log.store.get_entry_ref(2)
+        let mut second_entry: Entry = remote_log
+            .store
+            .get_entry_ref(2)
             .unwrap()
             .unwrap()
             .try_into()
             .unwrap();
 
-        log.add(&first_entry_bytes, None).expect("error adding first entry, this is not normal");
+        log.add(&first_entry_bytes, None)
+            .expect("error adding first entry, this is not normal");
 
         second_entry.lipmaa_link = match second_entry.lipmaa_link {
             Some(YamfHash::Blake2b(_)) => Some(YamfHash::new_blake2b(b"noooo")),
-            link => link
-        }; //set the lipmaa link to be zero 
+            link => link,
+        }; //set the lipmaa link to be zero
 
         let entry_bytes: Vec<_> = second_entry.try_into().unwrap();
-        
+
         match log.add(&entry_bytes, None) {
-            Err(Error::AddEntryLipmaaHashDidNotMatch) => {},
-            _ => panic!("Expected err")
+            Err(Error::AddEntryLipmaaHashDidNotMatch) => {}
+            _ => panic!("Expected err"),
         }
-    } 
+    }
 
     #[test]
-    fn add_checks_backlink_is_valid(){
+    fn add_checks_backlink_is_valid() {
         let remote_log = n_valid_entries(3);
 
-        let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
+        let mut log: Log<MemoryEntryStore> =
+            Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
         let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
 
-        let mut second_entry: Entry = remote_log.store.get_entry_ref(2)
+        let mut second_entry: Entry = remote_log
+            .store
+            .get_entry_ref(2)
             .unwrap()
             .unwrap()
             .try_into()
             .unwrap();
 
-        log.add(&first_entry_bytes, None).expect("error adding first entry, this is not normal");
+        log.add(&first_entry_bytes, None)
+            .expect("error adding first entry, this is not normal");
 
         second_entry.backlink = match second_entry.backlink {
             Some(YamfHash::Blake2b(_)) => Some(YamfHash::new_blake2b(b"noooo")),
-            link => link
-        }; //set the lipmaa link to be zero 
+            link => link,
+        }; //set the lipmaa link to be zero
 
         let entry_bytes: Vec<_> = second_entry.try_into().unwrap();
 
         match log.add(&entry_bytes, None) {
-            Err(Error::AddEntryBacklinkHashDidNotMatch) => {},
-            _ => panic!("Expected err")
+            Err(Error::AddEntryBacklinkHashDidNotMatch) => {}
+            _ => panic!("Expected err"),
         }
-    } 
+    }
     #[test]
-    fn add_checks_lipmaa_link_is_present(){
+    fn add_checks_lipmaa_link_is_present() {
         let (pub_key, secret_key) = generate_longterm_keypair();
         let cloned_secret = SecretKey::from_slice(secret_key.as_ref()).unwrap();
         let mut remote_log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
@@ -342,7 +352,7 @@ mod tests {
 
         let backlink = YamfHash::new_blake2b(first_entry);
 
-        let mut second_entry = Entry{
+        let mut second_entry = Entry {
             is_end_of_feed: false,
             payload_hash: YamfHash::new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
@@ -350,31 +360,32 @@ mod tests {
             seq_num: 2,
             backlink: Some(backlink),
             lipmaa_link: None,
-            sig: None
+            sig: None,
         };
 
         let mut second_entry_bytes = Vec::new();
-        second_entry.encode_write(&mut second_entry_bytes).unwrap(); 
+        second_entry.encode_write(&mut second_entry_bytes).unwrap();
 
-        let signature = sign_detached(&second_entry_bytes, &cloned_secret); 
+        let signature = sign_detached(&second_entry_bytes, &cloned_secret);
         let signature = Signature(signature.as_ref().into());
 
         second_entry.sig = Some(signature);
 
         let mut second_entry_bytes = Vec::new();
-        second_entry.encode_write(&mut second_entry_bytes).unwrap(); 
+        second_entry.encode_write(&mut second_entry_bytes).unwrap();
 
-        let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
+        let mut log: Log<MemoryEntryStore> =
+            Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
         log.add(&first_entry, None).unwrap();
 
         match log.add(&second_entry_bytes, None) {
-            Err(Error::AddEntryDecodeFailed{source: _}) => {},
-            e => panic!("Expected err, {:?}", e)
+            Err(Error::AddEntryDecodeFailed { source: _ }) => {}
+            e => panic!("Expected err, {:?}", e),
         }
-    } 
+    }
     #[test]
-    fn add_checks_back_link_is_present(){
+    fn add_checks_back_link_is_present() {
         let (pub_key, secret_key) = generate_longterm_keypair();
         let cloned_secret = SecretKey::from_slice(secret_key.as_ref()).unwrap();
         let mut remote_log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
@@ -386,7 +397,7 @@ mod tests {
 
         let lipmaa_link = YamfHash::new_blake2b(first_entry);
 
-        let mut second_entry = Entry{
+        let mut second_entry = Entry {
             is_end_of_feed: false,
             payload_hash: YamfHash::new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
@@ -394,27 +405,28 @@ mod tests {
             seq_num: 2,
             backlink: None,
             lipmaa_link: Some(lipmaa_link),
-            sig: None
+            sig: None,
         };
 
         let mut second_entry_bytes = Vec::new();
-        second_entry.encode_write(&mut second_entry_bytes).unwrap(); 
+        second_entry.encode_write(&mut second_entry_bytes).unwrap();
 
-        let signature = sign_detached(&second_entry_bytes, &cloned_secret); 
+        let signature = sign_detached(&second_entry_bytes, &cloned_secret);
         let signature = Signature(signature.as_ref().into());
 
         second_entry.sig = Some(signature);
 
         let mut second_entry_bytes = Vec::new();
-        second_entry.encode_write(&mut second_entry_bytes).unwrap(); 
+        second_entry.encode_write(&mut second_entry_bytes).unwrap();
 
-        let mut log: Log<MemoryEntryStore> = Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
+        let mut log: Log<MemoryEntryStore> =
+            Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
         log.add(&first_entry, None).unwrap();
 
         match log.add(&second_entry_bytes, None) {
-            Err(Error::AddEntryDecodeFailed{source: _}) => {},
-            e => panic!("Expected err, {:?}", e)
+            Err(Error::AddEntryDecodeFailed { source: _ }) => {}
+            e => panic!("Expected err, {:?}", e),
         }
-    } 
+    }
 }

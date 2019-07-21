@@ -1,7 +1,7 @@
 use super::hex_serde::{cow_from_hex, hex_from_cow};
-use snafu::{ResultExt, OptionExt};
-use std::convert::TryFrom;
+use snafu::{OptionExt, ResultExt};
 use std::borrow::Cow;
+use std::convert::TryFrom;
 use std::io::Write;
 use varu64::{decode as varu64_decode, encode_write as varu64_encode_write};
 
@@ -38,17 +38,17 @@ pub struct EntryBytes<'a>(
     #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
 );
 
-impl<'a> TryFrom<&'a[u8]> for Entry<'a>{
+impl<'a> TryFrom<&'a [u8]> for Entry<'a> {
     type Error = Error;
 
-    fn try_from(bytes: &'a[u8]) -> Result<Entry<'a>, Self::Error>{
+    fn try_from(bytes: &'a [u8]) -> Result<Entry<'a>, Self::Error> {
         Entry::decode(bytes)
     }
 }
-impl<'a> TryFrom<Entry<'a>> for Vec<u8>{
+impl<'a> TryFrom<Entry<'a>> for Vec<u8> {
     type Error = Error;
 
-    fn try_from(entry: Entry<'a>) -> Result<Vec<u8>, Self::Error>{
+    fn try_from(entry: Entry<'a>) -> Result<Vec<u8>, Self::Error> {
         let mut buff = Vec::new();
         entry.encode_write(&mut buff)?;
         Ok(buff)
@@ -129,7 +129,7 @@ impl<'a> Entry<'a> {
             .context(DecodeSeqError)?;
 
         if seq_num == 0 {
-            return Err(Error::DecodeSeqIsZero)
+            return Err(Error::DecodeSeqIsZero);
         }
 
         // Decode the backlink and lipmaa links if its not the first sequence
@@ -163,14 +163,16 @@ impl<'a> Entry<'a> {
         //Pluck off the signature before we encode it
         let sig = self.sig.take();
 
-        let ssb_sig = SsbSignature::from_slice(sig.as_ref().unwrap().0.as_ref()).context(DecodeSsbSigError)?;
+        let ssb_sig = SsbSignature::from_slice(sig.as_ref().unwrap().0.as_ref())
+            .context(DecodeSsbSigError)?;
 
         let mut buff = Vec::new();
         self.encode_write(&mut buff).unwrap();
 
         let result = match self.author {
             YamfSignatory::Ed25519(ref author, _) => {
-                let pub_key = PublicKey::from_slice(author.as_ref()).context(DecodeSsbPubKeyError)?;
+                let pub_key =
+                    PublicKey::from_slice(author.as_ref()).context(DecodeSsbPubKeyError)?;
                 verify_detached(&ssb_sig, &buff, &pub_key)
             }
         };

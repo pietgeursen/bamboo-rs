@@ -1,6 +1,6 @@
 pub use crate::entry::{Entry, Error as EntryError};
 pub use crate::entry_store::{EntryStore, Error as EntryStoreError};
-use snafu::{Backtrace, Snafu, ResultExt, AsErrorSource, IntoError};
+use snafu::{AsErrorSource, Backtrace, IntoError, ResultExt, Snafu};
 
 #[derive(Debug, Snafu)]
 #[snafu(visibility = "pub(in crate::log)")]
@@ -57,7 +57,7 @@ pub enum Error {
     #[snafu(display("There is no lipmaalink entry in the store with that seq num"))]
     AddEntryNoLipmaalinkInStore,
     #[snafu(display("Couldn't decode the lipmaa link from the store"))]
-    AddEntryDecodeLipmaalinkFromStore{source: EntryError },
+    AddEntryDecodeLipmaalinkFromStore { source: EntryError },
     #[snafu(display("The author in the entry did not match the author in the lipmaa link"))]
     AddEntryAuthorDidNotMatchLipmaaEntry,
     #[snafu(display("The entry store failed to get the last entry"))]
@@ -65,8 +65,10 @@ pub enum Error {
     #[snafu(display("The entry store couldn't find the last entry"))]
     AddEntryGetLastEntryNotFound,
     #[snafu(display("Couldn't decode the last entry from the store"))]
-    AddEntryDecodeLastEntry{source: EntryError },
-    #[snafu(display("Attempted to add an entry to a feed that has published an end of feed message"))]
+    AddEntryDecodeLastEntry { source: EntryError },
+    #[snafu(display(
+        "Attempted to add an entry to a feed that has published an end of feed message"
+    ))]
     AddEntryToFeedThatHasEnded { backtrace: Backtrace },
     #[snafu(display("Attempted to add an entry with invalid signature"))]
     AddEntryWithInvalidSignature { backtrace: Backtrace },

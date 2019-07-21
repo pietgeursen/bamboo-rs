@@ -1,4 +1,4 @@
-use snafu::{Snafu, AsErrorSource};
+use snafu::{AsErrorSource, Snafu};
 
 #[derive(Debug, Snafu)]
 #[snafu(visibility(pub))]
