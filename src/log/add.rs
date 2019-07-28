@@ -85,12 +85,8 @@ impl<Store: EntryStore> Log<Store> {
             }
             //Happy path 3: We don't have the backlink for this entry, happens when doing partial
             //replication.
-            (Ok(None), Some(_), seq_num) if seq_num > 1 => {
-                Ok(())
-            }
-            (_, _, _) => {
-                Err(Error::AddEntryBacklinkHashDidNotMatch)
-            },
+            (Ok(None), Some(_), seq_num) if seq_num > 1 => Ok(()),
+            (_, _, _) => Err(Error::AddEntryBacklinkHashDidNotMatch),
         }?;
 
         // Get the last entry in the log and make sure it's not an end of feed message.
