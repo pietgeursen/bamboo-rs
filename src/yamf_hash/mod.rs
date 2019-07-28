@@ -1,6 +1,7 @@
 use blake2b_simd::{blake2b, OUTBYTES};
+use arrayvec::ArrayVec;
 use core::borrow::Borrow;
-use core::ops::Deref;
+use core::iter::FromIterator;
 use snafu::{ResultExt, Snafu};
 use std::borrow::Cow;
 use std::io::{Error as IoError, Write};
@@ -28,17 +29,31 @@ pub enum YamfHash<'a> {
 }
 
 /// A borrowed YamfHash
-#[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
-pub enum YamfHash2<T: Borrow<[u8]>> {
+#[derive(Deserialize, Serialize, Debug, Eq)]
+pub enum YamfHash2<T: Borrow<[u8]> + PartialEq + Eq> {
     Blake2b(T),
 }
+ 
+impl<B1: Borrow<[u8]> + Eq, B2: Borrow<[u8]> + Eq> PartialEq<YamfHash2<B1>> for YamfHash2<B2> {
+    fn eq(&self, other: &YamfHash2<B1>) -> bool {
+        match (self, other) {
+            (YamfHash2::Blake2b(vec), YamfHash2::Blake2b(vec2)) => {
+                vec.borrow() == vec2.borrow()
+            }
+        }
+    }
+}
 
-//impl<T:Borrow<[u8]>> YamfHash2<T> {
-//    fn new_blake2b(bytes: &[u8])-> YamfHash2<T>{
-//        let hash_bytes = blake2b(bytes);
-//        YamfHash2::Blake2b(hash_bytes.as_ref())
-//    }
-//}
+impl<T:Borrow<[u8]> + Eq> YamfHash2<T> {
+    pub fn new_blake2b(bytes: &[u8])-> YamfHash2<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>{
+        let hash_bytes = blake2b(bytes);
+
+        let vec_bytes: ArrayVec<[u8; BLAKE2B_HASH_SIZE]> =
+            ArrayVec::from_iter(hash_bytes.as_bytes().iter().map(|b| *b));
+
+        YamfHash2::Blake2b(vec_bytes)
+    }
+}
 
 //gah fuck ok what's the problem here:
 //
@@ -247,6 +262,7 @@ mod tests {
         let hash_bytes = blake2b(&[1, 2]);
         let result2 = YamfHash2::Blake2b(hash_bytes.as_bytes());
 
+        assert_eq!(result, result2);
         assert_eq!(result2, result);
     }
     #[test]
