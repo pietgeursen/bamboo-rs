@@ -1,7 +1,8 @@
 use super::error::*;
 use super::Log;
 use crate::entry_store::EntryStore;
-use crate::yamf_hash::YamfHash;
+use crate::yamf_hash::{YamfHash, BLAKE2B_HASH_SIZE, new_blake2b};
+use arrayvec::ArrayVec;
 use crate::Entry;
 use lipmaa_link::lipmaa;
 use snafu::{ensure, ResultExt};
@@ -19,12 +20,12 @@ impl<Store: EntryStore> Log<Store> {
     /// from oldest to newest.
     pub fn add(&mut self, entry_bytes: &[u8], payload: Option<&[u8]>) -> Result<()> {
         // Decode the entry that we want to add.
-        let entry = Entry::decode(entry_bytes).context(AddEntryDecodeFailed)?;
+        let entry = Entry::<&[u8], &[u8], &[u8]>::decode(entry_bytes).context(AddEntryDecodeFailed)?;
 
         // If we have the payload, check that its hash and length match what is encoded in the
         // entry.
         if let Some(payload) = payload {
-            let payload_hash = YamfHash::new_blake2b(payload);
+            let payload_hash = new_blake2b(payload);
             ensure!(
                 payload_hash == entry.payload_hash,
                 AddEntryPayloadHashDidNotMatch
@@ -49,7 +50,7 @@ impl<Store: EntryStore> Log<Store> {
             // Happy path 2: seq is larger than one and we can find the lipmaa link in the store
             (Ok(Some(lipmaa)), Some(ref entry_lipmaa), seq_num) if seq_num > 1 => {
                 // Hash the lipmaa entry
-                let lipmaa_hash = YamfHash::new_blake2b(lipmaa);
+                let lipmaa_hash = new_blake2b(lipmaa);
                 // Make sure the lipmaa entry hash matches what's in the entry.
                 if lipmaa_hash != *entry_lipmaa {
                     return Err(Error::AddEntryLipmaaHashDidNotMatch);
@@ -57,7 +58,7 @@ impl<Store: EntryStore> Log<Store> {
 
                 // Verify the author of the entry is the same as the author in the lipmaa link entry
                 let lipmaa_entry =
-                    Entry::decode(lipmaa).context(AddEntryDecodeLipmaalinkFromStore)?;
+                    Entry::<&[u8], &[u8], &[u8]>::decode(lipmaa).context(AddEntryDecodeLipmaalinkFromStore)?;
 
                 if entry.author != lipmaa_entry.author {
                     return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry);
@@ -76,7 +77,7 @@ impl<Store: EntryStore> Log<Store> {
 
             //Happy path 2: This does have a backlink and we found it.
             (Ok(Some(backlink)), Some(ref entry_backlink), seq_num) if seq_num > 1 => {
-                let backlink_hash = YamfHash::new_blake2b(backlink);
+                let backlink_hash = new_blake2b(backlink);
 
                 if backlink_hash != *entry_backlink {
                     return Err(Error::AddEntryBacklinkHashDidNotMatch);
@@ -98,14 +99,14 @@ impl<Store: EntryStore> Log<Store> {
                 .context(AddEntryGetLastEntryError)?
                 .ok_or(Error::AddEntryGetLastEntryNotFound)?;
 
-            let last_entry = Entry::decode(last_entry_bytes).context(AddEntryDecodeLastEntry)?;
+            let last_entry = Entry::<&[u8], &[u8], &[u8]>::decode(last_entry_bytes).context(AddEntryDecodeLastEntry)?;
             ensure!(!last_entry.is_end_of_feed, AddEntryToFeedThatHasEnded)
         }
 
         // Verify the signature.
         let entry_bytes_to_verify = entry_bytes.to_owned();
         let mut entry_to_verify =
-            Entry::decode(&entry_bytes_to_verify).context(AddEntryDecodeEntryBytesForSigning)?;
+            Entry::<&[u8], &[u8], &[u8]>::decode(&entry_bytes_to_verify).context(AddEntryDecodeEntryBytesForSigning)?;
         let is_valid = entry_to_verify
             .verify_signature()
             .context(AddEntrySigNotValidError)?;
@@ -195,12 +196,12 @@ mod tests {
 
         let first_entry = remote_log.store.get_entry_ref(1).unwrap().unwrap();
 
-        let backlink = YamfHash::new_blake2b(first_entry);
-        let lipmaa_link = YamfHash::new_blake2b(first_entry);
+        let backlink = new_blake2b(first_entry);
+        let lipmaa_link = new_blake2b(first_entry);
 
         let mut second_entry = Entry {
             is_end_of_feed: false,
-            payload_hash: YamfHash::new_blake2b(&payload.as_bytes()),
+            payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
             author: YamfSignatory::Ed25519(pub_key.as_ref().into(), None),
             seq_num: 2,
@@ -298,7 +299,7 @@ mod tests {
             .expect("error adding first entry, this is not normal");
 
         second_entry.lipmaa_link = match second_entry.lipmaa_link {
-            Some(YamfHash::Blake2b(_)) => Some(YamfHash::new_blake2b(b"noooo")),
+            Some(YamfHash::Blake2b(_)) => Some(new_blake2b(b"noooo")),
             link => link,
         }; //set the lipmaa link to be zero
 
@@ -331,7 +332,7 @@ mod tests {
             .expect("error adding first entry, this is not normal");
 
         second_entry.backlink = match second_entry.backlink {
-            Some(YamfHash::Blake2b(_)) => Some(YamfHash::new_blake2b(b"noooo")),
+            Some(YamfHash::Blake2b(_)) => Some(new_blake2b(b"noooo")),
             link => link,
         }; //set the lipmaa link to be zero
 
@@ -353,11 +354,11 @@ mod tests {
 
         let first_entry = remote_log.store.get_entry_ref(1).unwrap().unwrap();
 
-        let backlink = YamfHash::new_blake2b(first_entry);
+        let backlink = new_blake2b(first_entry);
 
         let mut second_entry = Entry {
             is_end_of_feed: false,
-            payload_hash: YamfHash::new_blake2b(&payload.as_bytes()),
+            payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
             author: YamfSignatory::Ed25519(pub_key.as_ref().into(), None),
             seq_num: 2,
@@ -398,11 +399,11 @@ mod tests {
 
         let first_entry = remote_log.store.get_entry_ref(1).unwrap().unwrap();
 
-        let lipmaa_link = YamfHash::new_blake2b(first_entry);
+        let lipmaa_link = new_blake2b(first_entry);
 
         let mut second_entry = Entry {
             is_end_of_feed: false,
-            payload_hash: YamfHash::new_blake2b(&payload.as_bytes()),
+            payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
             author: YamfSignatory::Ed25519(pub_key.as_ref().into(), None),
             seq_num: 2,

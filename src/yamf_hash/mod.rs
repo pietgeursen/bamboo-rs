@@ -1,9 +1,8 @@
-use blake2b_simd::{blake2b, OUTBYTES};
 use arrayvec::ArrayVec;
+use blake2b_simd::{blake2b, OUTBYTES};
 use core::borrow::Borrow;
 use core::iter::FromIterator;
 use snafu::{ResultExt, Snafu};
-use std::borrow::Cow;
 use std::io::{Error as IoError, Write};
 
 use crate::util::hex_serde::{cow_from_hex, hex_from_cow};
@@ -22,37 +21,26 @@ pub enum Error {
 }
 
 /// Variants of `YamfHash`
-#[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
-pub enum YamfHash<'a> {
-    #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")]
-    Blake2b(Cow<'a, [u8]>),
-}
-
-/// A borrowed YamfHash
 #[derive(Deserialize, Serialize, Debug, Eq)]
-pub enum YamfHash2<T: Borrow<[u8]> + PartialEq + Eq> {
+pub enum YamfHash<T: Borrow<[u8]> + PartialEq + Eq> {
     Blake2b(T),
 }
- 
-impl<B1: Borrow<[u8]> + Eq, B2: Borrow<[u8]> + Eq> PartialEq<YamfHash2<B1>> for YamfHash2<B2> {
-    fn eq(&self, other: &YamfHash2<B1>) -> bool {
+
+impl<B1: Borrow<[u8]> + Eq, B2: Borrow<[u8]> + Eq> PartialEq<YamfHash<B1>> for YamfHash<B2> {
+    fn eq(&self, other: &YamfHash<B1>) -> bool {
         match (self, other) {
-            (YamfHash2::Blake2b(vec), YamfHash2::Blake2b(vec2)) => {
-                vec.borrow() == vec2.borrow()
-            }
+            (YamfHash::Blake2b(vec), YamfHash::Blake2b(vec2)) => vec.borrow() == vec2.borrow(),
         }
     }
 }
 
-impl<T:Borrow<[u8]> + Eq> YamfHash2<T> {
-    pub fn new_blake2b(bytes: &[u8])-> YamfHash2<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>{
-        let hash_bytes = blake2b(bytes);
+pub fn new_blake2b(bytes: &[u8]) -> YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>> {
+    let hash_bytes = blake2b(bytes);
 
-        let vec_bytes: ArrayVec<[u8; BLAKE2B_HASH_SIZE]> =
-            ArrayVec::from_iter(hash_bytes.as_bytes().iter().map(|b| *b));
+    let vec_bytes: ArrayVec<[u8; BLAKE2B_HASH_SIZE]> =
+        ArrayVec::from_iter(hash_bytes.as_bytes().iter().map(|b| *b));
 
-        YamfHash2::Blake2b(vec_bytes)
-    }
+    YamfHash::Blake2b(vec_bytes)
 }
 
 //gah fuck ok what's the problem here:
@@ -80,7 +68,7 @@ impl<T:Borrow<[u8]> + Eq> YamfHash2<T> {
 //
 
 //
-//impl<'a> YamfHash2<'a> {
+//impl<'a> YamfHash<'a> {
 //    /// Encode a YamfHash into the out buffer.
 //    pub fn encode(&self, out: &mut [u8]) {
 //        match self.hash_type {
@@ -93,18 +81,33 @@ impl<T:Borrow<[u8]> + Eq> YamfHash2<T> {
 //    }
 //}
 
-impl<'a> YamfHash<'a> {
+impl<T: Borrow<[u8]> + PartialEq + Eq> YamfHash<T> {
     /// Encode a YamfHash into the out buffer.
     pub fn encode(&self, out: &mut [u8]) {
         match self {
             YamfHash::Blake2b(vec) => {
                 varu64_encode(1, &mut out[0..1]);
                 varu64_encode(BLAKE2B_HASH_SIZE as u64, &mut out[1..2]);
-                out[2..].copy_from_slice(&vec);
+                out[2..].copy_from_slice(vec.borrow());
             }
         }
     }
 
+    /// Decode the `bytes` as a `YamfHash`
+    pub fn decode<'a>(bytes: &'a [u8]) -> Result<(YamfHash<&'a[u8]>, &'a [u8]), Error> {
+        match varu64_decode(&bytes) {
+            Ok((1, remaining_bytes)) if remaining_bytes.len() >= 65 => {
+                let hash = &remaining_bytes[1..65];
+                Ok((YamfHash::Blake2b(hash), &remaining_bytes[65..]))
+            }
+            Err((err, _)) => Err(Error::DecodeVaru64Error { source: err }),
+            _ => Err(Error::DecodeError {}),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl<T: Borrow<[u8]> + Eq> YamfHash<T> {
     /// Encode a YamfHash into the writer.
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
         let mut out = [0; 2];
@@ -113,35 +116,16 @@ impl<'a> YamfHash<'a> {
                 varu64_encode(1, &mut out[0..1]);
                 varu64_encode(BLAKE2B_HASH_SIZE as u64, &mut out[1..2]);
                 w.write_all(&out).context(EncodeWriteError)?;
-                w.write_all(&vec).context(EncodeWriteError)?;
+                w.write_all(vec.borrow()).context(EncodeWriteError)?;
                 Ok(())
             }
         }
-    }
-
-    /// Decode the `bytes` as a `YamfHash`
-    pub fn decode(bytes: &'a [u8]) -> Result<(YamfHash<'a>, &'a [u8]), Error> {
-        match varu64_decode(&bytes) {
-            Ok((1, remaining_bytes)) if remaining_bytes.len() >= 65 => {
-                let hash = &remaining_bytes[1..65];
-                Ok((YamfHash::Blake2b(hash.into()), &remaining_bytes[65..]))
-            }
-            Err((err, _)) => Err(Error::DecodeVaru64Error { source: err }),
-            _ => Err(Error::DecodeError {}),
-        }
-    }
-
-    /// Create a new `YamfHash::Blake2b` by hashing the input `bytes`. The resulting `YamfHash` owns the underlying
-    /// hash bytes.
-    pub fn new_blake2b<'b>(bytes: &'b [u8]) -> YamfHash<'static> {
-        let hash_bytes = blake2b(bytes);
-        YamfHash::Blake2b(Cow::Owned(hash_bytes.as_bytes().to_owned()))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Error, YamfHash, YamfHash2, BLAKE2B_HASH_SIZE};
+    use super::{Error, YamfHash, YamfHash, BLAKE2B_HASH_SIZE};
     use arrayvec::ArrayVec;
     use blake2b_simd::blake2b;
     use core::convert::TryInto;
@@ -245,7 +229,7 @@ mod tests {
             let hash_bytes = blake2b(&[1, 2]);
             let vec_bytes: ArrayVec<[u8; BLAKE2B_HASH_SIZE]> =
                 ArrayVec::from_iter(hash_bytes.as_bytes().iter().map(|b| *b));
-            YamfHash2::Blake2b(vec_bytes)
+            YamfHash::Blake2b(vec_bytes)
         };
         let result = lam();
     }
@@ -255,12 +239,12 @@ mod tests {
             let hash_bytes = blake2b(&[1, 2]);
             let vec_bytes: ArrayVec<[u8; BLAKE2B_HASH_SIZE]> =
                 ArrayVec::from_iter(hash_bytes.as_bytes().iter().map(|b| *b));
-            YamfHash2::Blake2b(vec_bytes)
+            YamfHash::Blake2b(vec_bytes)
         };
         let result = lam();
 
         let hash_bytes = blake2b(&[1, 2]);
-        let result2 = YamfHash2::Blake2b(hash_bytes.as_bytes());
+        let result2 = YamfHash::Blake2b(hash_bytes.as_bytes());
 
         assert_eq!(result, result2);
         assert_eq!(result2, result);
@@ -271,7 +255,7 @@ mod tests {
             let mut hash_bytes = ArrayVec::<[u8; BLAKE2B_HASH_SIZE]>::new();
             hash_bytes.push(1);
             hash_bytes.push(64);
-            YamfHash2::Blake2b(hash_bytes)
+            YamfHash::Blake2b(hash_bytes)
         };
         let result = lam();
     }
@@ -280,7 +264,7 @@ mod tests {
         let mut hash_bytes = ArrayVec::<[u8; BLAKE2B_HASH_SIZE * 2]>::new();
         hash_bytes.push(1);
         hash_bytes.push(64);
-        YamfHash2::Blake2b(hash_bytes);
+        YamfHash::Blake2b(hash_bytes);
     }
     //    #[test]
     //    fn ref_from_slice_yamf_hash() {
@@ -290,10 +274,10 @@ mod tests {
     //
     //        let other_bytes: [u8; BLAKE2B_HASH_SIZE] = hash_bytes[..BLAKE2B_HASH_SIZE].try_into().unwrap();
     //
-    //        let result = YamfHash2::Blake2b(other_bytes);
+    //        let result = YamfHash::Blake2b(other_bytes);
     //
     //        match result {
-    //            YamfHash2::Blake2b(arr) => {
+    //            YamfHash::Blake2b(arr) => {
     //                assert_eq!(arr[0], 1);
     //            }
     //        }

@@ -6,7 +6,7 @@ use super::error::*;
 use crate::entry::Entry;
 use crate::entry_store::EntryStore;
 use crate::signature::Signature;
-use crate::yamf_hash::YamfHash;
+use crate::yamf_hash::{YamfHash, new_blake2b};
 use crate::yamf_signatory::YamfSignatory;
 use snafu::{ensure, ResultExt};
 
@@ -20,7 +20,7 @@ impl<Store: EntryStore> Log<Store> {
             YamfSignatory::Ed25519(Cow::Owned(self.public_key.as_ref().to_vec()), None);
 
         // calc the payload hash
-        let payload_hash = YamfHash::new_blake2b(payload);
+        let payload_hash = new_blake2b(payload);
         let payload_size = payload.len() as u64;
 
         let seq_num = last_seq_num + 1;
@@ -50,7 +50,7 @@ impl<Store: EntryStore> Log<Store> {
                     seq_num: lipmaa_link_seq,
                 })?;
 
-            let lipmaa_link = YamfHash::new_blake2b(lipmaa_entry_bytes);
+            let lipmaa_link = new_blake2b(lipmaa_entry_bytes);
 
             let backlink_bytes = self
                 .store
@@ -65,7 +65,7 @@ impl<Store: EntryStore> Log<Store> {
                 Entry::decode(&backlink_bytes[..]).context(PreviousDecodeFailed)?;
             ensure!(!backlink_entry.is_end_of_feed, PublishAfterEndOfFeed);
 
-            let backlink = YamfHash::new_blake2b(backlink_bytes);
+            let backlink = new_blake2b(backlink_bytes);
 
             entry.backlink = Some(backlink);
             entry.lipmaa_link = Some(lipmaa_link);

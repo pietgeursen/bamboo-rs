@@ -1,4 +1,5 @@
 use crate::util::hex_serde::{cow_from_hex, hex_from_cow};
+use core::borrow::Borrow;
 use snafu::{OptionExt, ResultExt};
 use std::borrow::Cow;
 use std::convert::TryFrom;
@@ -15,20 +16,25 @@ pub mod error;
 pub use error::*;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct Entry<'a> {
+pub struct Entry<'a, H1, H2, H3>
+where
+    H1: Borrow<[u8]> + PartialEq + Eq,
+    H2: Borrow<[u8]> + PartialEq + Eq,
+    H3: Borrow<[u8]> + PartialEq + Eq,
+{
     #[serde(rename = "isEndOfFeed")]
     pub is_end_of_feed: bool,
     #[serde(rename = "payloadHash")]
-    pub payload_hash: YamfHash<'a>,
+    pub payload_hash: YamfHash<H1>,
     #[serde(rename = "payloadSize")]
     pub payload_size: u64,
     pub author: YamfSignatory<'a>,
     #[serde(rename = "sequenceNumber")]
     pub seq_num: u64,
     #[serde(rename = "backLink")]
-    pub backlink: Option<YamfHash<'a>>,
+    pub backlink: Option<YamfHash<H2>>,
     #[serde(rename = "lipmaaLink")]
-    pub lipmaa_link: Option<YamfHash<'a>>,
+    pub lipmaa_link: Option<YamfHash<H3>>,
     #[serde(rename = "signature")]
     pub sig: Option<Signature<'a>>,
 }
@@ -38,24 +44,35 @@ pub struct EntryBytes<'a>(
     #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
 );
 
-impl<'a> TryFrom<&'a [u8]> for Entry<'a> {
-    type Error = Error;
+//impl<'a> TryFrom<&'a [u8]> for Entry<'a, &'a[u8], &'a[u8], &'a[u8]>
+//{
+//    type Error = Error;
+//
+//    fn try_from(bytes: &'a [u8]) -> Result<Entry<'a, &'a[u8], &'a[u8], &'a[u8]>, Self::Error> {
+//        Entry::decode(bytes)
+//    }
+//}
+//impl<'a, H1, H2, H3> TryFrom<Entry<'a, H1, H2, H3>> for Vec<u8>
+//where
+//    H1: Borrow<[u8]> + PartialEq + Eq,
+//    H2: Borrow<[u8]> + PartialEq + Eq,
+//    H3: Borrow<[u8]> + PartialEq + Eq,
+//{
+//    type Error = Error;
+//
+//    fn try_from(entry: Entry<'a, H1, H2, H3>) -> Result<Vec<u8>, Self::Error> {
+//        let mut buff = Vec::new();
+//        entry.encode_write(&mut buff)?;
+//        Ok(buff)
+//    }
+//}
 
-    fn try_from(bytes: &'a [u8]) -> Result<Entry<'a>, Self::Error> {
-        Entry::decode(bytes)
-    }
-}
-impl<'a> TryFrom<Entry<'a>> for Vec<u8> {
-    type Error = Error;
-
-    fn try_from(entry: Entry<'a>) -> Result<Vec<u8>, Self::Error> {
-        let mut buff = Vec::new();
-        entry.encode_write(&mut buff)?;
-        Ok(buff)
-    }
-}
-
-impl<'a> Entry<'a> {
+impl<'a, H1, H2, H3> Entry<'a, H1, H2, H3>
+where
+    H1: Borrow<[u8]> + PartialEq + Eq,
+    H2: Borrow<[u8]> + PartialEq + Eq,
+    H3: Borrow<[u8]> + PartialEq + Eq,
+{
     pub fn encode(&self) -> EntryBytes {
         let mut buff = Vec::new();
         self.encode_write(&mut buff).unwrap();
@@ -103,7 +120,7 @@ impl<'a> Entry<'a> {
         Ok(())
     }
 
-    pub fn decode(bytes: &'a [u8]) -> Result<Entry<'a>, Error> {
+    pub fn decode(bytes: &'a [u8]) -> Result<Entry<'a, &'a[u8], &'a[u8], &'a[u8]>, Error> {
         // Decode is end of feed
         if bytes.len() == 0 {
             return Err(Error::DecodeInputIsLengthZero);
@@ -112,7 +129,7 @@ impl<'a> Entry<'a> {
 
         // Decode the payload hash
         let (payload_hash, remaining_bytes) =
-            YamfHash::decode(&bytes[1..]).context(DecodePayloadHashError)?;
+            YamfHash::<&[u8]>::decode(&bytes[1..]).context(DecodePayloadHashError)?;
 
         // Decode the payload size
         let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
@@ -137,9 +154,9 @@ impl<'a> Entry<'a> {
             1 => (None, None, remaining_bytes),
             _ => {
                 let (backlink, remaining_bytes) =
-                    YamfHash::decode(remaining_bytes).context(DecodeBacklinkError)?;
+                    YamfHash::<&[u8]>::decode(remaining_bytes).context(DecodeBacklinkError)?;
                 let (lipmaa_link, remaining_bytes) =
-                    YamfHash::decode(remaining_bytes).context(DecodeLipmaaError)?;
+                    YamfHash::<&[u8]>::decode(remaining_bytes).context(DecodeLipmaaError)?;
                 (Some(backlink), Some(lipmaa_link), remaining_bytes)
             }
         };
