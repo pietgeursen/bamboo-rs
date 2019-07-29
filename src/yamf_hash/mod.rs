@@ -135,7 +135,7 @@ mod tests {
     #[test]
     fn encode_yamf() {
         let hash_bytes = vec![0xFF; 4];
-        let yamf_hash = YamfHash::Blake2b(hash_bytes.into());
+        let yamf_hash = YamfHash::Blake2b(hash_bytes);
         let expected = [1, 64, 0xFF, 0xFF, 0xFF, 0xFF];
 
         let mut encoded = vec![0; 6];
@@ -145,7 +145,7 @@ mod tests {
     #[test]
     fn encode_yamf_write() {
         let hash_bytes = vec![0xFF; 4];
-        let yamf_hash = YamfHash::Blake2b(hash_bytes.into());
+        let yamf_hash = YamfHash::Blake2b(hash_bytes);
         let expected = [1, 64, 0xFF, 0xFF, 0xFF, 0xFF];
 
         let mut encoded = Vec::new();
@@ -155,7 +155,7 @@ mod tests {
     #[test]
     fn encode_yamf_not_enough_bytes_for_varu() {
         let hash_bytes = vec![0xFF; 4];
-        let yamf_hash = YamfHash::Blake2b(hash_bytes.into());
+        let yamf_hash = YamfHash::Blake2b(hash_bytes);
 
         let mut encoded = [0; 2];
         match yamf_hash.encode_write(&mut encoded[..]) {
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn encode_yamf_not_enough_bytes_for_hash() {
         let hash_bytes = vec![0xFF; 4];
-        let yamf_hash = YamfHash::Blake2b(hash_bytes.into());
+        let yamf_hash = YamfHash::Blake2b(hash_bytes);
 
         let mut encoded = [0; 4];
         match yamf_hash.encode_write(&mut encoded[..]) {
@@ -180,7 +180,7 @@ mod tests {
         hash_bytes[0] = 1;
         hash_bytes[1] = 64;
         hash_bytes[66] = 0xAA;
-        let result = YamfHash::decode(&hash_bytes);
+        let result = YamfHash::<&[u8]>::decode(&hash_bytes);
 
         match result {
             Ok((YamfHash::Blake2b(vec), remaining_bytes)) => {
@@ -198,7 +198,7 @@ mod tests {
         hash_bytes[1] = 1;
         hash_bytes[2] = 64;
         hash_bytes[66] = 0xAA;
-        let result = YamfHash::decode(&hash_bytes);
+        let result = YamfHash::<&[u8]>::decode(&hash_bytes);
 
         match result {
             Err(Error::DecodeVaru64Error { source: _ }) => {}
@@ -210,7 +210,7 @@ mod tests {
         let mut hash_bytes = vec![0xFF; 64];
         hash_bytes[0] = 1;
         hash_bytes[1] = 64;
-        let result = YamfHash::decode(&hash_bytes);
+        let result = YamfHash::<&[u8]>::decode(&hash_bytes);
 
         match result {
             Err(Error::DecodeError {}) => {}

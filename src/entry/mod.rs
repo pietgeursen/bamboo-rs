@@ -64,7 +64,7 @@ where
 
     fn try_from(entry: Entry<'a, H1, H2, H3>) -> Result<ArrayVec<[u8; 512]>, Self::Error> {
         let mut buff = ArrayVec::<[u8; 512]>::new();
-        entry.encode(&mut buff)?;
+        entry.encode_write(&mut buff)?;
         Ok(buff)
     }
 }
