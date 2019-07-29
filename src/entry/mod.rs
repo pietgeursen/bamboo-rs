@@ -348,7 +348,7 @@ mod tests {
         let entry = decode(entry_bytes).unwrap();
 
         let string = serde_json::to_string(&entry).unwrap();
-        let parsed: Entry<&[u8], &[u8], &[u8]> = serde_json::from_str(&string).unwrap();
+        let parsed: Entry<&[u8]> = serde_json::from_str(&string).unwrap();
 
         assert_eq!(parsed, entry);
     }

@@ -151,7 +151,7 @@ mod tests {
         let mut log: Log<MemoryEntryStore> =
             Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let mut first_entry: Entry<&[u8], &[u8], &[u8]> = remote_log
+        let mut first_entry: Entry<&[u8]> = remote_log
             .store
             .get_entry_ref(1)
             .unwrap()
@@ -253,7 +253,7 @@ mod tests {
         let mut log: Log<MemoryEntryStore> =
             Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let mut first_entry: Entry<&[u8], &[u8], &[u8]> = remote_log
+        let mut first_entry: Entry<&[u8]> = remote_log
             .store
             .get_entry_ref(1)
             .unwrap()
