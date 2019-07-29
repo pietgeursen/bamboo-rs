@@ -1,8 +1,15 @@
+#[cfg(feature = "std")]
+use std::io::{Error as IoError, Write};
+
 use crate::util::hex_serde::{cow_from_hex, hex_from_cow};
 use snafu::{ResultExt, Snafu};
+use ssb_crypto::PUBLICKEYBYTES;
 use std::borrow::Cow;
-use std::io::{Error as IoError, Write};
-use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError as varu64DecodeError};
+use varu64::{
+    decode as varu64_decode, encode as varu64_encode, encoding_length,
+    DecodeError as varu64DecodeError,
+};
+
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -12,6 +19,8 @@ pub enum Error {
     DecodeError,
     #[snafu(display("IO Error when encoding signatory to writer. {}", source))]
     EncodeWriteError { source: IoError },
+    #[snafu(display("Error when encoding signatory."))]
+    EncodeError,
 }
 
 /// A Yamf Signatory holds a public key and a ref to an optional private key.
@@ -30,13 +39,18 @@ pub enum YamfSignatory<'a> {
 
 impl<'a> YamfSignatory<'a> {
     /// Encode this signatory into the `out` byte slice.
-    pub fn encode(&self, out: &mut [u8]) {
-        match self {
-            YamfSignatory::Ed25519(vec, _) => {
+    pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
+        let encoded_size =
+            encoding_length(1u64) + encoding_length(PUBLICKEYBYTES as u64) + PUBLICKEYBYTES;
+
+        match (self, out.len()) {
+            (YamfSignatory::Ed25519(vec, _), buffer_length) if buffer_length >= encoded_size => {
                 varu64_encode(1, &mut out[0..1]);
-                varu64_encode(32, &mut out[1..2]);
+                varu64_encode(PUBLICKEYBYTES as u64, &mut out[1..2]);
                 out[2..].copy_from_slice(&vec);
+                Ok(encoded_size)
             }
+            _ => Err(Error::EncodeError),
         }
     }
 

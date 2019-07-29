@@ -3,10 +3,14 @@ use blake2b_simd::{blake2b, OUTBYTES};
 use core::borrow::Borrow;
 use core::iter::FromIterator;
 use snafu::{ResultExt, Snafu};
+
+#[cfg(feature = "std")]
 use std::io::{Error as IoError, Write};
 
-use crate::util::hex_serde::{cow_from_hex, hex_from_cow};
-use varu64::{decode as varu64_decode, encode as varu64_encode, DecodeError as varu64DecodeError};
+use varu64::{
+    decode as varu64_decode, encode as varu64_encode, encoding_length,
+    DecodeError as varu64DecodeError,
+};
 
 pub const BLAKE2B_HASH_SIZE: usize = OUTBYTES;
 
@@ -18,6 +22,8 @@ pub enum Error {
     DecodeError,
     #[snafu(display("IO Error when encoding hash to writer. {}", source))]
     EncodeWriteError { source: IoError },
+    #[snafu(display("Error when encoding hash."))]
+    EncodeError,
 }
 
 /// Variants of `YamfHash`
@@ -83,18 +89,23 @@ pub fn new_blake2b(bytes: &[u8]) -> YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>> 
 
 impl<T: Borrow<[u8]> + PartialEq + Eq> YamfHash<T> {
     /// Encode a YamfHash into the out buffer.
-    pub fn encode(&self, out: &mut [u8]) {
-        match self {
-            YamfHash::Blake2b(vec) => {
-                varu64_encode(1, &mut out[0..1]);
+    pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
+        let encoded_size =
+            encoding_length(0u64) + encoding_length(BLAKE2B_HASH_SIZE as u64) + BLAKE2B_HASH_SIZE;
+
+        match (self, out.len()) {
+            (YamfHash::Blake2b(vec), len) if len >= encoded_size => {
+                varu64_encode(0, &mut out[0..1]);
                 varu64_encode(BLAKE2B_HASH_SIZE as u64, &mut out[1..2]);
                 out[2..].copy_from_slice(vec.borrow());
+                Ok(encoded_size)
             }
+            _ => Err(Error::EncodeError),
         }
     }
 
     /// Decode the `bytes` as a `YamfHash`
-    pub fn decode<'a>(bytes: &'a [u8]) -> Result<(YamfHash<&'a[u8]>, &'a [u8]), Error> {
+    pub fn decode<'a>(bytes: &'a [u8]) -> Result<(YamfHash<&'a [u8]>, &'a [u8]), Error> {
         match varu64_decode(&bytes) {
             Ok((1, remaining_bytes)) if remaining_bytes.len() >= 65 => {
                 let hash = &remaining_bytes[1..65];
@@ -104,11 +115,9 @@ impl<T: Borrow<[u8]> + PartialEq + Eq> YamfHash<T> {
             _ => Err(Error::DecodeError {}),
         }
     }
-}
 
-#[cfg(feature = "std")]
-impl<T: Borrow<[u8]> + Eq> YamfHash<T> {
     /// Encode a YamfHash into the writer.
+    #[cfg(feature = "std")]
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
         let mut out = [0; 2];
         match self {
@@ -218,11 +227,6 @@ mod tests {
         }
     }
 
-    //If this is gonna be no_std what are the use cases:
-    // - it has to work with arrays or arrayvec
-    // - we can't use Vec<>
-    // - it'd be nice if
-
     #[test]
     fn blake_yamf_hash() {
         let lam = || {
@@ -233,6 +237,7 @@ mod tests {
         };
         let result = lam();
     }
+
     #[test]
     fn blake_yamf_hash_eq() {
         let lam = || {

@@ -1,11 +1,11 @@
 use crate::util::hex_serde::{cow_from_hex, hex_from_cow};
+use arrayvec::ArrayVec;
 use core::borrow::Borrow;
 use snafu::{OptionExt, ResultExt};
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::io::Write;
 use varu64::{decode as varu64_decode, encode_write as varu64_encode_write};
-use arrayvec::ArrayVec;
 
 use ssb_crypto::{verify_detached, PublicKey, Signature as SsbSignature};
 
@@ -17,25 +17,23 @@ pub mod error;
 pub use error::*;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct Entry<'a, H1, H2, H3>
+pub struct Entry<'a, H>
 where
-    H1: Borrow<[u8]> + PartialEq + Eq,
-    H2: Borrow<[u8]> + PartialEq + Eq,
-    H3: Borrow<[u8]> + PartialEq + Eq,
+    H: Borrow<[u8]> + PartialEq + Eq,
 {
     #[serde(rename = "isEndOfFeed")]
     pub is_end_of_feed: bool,
     #[serde(rename = "payloadHash")]
-    pub payload_hash: YamfHash<H1>,
+    pub payload_hash: YamfHash<H>,
     #[serde(rename = "payloadSize")]
     pub payload_size: u64,
     pub author: YamfSignatory<'a>,
     #[serde(rename = "sequenceNumber")]
     pub seq_num: u64,
     #[serde(rename = "backLink")]
-    pub backlink: Option<YamfHash<H2>>,
+    pub backlink: Option<YamfHash<H>>,
     #[serde(rename = "lipmaaLink")]
-    pub lipmaa_link: Option<YamfHash<H3>>,
+    pub lipmaa_link: Option<YamfHash<H>>,
     #[serde(rename = "signature")]
     pub sig: Option<Signature<'a>>,
 }
@@ -45,35 +43,30 @@ pub struct EntryBytes<'a>(
     #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
 );
 
-impl<'a> TryFrom<&'a [u8]> for Entry<'a, &'a[u8], &'a[u8], &'a[u8]>
-{
+impl<'a> TryFrom<&'a [u8]> for Entry<'a, &'a [u8]> {
     type Error = Error;
 
-    fn try_from(bytes: &'a [u8]) -> Result<Entry<'a, &'a[u8], &'a[u8], &'a[u8]>, Self::Error> {
+    fn try_from(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8]>, Self::Error> {
         decode(bytes)
     }
 }
 
-impl<'a, H1, H2, H3> TryFrom<Entry<'a, H1, H2, H3>> for ArrayVec<[u8; 512]> 
+impl<'a, H> TryFrom<Entry<'a, H>> for ArrayVec<[u8; 512]>
 where
-    H1: Borrow<[u8]> + PartialEq + Eq,
-    H2: Borrow<[u8]> + PartialEq + Eq,
-    H3: Borrow<[u8]> + PartialEq + Eq,
+    H: Borrow<[u8]> + PartialEq + Eq,
 {
     type Error = Error;
 
-    fn try_from(entry: Entry<'a, H1, H2, H3>) -> Result<ArrayVec<[u8; 512]>, Self::Error> {
+    fn try_from(entry: Entry<'a, H>) -> Result<ArrayVec<[u8; 512]>, Self::Error> {
         let mut buff = ArrayVec::<[u8; 512]>::new();
         entry.encode_write(&mut buff)?;
         Ok(buff)
     }
 }
 
-impl<'a, H1, H2, H3> Entry<'a, H1, H2, H3>
+impl<'a, H> Entry<'a, H>
 where
-    H1: Borrow<[u8]> + PartialEq + Eq,
-    H2: Borrow<[u8]> + PartialEq + Eq,
-    H3: Borrow<[u8]> + PartialEq + Eq,
+    H: Borrow<[u8]> + PartialEq + Eq,
 {
     pub fn encode(&self) -> EntryBytes {
         let mut buff = Vec::new();
@@ -122,7 +115,6 @@ where
         Ok(())
     }
 
-
     pub fn verify_signature(&mut self) -> Result<bool> {
         //Pluck off the signature before we encode it
         let sig = self.sig.take();
@@ -148,7 +140,7 @@ where
     }
 }
 
-pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a[u8], &'a[u8], &'a[u8]>, Error> {
+pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8]>, Error> {
     // Decode is end of feed
     if bytes.len() == 0 {
         return Err(Error::DecodeInputIsLengthZero);
@@ -207,8 +199,8 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a[u8], &'a[u8], &'a[u8]
 #[cfg(test)]
 mod tests {
     use super::{Entry, Signature, YamfHash, YamfSignatory};
+    use crate::entry::decode;
     use crate::entry_store::MemoryEntryStore;
-    use crate::entry::{decode};
     use crate::{EntryStore, Log};
     use ssb_crypto::{generate_longterm_keypair, init};
     use varu64::encode_write as varu64_encode_write;

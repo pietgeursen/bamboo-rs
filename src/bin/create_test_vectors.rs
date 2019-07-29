@@ -2,8 +2,8 @@
 extern crate serde_json;
 extern crate bamboo_rs;
 
-use bamboo_rs::entry_store::MemoryEntryStore;
 use bamboo_rs::entry::decode;
+use bamboo_rs::entry_store::MemoryEntryStore;
 use bamboo_rs::{lipmaa, Entry, EntryStore, Log};
 use serde_json::Value;
 use ssb_crypto::{generate_longterm_keypair, init};

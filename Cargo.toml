@@ -24,7 +24,7 @@ snafu = "0.4.1"
 varu64 = "0.6.1"
 lipmaa-link = "0.1.0"
 blake2b_simd = "0.5.5"
-ssb-crypto = "0.1.3"
+ssb-crypto = {path = "../ssb-crypto"}
 
 [dev-dependencies]
 criterion = "0.2"

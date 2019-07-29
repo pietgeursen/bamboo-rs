@@ -3,10 +3,10 @@ use ssb_crypto::sign_detached;
 use std::borrow::Cow;
 
 use super::error::*;
-use crate::entry::{Entry, decode};
+use crate::entry::{decode, Entry};
 use crate::entry_store::EntryStore;
 use crate::signature::Signature;
-use crate::yamf_hash::{YamfHash, new_blake2b};
+use crate::yamf_hash::{new_blake2b, YamfHash};
 use crate::yamf_signatory::YamfSignatory;
 use snafu::{ensure, ResultExt};
 
@@ -61,8 +61,7 @@ impl<Store: EntryStore> Log<Store> {
                 .unwrap();
 
             //Make sure we're not trying to publish after the end of a feed.
-            let backlink_entry =
-                decode(&backlink_bytes[..]).context(PreviousDecodeFailed)?;
+            let backlink_entry = decode(&backlink_bytes[..]).context(PreviousDecodeFailed)?;
             ensure!(!backlink_entry.is_end_of_feed, PublishAfterEndOfFeed);
 
             let backlink = new_blake2b(backlink_bytes);
@@ -97,8 +96,8 @@ impl<Store: EntryStore> Log<Store> {
 
 #[cfg(test)]
 mod tests {
-    use crate::entry_store::MemoryEntryStore;
     use crate::entry::decode;
+    use crate::entry_store::MemoryEntryStore;
     use crate::log::{Error, Log};
     use crate::{Entry, EntryStore};
     use ssb_crypto::{generate_longterm_keypair, init};

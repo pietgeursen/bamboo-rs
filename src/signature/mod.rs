@@ -1,10 +1,12 @@
+#[cfg(feature = "std")]
+use std::io::{Error as IoError, Write};
+
 use crate::util::hex_serde::{cow_from_hex, hex_from_cow};
 use snafu::{ResultExt, Snafu};
 use std::borrow::Cow;
-use std::io::{Error as IoError, Write};
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
-    DecodeError as varu64DecodeError,
+    encoding_length, DecodeError as varu64DecodeError,
 };
 
 #[derive(Debug, Snafu)]
@@ -15,6 +17,8 @@ pub enum Error {
     DecodeError,
     #[snafu(display("IO Error when encoding signature to writer. {}", source))]
     EncodeWriteError { source: IoError },
+    #[snafu(display("Error when encoding signature"))]
+    EncodeError,
 }
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
@@ -30,13 +34,21 @@ impl<'a> Signature<'a> {
 
     // This is bit yuck that the out slice needs to be the right length.
     /// Encodes signature into `out`. `out` must be the same length as the inner slice.
-    pub fn encode(&self, out: &mut [u8]) {
+    pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
+        let encoded_size = self.0.len() + encoding_length(self.0.len() as u64);
+
+        if out.len() < encoded_size {
+            return Err(Error::EncodeError);
+        }
+
         varu64_encode(self.0.len() as u64, &mut out[0..]);
 
         out[1..].copy_from_slice(&self.0);
+        Ok(encoded_size)
     }
 
     /// Encodes signature into a writer.
+    #[cfg(feature = "std")]
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
         varu64_encode_write(self.len() as u64, &mut w).context(EncodeWriteError)?;
         w.write_all(&self.0).context(EncodeWriteError)?;

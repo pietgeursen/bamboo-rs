@@ -2,11 +2,13 @@
 extern crate criterion;
 extern crate varu64;
 
+use bamboo_rs::entry::decode;
 use bamboo_rs::entry::Entry;
+use bamboo_rs::entry_store::MemoryEntryStore;
 use bamboo_rs::signature::Signature;
 use bamboo_rs::yamf_hash::YamfHash;
 use bamboo_rs::yamf_signatory::YamfSignatory;
-use bamboo_rs::{EntryStore, Log, MemoryEntryStore};
+use bamboo_rs::{EntryStore, Log};
 
 use ssb_crypto::{generate_longterm_keypair, init};
 
@@ -14,6 +16,7 @@ use varu64::encode_write as varu64_encode_write;
 
 use criterion::Criterion;
 
+#[cfg(feature = "std")]
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("publish", |b| {
         init();
@@ -33,10 +36,10 @@ fn criterion_benchmark(c: &mut Criterion) {
         let payload = [1, 2, 3];
         log.publish(&payload, false).unwrap();
 
-        let entry_bytes = log.store.get_entry_ref(1).unwrap();
+        let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
 
-        let mut entry = Entry::decode(entry_bytes).unwrap();
-        b.iter(|| assert!(entry.verify_signature()))
+        let mut entry = decode(entry_bytes).unwrap();
+        b.iter(|| entry.verify_signature())
     });
     c.bench_function("encode entry into writer", |b| {
         let backlink_bytes = [0xAA; 64];
@@ -95,7 +98,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         sig.encode_write(&mut entry_vec).unwrap();
 
         b.iter(|| {
-            let entry = Entry::decode(&entry_vec).unwrap();
+            let entry = decode(&entry_vec).unwrap();
             assert_eq!(entry.seq_num, seq_num);
         })
     });
