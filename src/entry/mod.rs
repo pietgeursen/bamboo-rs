@@ -259,6 +259,7 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8]>, Error> {
 #[cfg(test)]
 mod tests {
     use super::{Entry, Signature, YamfHash, YamfSignatory};
+    use crate::yamf_hash::BLAKE2B_HASH_SIZE;
     use crate::entry::decode;
     use crate::entry_store::MemoryEntryStore;
     use crate::{EntryStore, Log};
@@ -267,11 +268,11 @@ mod tests {
 
     #[test]
     fn encode_decode_entry() {
-        let backlink_bytes = [0xAA; 64];
+        let backlink_bytes = [0xAA; BLAKE2B_HASH_SIZE];
         let backlink = YamfHash::<&[u8]>::Blake2b(backlink_bytes[..].into());
-        let payload_hash_bytes = [0xAB; 64];
+        let payload_hash_bytes = [0xAB; BLAKE2B_HASH_SIZE];
         let payload_hash = YamfHash::<&[u8]>::Blake2b(payload_hash_bytes[..].into());
-        let lipmaa_link_bytes = [0xAC; 64];
+        let lipmaa_link_bytes = [0xAC; BLAKE2B_HASH_SIZE];
         let lipmaa_link = YamfHash::<&[u8]>::Blake2b(lipmaa_link_bytes[..].into());
         let payload_size = 512;
         let seq_num = 2;

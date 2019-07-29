@@ -13,6 +13,7 @@ use varu64::{
 };
 
 pub const BLAKE2B_HASH_SIZE: usize = OUTBYTES;
+pub const BLAKE2B_NUMERIC_ID: u64 = 0;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -49,6 +50,16 @@ pub fn new_blake2b(bytes: &[u8]) -> YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>> 
     YamfHash::Blake2b(vec_bytes)
 }
 
+impl<'a> From<&'a YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>> for YamfHash<&'a[u8]>{
+    fn from(hash: & YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>) -> YamfHash<&[u8]>{
+        match hash {
+            YamfHash::Blake2b(bytes) => {
+                YamfHash::Blake2b(&bytes[..])
+            }
+        }
+    }
+}
+
 impl<T: Borrow<[u8]> + PartialEq + Eq> YamfHash<T> {
     /// Encode a YamfHash into the out buffer.
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
@@ -56,7 +67,7 @@ impl<T: Borrow<[u8]> + PartialEq + Eq> YamfHash<T> {
 
         match (self, out.len()) {
             (YamfHash::Blake2b(vec), len) if len >= encoded_size => {
-                varu64_encode(0, &mut out[0..1]);
+                varu64_encode(BLAKE2B_NUMERIC_ID, &mut out[0..1]);
                 varu64_encode(BLAKE2B_HASH_SIZE as u64, &mut out[1..2]);
                 out[2..].copy_from_slice(vec.borrow());
                 Ok(encoded_size)
@@ -78,7 +89,7 @@ impl<T: Borrow<[u8]> + PartialEq + Eq> YamfHash<T> {
     /// Decode the `bytes` as a `YamfHash`
     pub fn decode<'a>(bytes: &'a [u8]) -> Result<(YamfHash<&'a [u8]>, &'a [u8]), Error> {
         match varu64_decode(&bytes) {
-            Ok((1, remaining_bytes)) if remaining_bytes.len() >= 65 => {
+            Ok((BLAKE2B_NUMERIC_ID, remaining_bytes)) if remaining_bytes.len() >= 65 => {
                 let hash = &remaining_bytes[1..65];
                 Ok((YamfHash::Blake2b(hash), &remaining_bytes[65..]))
             }
@@ -93,7 +104,7 @@ impl<T: Borrow<[u8]> + PartialEq + Eq> YamfHash<T> {
         let mut out = [0; 2];
         match self {
             YamfHash::Blake2b(vec) => {
-                varu64_encode(1, &mut out[0..1]);
+                varu64_encode(BLAKE2B_NUMERIC_ID, &mut out[0..1]);
                 varu64_encode(BLAKE2B_HASH_SIZE as u64, &mut out[1..2]);
                 w.write_all(&out).context(EncodeWriteError)?;
                 w.write_all(vec.borrow()).context(EncodeWriteError)?;
@@ -114,23 +125,25 @@ mod tests {
 
     #[test]
     fn encode_yamf() {
-        let hash_bytes = vec![0xFF; 4];
+        let hash_bytes = vec![0xFF; 64];
         let yamf_hash = YamfHash::Blake2b(hash_bytes);
-        let expected = [1, 64, 0xFF, 0xFF, 0xFF, 0xFF];
 
-        let mut encoded = vec![0; 6];
-        yamf_hash.encode(&mut encoded);
-        assert_eq!(encoded, expected);
+        let mut encoded = vec![0; 66];
+        let length = yamf_hash.encode(&mut encoded).unwrap();
+        assert_eq!(length, 66);
+        assert_eq!(encoded[0], 0);
+        assert_eq!(encoded[1], 64);
     }
     #[test]
     fn encode_yamf_write() {
-        let hash_bytes = vec![0xFF; 4];
+        let hash_bytes = vec![0xFF; 64];
         let yamf_hash = YamfHash::Blake2b(hash_bytes);
-        let expected = [1, 64, 0xFF, 0xFF, 0xFF, 0xFF];
 
         let mut encoded = Vec::new();
         yamf_hash.encode_write(&mut encoded).unwrap();
-        assert_eq!(encoded, expected);
+        assert_eq!(encoded.len(), 66);
+        assert_eq!(encoded[0], 0);
+        assert_eq!(encoded[1], 64);
     }
     #[test]
     fn encode_yamf_not_enough_bytes_for_varu() {
@@ -241,6 +254,17 @@ mod tests {
         hash_bytes.push(1);
         hash_bytes.push(64);
         YamfHash::Blake2b(hash_bytes);
+    }
+    #[test]
+    fn from_owned_to_ref_yamf_hash() {
+        let lam = || {
+            let mut hash_bytes = ArrayVec::<[u8; BLAKE2B_HASH_SIZE]>::new();
+            hash_bytes.push(1);
+            hash_bytes.push(64);
+            YamfHash::Blake2b(hash_bytes)
+        };
+        let result = lam();
+        let borrowed: YamfHash<&[u8]> = YamfHash::from(&result);
     }
     //    #[test]
     //    fn ref_from_slice_yamf_hash() {

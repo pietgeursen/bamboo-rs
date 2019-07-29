@@ -278,38 +278,40 @@ mod tests {
         }
     }
 
-    //    #[test]
-    //    fn add_checks_lipmaa_link_is_valid() {
-    //        let remote_log = n_valid_entries(3);
-    //
-    //        let mut log: Log<MemoryEntryStore> =
-    //            Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
-    //
-    //        let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
-    //        let mut second_entry: Entry<&[u8], &[u8], &[u8]> = remote_log
-    //            .store
-    //            .get_entry_ref(2)
-    //            .unwrap()
-    //            .unwrap()
-    //            .try_into()
-    //            .unwrap();
-    //
-    //        log.add(&first_entry_bytes, None)
-    //            .expect("error adding first entry, this is not normal");
-    //
-    //        second_entry.lipmaa_link = match second_entry.lipmaa_link {
-    //            Some(YamfHash::Blake2b(_)) => Some(new_blake2b(b"noooo")),
-    //            link => link,
-    //        }; //set the lipmaa link to be zero
-    //
-    //        let entry_bytes: ArrayVec<_> = second_entry.try_into().unwrap();
-    //
-    //        match log.add(&entry_bytes, None) {
-    //            Err(Error::AddEntryLipmaaHashDidNotMatch) => {}
-    //            _ => panic!("Expected err"),
-    //        }
-    //    }
-    //
+    #[test]
+    fn add_checks_lipmaa_link_is_valid() {
+        let remote_log = n_valid_entries(3);
+
+        let mut log: Log<MemoryEntryStore> =
+            Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
+
+        let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
+        let mut second_entry: Entry<&[u8]> = remote_log
+            .store
+            .get_entry_ref(2)
+            .unwrap()
+            .unwrap()
+            .try_into()
+            .unwrap();
+
+        log.add(&first_entry_bytes, None)
+            .expect("error adding first entry, this is not normal");
+
+        let incorrect_lipmaa = new_blake2b(b"noooo");
+
+        second_entry.lipmaa_link = match second_entry.lipmaa_link {
+            Some(YamfHash::Blake2b(_)) => Some(YamfHash::from(&incorrect_lipmaa)),
+            link => link,
+        }; //set the lipmaa link to be zero
+
+        let entry_bytes: ArrayVec<_> = second_entry.try_into().unwrap();
+
+        match log.add(&entry_bytes, None) {
+            Err(Error::AddEntryLipmaaHashDidNotMatch) => {}
+            _ => panic!("Expected err"),
+        }
+    }
+   
     //    #[test]
     //    fn add_checks_backlink_is_valid() {
     //        let remote_log = n_valid_entries(3);
