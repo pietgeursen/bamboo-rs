@@ -3,7 +3,7 @@ use super::Log;
 use crate::entry_store::EntryStore;
 use crate::yamf_hash::{YamfHash, BLAKE2B_HASH_SIZE, new_blake2b};
 use arrayvec::ArrayVec;
-use crate::Entry;
+use crate::entry::{Entry, decode};
 use lipmaa_link::lipmaa;
 use snafu::{ensure, ResultExt};
 
@@ -20,7 +20,7 @@ impl<Store: EntryStore> Log<Store> {
     /// from oldest to newest.
     pub fn add(&mut self, entry_bytes: &[u8], payload: Option<&[u8]>) -> Result<()> {
         // Decode the entry that we want to add.
-        let entry = Entry::<&[u8], &[u8], &[u8]>::decode(entry_bytes).context(AddEntryDecodeFailed)?;
+        let entry = decode(entry_bytes).context(AddEntryDecodeFailed)?;
 
         // If we have the payload, check that its hash and length match what is encoded in the
         // entry.
@@ -58,7 +58,7 @@ impl<Store: EntryStore> Log<Store> {
 
                 // Verify the author of the entry is the same as the author in the lipmaa link entry
                 let lipmaa_entry =
-                    Entry::<&[u8], &[u8], &[u8]>::decode(lipmaa).context(AddEntryDecodeLipmaalinkFromStore)?;
+                    decode(lipmaa).context(AddEntryDecodeLipmaalinkFromStore)?;
 
                 if entry.author != lipmaa_entry.author {
                     return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry);
@@ -99,14 +99,14 @@ impl<Store: EntryStore> Log<Store> {
                 .context(AddEntryGetLastEntryError)?
                 .ok_or(Error::AddEntryGetLastEntryNotFound)?;
 
-            let last_entry = Entry::<&[u8], &[u8], &[u8]>::decode(last_entry_bytes).context(AddEntryDecodeLastEntry)?;
+            let last_entry = decode(last_entry_bytes).context(AddEntryDecodeLastEntry)?;
             ensure!(!last_entry.is_end_of_feed, AddEntryToFeedThatHasEnded)
         }
 
         // Verify the signature.
         let entry_bytes_to_verify = entry_bytes.to_owned();
         let mut entry_to_verify =
-            Entry::<&[u8], &[u8], &[u8]>::decode(&entry_bytes_to_verify).context(AddEntryDecodeEntryBytesForSigning)?;
+            decode(&entry_bytes_to_verify).context(AddEntryDecodeEntryBytesForSigning)?;
         let is_valid = entry_to_verify
             .verify_signature()
             .context(AddEntrySigNotValidError)?;
@@ -124,7 +124,7 @@ mod tests {
     use crate::entry_store::MemoryEntryStore;
     use crate::log::{Error, Log};
     use crate::signature::Signature;
-    use crate::yamf_hash::YamfHash;
+    use crate::yamf_hash::{YamfHash, new_blake2b};
     use crate::yamf_signatory::YamfSignatory;
     use crate::{Entry, EntryStore};
     use ssb_crypto::{generate_longterm_keypair, init, sign_detached, SecretKey};
@@ -152,7 +152,7 @@ mod tests {
         let mut log: Log<MemoryEntryStore> =
             Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let mut first_entry: Entry = remote_log
+        let mut first_entry: Entry<&[u8], &[u8], &[u8]> = remote_log
             .store
             .get_entry_ref(1)
             .unwrap()
@@ -199,7 +199,7 @@ mod tests {
         let backlink = new_blake2b(first_entry);
         let lipmaa_link = new_blake2b(first_entry);
 
-        let mut second_entry = Entry {
+        let mut second_entry = Entry{
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
@@ -254,7 +254,7 @@ mod tests {
         let mut log: Log<MemoryEntryStore> =
             Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let mut first_entry: Entry = remote_log
+        let mut first_entry: Entry<&[u8], &[u8], &[u8]> = remote_log
             .store
             .get_entry_ref(1)
             .unwrap()
@@ -287,7 +287,7 @@ mod tests {
             Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
         let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
-        let mut second_entry: Entry = remote_log
+        let mut second_entry: Entry<&[u8], &[u8], &[u8]> = remote_log
             .store
             .get_entry_ref(2)
             .unwrap()
@@ -320,7 +320,7 @@ mod tests {
 
         let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
 
-        let mut second_entry: Entry = remote_log
+        let mut second_entry: Entry<_,_,_> = remote_log
             .store
             .get_entry_ref(2)
             .unwrap()
@@ -356,7 +356,7 @@ mod tests {
 
         let backlink = new_blake2b(first_entry);
 
-        let mut second_entry = Entry {
+        let mut second_entry = Entry{
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,

@@ -5,6 +5,7 @@ use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::io::Write;
 use varu64::{decode as varu64_decode, encode_write as varu64_encode_write};
+use arrayvec::ArrayVec;
 
 use ssb_crypto::{verify_detached, PublicKey, Signature as SsbSignature};
 
@@ -44,28 +45,29 @@ pub struct EntryBytes<'a>(
     #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
 );
 
-//impl<'a> TryFrom<&'a [u8]> for Entry<'a, &'a[u8], &'a[u8], &'a[u8]>
-//{
-//    type Error = Error;
-//
-//    fn try_from(bytes: &'a [u8]) -> Result<Entry<'a, &'a[u8], &'a[u8], &'a[u8]>, Self::Error> {
-//        Entry::decode(bytes)
-//    }
-//}
-//impl<'a, H1, H2, H3> TryFrom<Entry<'a, H1, H2, H3>> for Vec<u8>
-//where
-//    H1: Borrow<[u8]> + PartialEq + Eq,
-//    H2: Borrow<[u8]> + PartialEq + Eq,
-//    H3: Borrow<[u8]> + PartialEq + Eq,
-//{
-//    type Error = Error;
-//
-//    fn try_from(entry: Entry<'a, H1, H2, H3>) -> Result<Vec<u8>, Self::Error> {
-//        let mut buff = Vec::new();
-//        entry.encode_write(&mut buff)?;
-//        Ok(buff)
-//    }
-//}
+impl<'a> TryFrom<&'a [u8]> for Entry<'a, &'a[u8], &'a[u8], &'a[u8]>
+{
+    type Error = Error;
+
+    fn try_from(bytes: &'a [u8]) -> Result<Entry<'a, &'a[u8], &'a[u8], &'a[u8]>, Self::Error> {
+        decode(bytes)
+    }
+}
+
+impl<'a, H1, H2, H3> TryFrom<Entry<'a, H1, H2, H3>> for ArrayVec<[u8; 512]> 
+where
+    H1: Borrow<[u8]> + PartialEq + Eq,
+    H2: Borrow<[u8]> + PartialEq + Eq,
+    H3: Borrow<[u8]> + PartialEq + Eq,
+{
+    type Error = Error;
+
+    fn try_from(entry: Entry<'a, H1, H2, H3>) -> Result<ArrayVec<[u8; 512]>, Self::Error> {
+        let mut buff = ArrayVec::<[u8; 512]>::new();
+        entry.encode(&mut buff)?;
+        Ok(buff)
+    }
+}
 
 impl<'a, H1, H2, H3> Entry<'a, H1, H2, H3>
 where
@@ -120,61 +122,6 @@ where
         Ok(())
     }
 
-    pub fn decode(bytes: &'a [u8]) -> Result<Entry<'a, &'a[u8], &'a[u8], &'a[u8]>, Error> {
-        // Decode is end of feed
-        if bytes.len() == 0 {
-            return Err(Error::DecodeInputIsLengthZero);
-        }
-        let is_end_of_feed = bytes[0] == 1;
-
-        // Decode the payload hash
-        let (payload_hash, remaining_bytes) =
-            YamfHash::<&[u8]>::decode(&bytes[1..]).context(DecodePayloadHashError)?;
-
-        // Decode the payload size
-        let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
-            .map_err(|(err, _)| err)
-            .context(DecodePayloadSizeError)?;
-
-        // Decode the author
-        let (author, remaining_bytes) =
-            YamfSignatory::decode(remaining_bytes).context(DecodeAuthorError)?;
-
-        // Decode the sequence number
-        let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
-            .map_err(|(err, _)| err)
-            .context(DecodeSeqError)?;
-
-        if seq_num == 0 {
-            return Err(Error::DecodeSeqIsZero);
-        }
-
-        // Decode the backlink and lipmaa links if its not the first sequence
-        let (backlink, lipmaa_link, remaining_bytes) = match seq_num {
-            1 => (None, None, remaining_bytes),
-            _ => {
-                let (backlink, remaining_bytes) =
-                    YamfHash::<&[u8]>::decode(remaining_bytes).context(DecodeBacklinkError)?;
-                let (lipmaa_link, remaining_bytes) =
-                    YamfHash::<&[u8]>::decode(remaining_bytes).context(DecodeLipmaaError)?;
-                (Some(backlink), Some(lipmaa_link), remaining_bytes)
-            }
-        };
-
-        // Decode the signature
-        let (sig, _) = Signature::decode(remaining_bytes).context(DecodeSigError)?;
-
-        Ok(Entry {
-            is_end_of_feed,
-            payload_hash,
-            payload_size,
-            author,
-            seq_num,
-            backlink,
-            lipmaa_link,
-            sig: Some(sig),
-        })
-    }
 
     pub fn verify_signature(&mut self) -> Result<bool> {
         //Pluck off the signature before we encode it
@@ -200,10 +147,68 @@ where
         Ok(result)
     }
 }
+
+pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a[u8], &'a[u8], &'a[u8]>, Error> {
+    // Decode is end of feed
+    if bytes.len() == 0 {
+        return Err(Error::DecodeInputIsLengthZero);
+    }
+    let is_end_of_feed = bytes[0] == 1;
+
+    // Decode the payload hash
+    let (payload_hash, remaining_bytes) =
+        YamfHash::<&[u8]>::decode(&bytes[1..]).context(DecodePayloadHashError)?;
+
+    // Decode the payload size
+    let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
+        .map_err(|(err, _)| err)
+        .context(DecodePayloadSizeError)?;
+
+    // Decode the author
+    let (author, remaining_bytes) =
+        YamfSignatory::decode(remaining_bytes).context(DecodeAuthorError)?;
+
+    // Decode the sequence number
+    let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
+        .map_err(|(err, _)| err)
+        .context(DecodeSeqError)?;
+
+    if seq_num == 0 {
+        return Err(Error::DecodeSeqIsZero);
+    }
+
+    // Decode the backlink and lipmaa links if its not the first sequence
+    let (backlink, lipmaa_link, remaining_bytes) = match seq_num {
+        1 => (None, None, remaining_bytes),
+        _ => {
+            let (backlink, remaining_bytes) =
+                YamfHash::<&[u8]>::decode(remaining_bytes).context(DecodeBacklinkError)?;
+            let (lipmaa_link, remaining_bytes) =
+                YamfHash::<&[u8]>::decode(remaining_bytes).context(DecodeLipmaaError)?;
+            (Some(backlink), Some(lipmaa_link), remaining_bytes)
+        }
+    };
+
+    // Decode the signature
+    let (sig, _) = Signature::decode(remaining_bytes).context(DecodeSigError)?;
+
+    Ok(Entry {
+        is_end_of_feed,
+        payload_hash,
+        payload_size,
+        author,
+        seq_num,
+        backlink,
+        lipmaa_link,
+        sig: Some(sig),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Entry, Signature, YamfHash, YamfSignatory};
     use crate::entry_store::MemoryEntryStore;
+    use crate::entry::{decode};
     use crate::{EntryStore, Log};
     use ssb_crypto::{generate_longterm_keypair, init};
     use varu64::encode_write as varu64_encode_write;
@@ -211,11 +216,11 @@ mod tests {
     #[test]
     fn encode_decode_entry() {
         let backlink_bytes = [0xAA; 64];
-        let backlink = YamfHash::Blake2b(backlink_bytes[..].into());
+        let backlink = YamfHash::<&[u8]>::Blake2b(backlink_bytes[..].into());
         let payload_hash_bytes = [0xAB; 64];
-        let payload_hash = YamfHash::Blake2b(payload_hash_bytes[..].into());
+        let payload_hash = YamfHash::<&[u8]>::Blake2b(payload_hash_bytes[..].into());
         let lipmaa_link_bytes = [0xAC; 64];
-        let lipmaa_link = YamfHash::Blake2b(lipmaa_link_bytes[..].into());
+        let lipmaa_link = YamfHash::<&[u8]>::Blake2b(lipmaa_link_bytes[..].into());
         let payload_size = 512;
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];
@@ -235,7 +240,7 @@ mod tests {
         lipmaa_link.encode_write(&mut entry_vec).unwrap();
         sig.encode_write(&mut entry_vec).unwrap();
 
-        let entry = Entry::decode(&entry_vec).unwrap();
+        let entry = decode(&entry_vec).unwrap();
 
         match entry.payload_hash {
             YamfHash::Blake2b(ref hash) => {
@@ -288,10 +293,10 @@ mod tests {
 
         let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
 
-        let entry = Entry::decode(entry_bytes).unwrap();
+        let entry = decode(entry_bytes).unwrap();
 
         let string = serde_json::to_string(&entry).unwrap();
-        let parsed: Entry = serde_json::from_str(&string).unwrap();
+        let parsed: Entry<&[u8], &[u8], &[u8]> = serde_json::from_str(&string).unwrap();
 
         assert_eq!(parsed, entry);
     }

@@ -3,6 +3,7 @@ extern crate serde_json;
 extern crate bamboo_rs;
 
 use bamboo_rs::entry_store::MemoryEntryStore;
+use bamboo_rs::entry::decode;
 use bamboo_rs::{lipmaa, Entry, EntryStore, Log};
 use serde_json::Value;
 use ssb_crypto::{generate_longterm_keypair, init};
@@ -30,7 +31,7 @@ fn valid_first_entry() -> Value {
 
     let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
 
-    let mut entry = Entry::decode(entry_bytes).unwrap();
+    let mut entry = decode(entry_bytes).unwrap();
     assert!(entry.verify_signature().unwrap());
 
     let encoded_entry = entry.encode();
@@ -56,7 +57,7 @@ fn n_valid_entries(n: u64) -> Value {
             let payload = format!("message number {}", i);
             log.publish(&payload.as_bytes(), false).unwrap();
             let entry_bytes = log.store.get_entry_ref(i).unwrap().unwrap();
-            let entry = Entry::decode(entry_bytes).unwrap();
+            let entry = decode(entry_bytes).unwrap();
             let encoded_entry = entry.encode();
 
             json!({
@@ -94,7 +95,7 @@ fn valid_partially_replicated_feed(n: u64) -> Value {
         .rev()
         .map(|lipmaa_seq| {
             let entry_bytes = log.store.get_entry_ref(*lipmaa_seq).unwrap().unwrap();
-            let entry = Entry::decode(entry_bytes).unwrap();
+            let entry = decode(entry_bytes).unwrap();
             partial_log.add(entry_bytes, None).unwrap();
 
             let encoded_entry = entry.encode();

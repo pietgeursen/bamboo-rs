@@ -125,7 +125,7 @@ impl<T: Borrow<[u8]> + Eq> YamfHash<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Error, YamfHash, YamfHash, BLAKE2B_HASH_SIZE};
+    use super::{Error, YamfHash, BLAKE2B_HASH_SIZE};
     use arrayvec::ArrayVec;
     use blake2b_simd::blake2b;
     use core::convert::TryInto;
