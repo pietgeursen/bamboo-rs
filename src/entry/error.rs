@@ -28,6 +28,8 @@ pub enum Error {
     EncodeSigError { source: SigError },
     #[snafu(display("Error when encoding entry with seq 0 that has backlinks or lipmaalinks"))]
     EncodeEntryHasBacklinksWhenSeqZero,
+    #[snafu(display("Error when encoding entry, buffer was not large enough"))]
+    EncodeBufferLength,
 
     //All the ways decoding an entry can fail
     #[snafu(display("Error when decoding is_end_of_feed: {}", source))]

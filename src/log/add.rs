@@ -1,8 +1,8 @@
 use super::error::*;
 use super::Log;
-use crate::entry::{decode, Entry};
+use crate::entry::{decode};
 use crate::entry_store::EntryStore;
-use crate::yamf_hash::{new_blake2b, YamfHash, BLAKE2B_HASH_SIZE};
+use crate::yamf_hash::{new_blake2b};
 use lipmaa_link::lipmaa;
 use snafu::{ensure, ResultExt};
 

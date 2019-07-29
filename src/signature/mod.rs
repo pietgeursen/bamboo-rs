@@ -47,6 +47,10 @@ impl<'a> Signature<'a> {
         Ok(encoded_size)
     }
 
+    pub fn encoding_length(&self) -> usize {
+        self.0.len() + encoding_length(self.0.len() as u64)
+    }
+
     /// Encodes signature into a writer.
     #[cfg(feature = "std")]
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {

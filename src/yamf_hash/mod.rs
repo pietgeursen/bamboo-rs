@@ -49,49 +49,10 @@ pub fn new_blake2b(bytes: &[u8]) -> YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>> 
     YamfHash::Blake2b(vec_bytes)
 }
 
-//gah fuck ok what's the problem here:
-//
-//What do I want in a perfect world
-//Either, one type that can abstract over whether the data is owned or borrowed like Cow.
-//Or: making two types, one for a ref to a slice and the other that owns the bytes
-//  - we know that the general form of the pattern is _possible_ because of the str + String types.
-//  - one thing to try is to try and get things to compile using str and String
-//  - another thing is try again with the unsafe code and pointers.
-//  - read more about deref, asref and borrow.
-//  - check Sean's convo on signal
-//  - want to try that pattern again
-//  - what are other crates that solve similar problems?
-//      - blake2b
-//      - serde
-//          - serde seems to do things a little differently where the methods doing the decoding
-//          are split by borrow / owned.
-//
-// - what are the use cases for when I want to use borrowed vs owned?
-//  - borrow:
-//      - when we decode from bytes borrowed from a log.
-//  - owned
-//      - when we want to actually hash some bytes and make a new yamfhash or yamfsignature.
-//
-
-//
-//impl<'a> YamfHash<'a> {
-//    /// Encode a YamfHash into the out buffer.
-//    pub fn encode(&self, out: &mut [u8]) {
-//        match self.hash_type {
-//            YamfHashType::Blake2b => {
-//                varu64_encode(1, &mut out[0..1]);
-//                varu64_encode(BLAKE2B_HASH_SIZE as u64, &mut out[1..2]);
-//                out[2..].copy_from_slice(&self.inner);
-//            }
-//        }
-//    }
-//}
-
 impl<T: Borrow<[u8]> + PartialEq + Eq> YamfHash<T> {
     /// Encode a YamfHash into the out buffer.
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
-        let encoded_size =
-            encoding_length(0u64) + encoding_length(BLAKE2B_HASH_SIZE as u64) + BLAKE2B_HASH_SIZE;
+        let encoded_size = self.encoding_length();
 
         match (self, out.len()) {
             (YamfHash::Blake2b(vec), len) if len >= encoded_size => {
@@ -101,6 +62,16 @@ impl<T: Borrow<[u8]> + PartialEq + Eq> YamfHash<T> {
                 Ok(encoded_size)
             }
             _ => Err(Error::EncodeError),
+        }
+    }
+
+    pub fn encoding_length(&self) -> usize {
+        match self {
+            YamfHash::Blake2b(_) => {
+                encoding_length(0u64)
+                    + encoding_length(BLAKE2B_HASH_SIZE as u64)
+                    + BLAKE2B_HASH_SIZE
+            }
         }
     }
 

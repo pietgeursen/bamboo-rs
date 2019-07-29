@@ -10,7 +10,6 @@ use varu64::{
     DecodeError as varu64DecodeError,
 };
 
-
 #[derive(Debug, Snafu)]
 pub enum Error {
     #[snafu(display("Error when decoding var64 for signatory. {}", source))]
@@ -40,8 +39,7 @@ pub enum YamfSignatory<'a> {
 impl<'a> YamfSignatory<'a> {
     /// Encode this signatory into the `out` byte slice.
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
-        let encoded_size =
-            encoding_length(1u64) + encoding_length(PUBLICKEYBYTES as u64) + PUBLICKEYBYTES;
+        let encoded_size = self.encoding_length();
 
         match (self, out.len()) {
             (YamfSignatory::Ed25519(vec, _), buffer_length) if buffer_length >= encoded_size => {
@@ -66,6 +64,14 @@ impl<'a> YamfSignatory<'a> {
                 w.write_all(&out).context(EncodeWriteError)?;
                 w.write_all(&vec).context(EncodeWriteError)?;
                 Ok(())
+            }
+        }
+    }
+
+    pub fn encoding_length(&self) -> usize {
+        match self {
+            YamfSignatory::Ed25519(_, _) => {
+                encoding_length(1u64) + encoding_length(PUBLICKEYBYTES as u64) + PUBLICKEYBYTES
             }
         }
     }
