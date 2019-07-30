@@ -170,7 +170,7 @@ mod tests {
     #[test]
     fn decode_yamf() {
         let mut hash_bytes = vec![0xFF; 67];
-        hash_bytes[0] = 1;
+        hash_bytes[0] = 0;
         hash_bytes[1] = 64;
         hash_bytes[66] = 0xAA;
         let result = YamfHash::<&[u8]>::decode(&hash_bytes);
@@ -266,20 +266,4 @@ mod tests {
         let result = lam();
         let borrowed: YamfHash<&[u8]> = YamfHash::from(&result);
     }
-    //    #[test]
-    //    fn ref_from_slice_yamf_hash() {
-    //        let mut hash_bytes = [0xFFu8; BLAKE2B_HASH_SIZE*2];
-    //        hash_bytes[0] = 1;
-    //        hash_bytes[1] = 64;
-    //
-    //        let other_bytes: [u8; BLAKE2B_HASH_SIZE] = hash_bytes[..BLAKE2B_HASH_SIZE].try_into().unwrap();
-    //
-    //        let result = YamfHash::Blake2b(other_bytes);
-    //
-    //        match result {
-    //            YamfHash::Blake2b(arr) => {
-    //                assert_eq!(arr[0], 1);
-    //            }
-    //        }
-    //    }
 }

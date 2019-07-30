@@ -10,6 +10,9 @@ use varu64::{
     DecodeError as varu64DecodeError,
 };
 
+pub const ED25519_NUMERIC_ID: u64 = 0;
+pub const ED25519_SIZE: usize = PUBLICKEYBYTES;
+
 #[derive(Debug, Snafu)]
 pub enum Error {
     #[snafu(display("Error when decoding var64 for signatory. {}", source))]
@@ -43,8 +46,8 @@ impl<'a> YamfSignatory<'a> {
 
         match (self, out.len()) {
             (YamfSignatory::Ed25519(vec, _), buffer_length) if buffer_length >= encoded_size => {
-                varu64_encode(1, &mut out[0..1]);
-                varu64_encode(PUBLICKEYBYTES as u64, &mut out[1..2]);
+                varu64_encode(ED25519_NUMERIC_ID, &mut out[0..1]);
+                varu64_encode(ED25519_SIZE as u64, &mut out[1..2]);
                 out[2..].copy_from_slice(&vec);
                 Ok(encoded_size)
             }
@@ -59,8 +62,8 @@ impl<'a> YamfSignatory<'a> {
         let mut out = [0; 2];
         match self {
             YamfSignatory::Ed25519(vec, _) => {
-                varu64_encode(1, &mut out[0..1]);
-                varu64_encode(32, &mut out[1..2]);
+                varu64_encode(ED25519_NUMERIC_ID, &mut out[0..1]);
+                varu64_encode(ED25519_SIZE as u64, &mut out[1..2]);
                 w.write_all(&out).context(EncodeWriteError)?;
                 w.write_all(&vec).context(EncodeWriteError)?;
                 Ok(())
@@ -71,7 +74,7 @@ impl<'a> YamfSignatory<'a> {
     pub fn encoding_length(&self) -> usize {
         match self {
             YamfSignatory::Ed25519(_, _) => {
-                encoding_length(1u64) + encoding_length(PUBLICKEYBYTES as u64) + PUBLICKEYBYTES
+                encoding_length(ED25519_NUMERIC_ID) + encoding_length(ED25519_SIZE as u64) + PUBLICKEYBYTES
             }
         }
     }
@@ -82,7 +85,7 @@ impl<'a> YamfSignatory<'a> {
     /// invalid.
     pub fn decode(bytes: &'a [u8]) -> Result<(YamfSignatory<'a>, &'a [u8]), Error> {
         match varu64_decode(&bytes) {
-            Ok((1, remaining_bytes)) if remaining_bytes.len() >= 33 => {
+            Ok((ED25519_NUMERIC_ID, remaining_bytes)) if remaining_bytes.len() >= 33 => {
                 let hash = &remaining_bytes[1..33];
                 Ok((
                     YamfSignatory::Ed25519(hash.into(), None),
@@ -97,39 +100,41 @@ impl<'a> YamfSignatory<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::YamfSignatory;
+    use super::{YamfSignatory, ED25519_SIZE, ED25519_NUMERIC_ID};
 
     #[test]
     fn encode_yamf() {
-        let hash_bytes = vec![0xFF; 4];
+        let hash_bytes = vec![0xFF; ED25519_SIZE];
         let yamf_hash = YamfSignatory::Ed25519(hash_bytes.into(), None);
-        let expected = [1, 32, 0xFF, 0xFF, 0xFF, 0xFF];
+        let expected = [ED25519_NUMERIC_ID as u8, ED25519_SIZE as u8, 0xFF, 0xFF, 0xFF, 0xFF];
 
-        let mut encoded = vec![0; 6];
+        let mut encoded = vec![0; ED25519_SIZE + 2];
         yamf_hash.encode(&mut encoded);
-        assert_eq!(encoded, expected);
+        assert_eq!(encoded[0], ED25519_NUMERIC_ID as u8);
+        assert_eq!(encoded[1], ED25519_SIZE as u8);
     }
     #[test]
     fn encode_yamf_write() {
-        let hash_bytes = vec![0xFF; 4];
+        let hash_bytes = vec![0xFF; ED25519_SIZE];
         let yamf_hash = YamfSignatory::Ed25519(hash_bytes.into(), None);
-        let expected = [1, 32, 0xFF, 0xFF, 0xFF, 0xFF];
+        let expected = [ED25519_NUMERIC_ID as u8, ED25519_SIZE as u8, 0xFF, 0xFF, 0xFF, 0xFF];
 
         let mut encoded = Vec::new();
         yamf_hash.encode_write(&mut encoded).unwrap();
-        assert_eq!(encoded, expected);
+        assert_eq!(encoded[0], ED25519_NUMERIC_ID as u8);
+        assert_eq!(encoded[1], ED25519_SIZE as u8);
     }
     #[test]
     fn decode_yamf() {
         let mut hash_bytes = vec![0xFF; 35];
-        hash_bytes[0] = 1;
-        hash_bytes[1] = 32;
+        hash_bytes[0] = ED25519_NUMERIC_ID as u8;
+        hash_bytes[1] = ED25519_SIZE as u8;
         hash_bytes[34] = 0xAA;
         let result = YamfSignatory::decode(&hash_bytes);
 
         match result {
             Ok((YamfSignatory::Ed25519(vec, _), remaining_bytes)) => {
-                assert_eq!(vec.len(), 32);
+                assert_eq!(vec.len(), ED25519_SIZE);
                 assert_eq!(vec, &hash_bytes[2..34]);
                 assert_eq!(remaining_bytes, &[0xAA]);
             }
