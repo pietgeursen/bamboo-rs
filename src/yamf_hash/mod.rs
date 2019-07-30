@@ -3,6 +3,7 @@ use blake2b_simd::{blake2b, OUTBYTES};
 use core::borrow::Borrow;
 use core::iter::FromIterator;
 use snafu::{ResultExt, Snafu};
+use crate::util::hex_serde::{hex_from_bytes};
 
 #[cfg(feature = "std")]
 use std::io::{Error as IoError, Write};
@@ -29,11 +30,12 @@ pub enum Error {
 
 /// Variants of `YamfHash`
 #[derive(Deserialize, Serialize, Debug, Eq)]
-pub enum YamfHash<T: Borrow<[u8]> + PartialEq + Eq> {
+pub enum YamfHash<T: Borrow<[u8]>> {
+    #[serde(serialize_with = "hex_from_bytes")]
     Blake2b(T),
 }
 
-impl<B1: Borrow<[u8]> + Eq, B2: Borrow<[u8]> + Eq> PartialEq<YamfHash<B1>> for YamfHash<B2> {
+impl<B1: Borrow<[u8]>, B2: Borrow<[u8]>> PartialEq<YamfHash<B1>> for YamfHash<B2> {
     fn eq(&self, other: &YamfHash<B1>) -> bool {
         match (self, other) {
             (YamfHash::Blake2b(vec), YamfHash::Blake2b(vec2)) => vec.borrow() == vec2.borrow(),
@@ -60,7 +62,7 @@ impl<'a> From<&'a YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>> for YamfHash<&'a[
     }
 }
 
-impl<T: Borrow<[u8]> + PartialEq + Eq> YamfHash<T> {
+impl<T: Borrow<[u8]>> YamfHash<T> {
     /// Encode a YamfHash into the out buffer.
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
         let encoded_size = self.encoding_length();

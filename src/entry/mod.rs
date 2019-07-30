@@ -23,7 +23,7 @@ const TAG_BYTE_LENGTH: usize = 1;
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Entry<'a, B>
 where
-    B: Borrow<[u8]> + PartialEq + Eq,
+    B: Borrow<[u8]>,
 {
     #[serde(rename = "isEndOfFeed")]
     pub is_end_of_feed: bool,
@@ -70,7 +70,7 @@ where
 
 impl<'a, B> Entry<'a, B>
 where
-    B: Borrow<[u8]> + PartialEq + Eq,
+    B: Borrow<[u8]>,
 {
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
         if out.len() < self.encoding_length() {
