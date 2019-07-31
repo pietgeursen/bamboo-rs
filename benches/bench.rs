@@ -10,7 +10,8 @@ use bamboo_rs::yamf_hash::{YamfHash, BLAKE2B_HASH_SIZE};
 use bamboo_rs::yamf_signatory::YamfSignatory;
 use bamboo_rs::{EntryStore, Log};
 
-use ssb_crypto::{generate_longterm_keypair, init};
+use ed25519_dalek::Keypair;
+use rand::rngs::OsRng;
 
 use varu64::encode_write as varu64_encode_write;
 
@@ -19,9 +20,14 @@ use criterion::Criterion;
 #[cfg(feature = "std")]
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("publish", |b| {
-        init();
-        let (pub_key, secret_key) = generate_longterm_keypair();
-        let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let keypair: Keypair = Keypair::generate(&mut csprng);
+
+        let mut log = Log::new(
+            MemoryEntryStore::new(),
+            keypair.public.clone(),
+            Some(keypair),
+        );
         let payload = [1, 2, 3];
 
         b.iter(|| {
@@ -30,9 +36,14 @@ fn criterion_benchmark(c: &mut Criterion) {
         })
     });
     c.bench_function("verify", |b| {
-        init();
-        let (pub_key, secret_key) = generate_longterm_keypair();
-        let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let keypair: Keypair = Keypair::generate(&mut csprng);
+
+        let mut log = Log::new(
+            MemoryEntryStore::new(),
+            keypair.public.clone(),
+            Some(keypair),
+        );
         let payload = [1, 2, 3];
         log.publish(&payload, false).unwrap();
 
@@ -53,7 +64,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         let sig_bytes = [0xDD; 128];
         let sig = Signature(sig_bytes[..].into());
         let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519((&author_bytes[..]).into(), None);
+        let author = YamfSignatory::Ed25519(&author_bytes[..], None);
 
         let entry = Entry {
             is_end_of_feed: false,
@@ -83,7 +94,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         let sig_bytes = [0xDD; 128];
         let sig = Signature(sig_bytes[..].into());
         let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519((&author_bytes[..]).into(), None);
+        let author = YamfSignatory::Ed25519(&author_bytes[..], None);
         let mut entry_vec = Vec::new();
 
         entry_vec.push(1u8); // end of feed is true
