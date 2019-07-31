@@ -2,8 +2,8 @@
 use std::io::{Error as IoError, Write};
 
 use crate::util::hex_serde::{cow_from_hex, hex_from_cow};
+use ed25519_dalek::PUBLIC_KEY_LENGTH;
 use snafu::{ResultExt, Snafu};
-use ssb_crypto::PUBLICKEYBYTES;
 use std::borrow::Cow;
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encoding_length,
@@ -11,7 +11,7 @@ use varu64::{
 };
 
 pub const ED25519_NUMERIC_ID: u64 = 0;
-pub const ED25519_SIZE: usize = PUBLICKEYBYTES;
+pub const ED25519_SIZE: usize = PUBLIC_KEY_LENGTH;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -76,7 +76,7 @@ impl<'a> YamfSignatory<'a> {
             YamfSignatory::Ed25519(_, _) => {
                 encoding_length(ED25519_NUMERIC_ID)
                     + encoding_length(ED25519_SIZE as u64)
-                    + PUBLICKEYBYTES
+                    + PUBLIC_KEY_LENGTH
             }
         }
     }

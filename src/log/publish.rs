@@ -1,5 +1,4 @@
 use lipmaa_link::lipmaa;
-use ssb_crypto::sign_detached;
 use std::borrow::Cow;
 
 use super::error::*;
@@ -75,13 +74,14 @@ impl<Store: EntryStore> Log<Store> {
             .encode_write(&mut buff)
             .context(EncodingForSigningFailed)?;
 
-        let secret = self
-            .secret_key
+        let key_pair = self
+            .key_pair
             .as_ref()
             .ok_or(Error::TriedToPublishWithoutSecretKey)?;
 
-        let signature = sign_detached(&buff, secret);
-        let signature = Signature(signature.as_ref().into());
+        let signature = key_pair.sign(&buff);
+        let sig_bytes = &signature.to_bytes()[..];
+        let signature = Signature(sig_bytes.into());
 
         entry.sig = Some(signature);
 
@@ -99,15 +99,21 @@ mod tests {
     use crate::entry::decode;
     use crate::entry_store::MemoryEntryStore;
     use crate::log::{Error, Log};
-    use crate::{Entry, EntryStore};
-    use ssb_crypto::{generate_longterm_keypair, init};
+    use crate::EntryStore;
+
+    use ed25519_dalek::Keypair;
+    use rand::rngs::OsRng;
 
     #[test]
     fn publish_and_verify_signature() {
-        init();
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let keypair: Keypair = Keypair::generate(&mut csprng);
 
-        let (pub_key, secret_key) = generate_longterm_keypair();
-        let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let mut log = Log::new(
+            MemoryEntryStore::new(),
+            keypair.public.clone(),
+            Some(keypair),
+        );
         let payload = [1, 2, 3];
         log.publish(&payload, false).unwrap();
 
@@ -118,10 +124,14 @@ mod tests {
     }
     #[test]
     fn publish_after_an_end_of_feed_message_errors() {
-        init();
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let keypair: Keypair = Keypair::generate(&mut csprng);
 
-        let (pub_key, secret_key) = generate_longterm_keypair();
-        let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let mut log = Log::new(
+            MemoryEntryStore::new(),
+            keypair.public.clone(),
+            Some(keypair),
+        );
         let payload = [1, 2, 3];
 
         //publish an end of feed message.
@@ -134,15 +144,15 @@ mod tests {
     }
     #[test]
     fn publish_without_secret_key_errors() {
-        init();
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let keypair: Keypair = Keypair::generate(&mut csprng);
 
-        let (pub_key, _) = generate_longterm_keypair();
-        let mut log = Log::new(MemoryEntryStore::new(), pub_key, None);
+        let mut log = Log::new(MemoryEntryStore::new(), keypair.public.clone(), None);
         let payload = [1, 2, 3];
 
         match log.publish(&payload, false) {
             Err(Error::TriedToPublishWithoutSecretKey) => {}
-            _ => panic!("expected publish to fail with an error"),
+            e => panic!("expected publish to fail with an error, got: {:?}", e),
         }
     }
 }

@@ -126,15 +126,20 @@ mod tests {
     use crate::yamf_signatory::YamfSignatory;
     use crate::{Entry, EntryStore};
     use arrayvec::ArrayVec;
-    use ssb_crypto::{generate_longterm_keypair, init, sign_detached, SecretKey};
+    use ed25519_dalek::Keypair;
+    use rand::rngs::OsRng;
     use std::borrow::Cow;
     use std::convert::TryInto;
 
     fn n_valid_entries(n: u64) -> Log<MemoryEntryStore> {
-        init();
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let keypair: Keypair = Keypair::generate(&mut csprng);
 
-        let (pub_key, secret_key) = generate_longterm_keypair();
-        let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let mut log = Log::new(
+            MemoryEntryStore::new(),
+            keypair.public.clone(),
+            Some(keypair),
+        );
 
         (1..n).into_iter().for_each(|i| {
             let payload = format!("message number {}", i);
@@ -186,9 +191,14 @@ mod tests {
 
     #[test]
     fn add_checks_entry_not_after_end_of_feed() {
-        let (pub_key, secret_key) = generate_longterm_keypair();
-        let cloned_secret = SecretKey::from_slice(secret_key.as_ref()).unwrap();
-        let mut remote_log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let keypair: Keypair = Keypair::generate(&mut csprng);
+
+        let mut remote_log = Log::new(
+            MemoryEntryStore::new(),
+            keypair.public.clone(),
+            Some(keypair),
+        );
 
         let payload = format!("message number {}", 1);
         remote_log.publish(&payload.as_bytes(), true).unwrap();
@@ -202,7 +212,7 @@ mod tests {
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
-            author: YamfSignatory::Ed25519(pub_key.as_ref().into(), None),
+            author: YamfSignatory::Ed25519(remote_log.public_key.as_ref().into(), None),
             seq_num: 2,
             backlink: Some(backlink),
             lipmaa_link: Some(lipmaa_link),
@@ -212,8 +222,9 @@ mod tests {
         let mut second_entry_bytes = Vec::new();
         second_entry.encode_write(&mut second_entry_bytes).unwrap();
 
-        let signature = sign_detached(&second_entry_bytes, &cloned_secret);
-        let signature = Signature(signature.as_ref().into());
+        let signature = remote_log.key_pair.unwrap().sign(&second_entry_bytes);
+        let sig_bytes = &signature.to_bytes()[..];
+        let signature = Signature(sig_bytes.into());
 
         second_entry.sig = Some(signature);
 
@@ -347,9 +358,14 @@ mod tests {
     }
     #[test]
     fn add_checks_lipmaa_link_is_present() {
-        let (pub_key, secret_key) = generate_longterm_keypair();
-        let cloned_secret = SecretKey::from_slice(secret_key.as_ref()).unwrap();
-        let mut remote_log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let keypair: Keypair = Keypair::generate(&mut csprng);
+
+        let mut remote_log = Log::new(
+            MemoryEntryStore::new(),
+            keypair.public.clone(),
+            Some(keypair),
+        );
 
         let payload = format!("message number {}", 1);
         remote_log.publish(&payload.as_bytes(), false).unwrap();
@@ -362,7 +378,7 @@ mod tests {
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
-            author: YamfSignatory::Ed25519(pub_key.as_ref().into(), None),
+            author: YamfSignatory::Ed25519(remote_log.public_key.as_ref().into(), None),
             seq_num: 2,
             backlink: Some(backlink),
             lipmaa_link: None,
@@ -372,8 +388,9 @@ mod tests {
         let mut second_entry_bytes = Vec::new();
         second_entry.encode_write(&mut second_entry_bytes).unwrap();
 
-        let signature = sign_detached(&second_entry_bytes, &cloned_secret);
-        let signature = Signature(signature.as_ref().into());
+        let signature = remote_log.key_pair.unwrap().sign(&second_entry_bytes);
+        let sig_bytes = &signature.to_bytes()[..];
+        let signature = Signature(sig_bytes.into());
 
         second_entry.sig = Some(signature);
 
@@ -392,9 +409,14 @@ mod tests {
     }
     #[test]
     fn add_checks_back_link_is_present() {
-        let (pub_key, secret_key) = generate_longterm_keypair();
-        let cloned_secret = SecretKey::from_slice(secret_key.as_ref()).unwrap();
-        let mut remote_log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let keypair: Keypair = Keypair::generate(&mut csprng);
+
+        let mut remote_log = Log::new(
+            MemoryEntryStore::new(),
+            keypair.public.clone(),
+            Some(keypair),
+        );
 
         let payload = format!("message number {}", 1);
         remote_log.publish(&payload.as_bytes(), false).unwrap();
@@ -407,7 +429,7 @@ mod tests {
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
-            author: YamfSignatory::Ed25519(pub_key.as_ref().into(), None),
+            author: YamfSignatory::Ed25519(remote_log.public_key.as_ref().into(), None),
             seq_num: 2,
             backlink: None,
             lipmaa_link: Some(lipmaa_link),
@@ -417,8 +439,9 @@ mod tests {
         let mut second_entry_bytes = Vec::new();
         second_entry.encode_write(&mut second_entry_bytes).unwrap();
 
-        let signature = sign_detached(&second_entry_bytes, &cloned_secret);
-        let signature = Signature(signature.as_ref().into());
+        let signature = remote_log.key_pair.unwrap().sign(&second_entry_bytes);
+        let sig_bytes = &signature.to_bytes()[..];
+        let signature = Signature(sig_bytes.into());
 
         second_entry.sig = Some(signature);
 

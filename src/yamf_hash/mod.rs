@@ -122,7 +122,6 @@ mod tests {
     use blake2b_simd::blake2b;
     use core::convert::TryInto;
     use core::iter::FromIterator;
-    use std::io::Write;
 
     #[test]
     fn encode_yamf() {

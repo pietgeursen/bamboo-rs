@@ -54,6 +54,8 @@ pub enum Error {
     DecodeSsbSigError,
     #[snafu(display("Error when decoding pubkey as a ssb pubkey"))]
     DecodeSsbPubKeyError,
+    #[snafu(display("Error when verifying signature as a ssb sig"))]
+    VerifySsbSigError,
 
     #[snafu(display("Error when decoding, input had length 0"))]
     DecodeInputIsLengthZero,

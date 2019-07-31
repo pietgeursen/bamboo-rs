@@ -1,14 +1,14 @@
 use arrayvec::ArrayVec;
 use core::borrow::Borrow;
-use snafu::{OptionExt, ResultExt};
-use std::convert::TryFrom;
+use core::convert::TryFrom;
+use snafu::ResultExt;
 use std::io::Write;
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
     encoding_length as varu64_encoding_length,
 };
 
-use ssb_crypto::{verify_detached, PublicKey, Signature as SsbSignature};
+use ed25519_dalek::{PublicKey as DalekPublicKey, Signature as DalekSignature};
 
 use super::signature::Signature;
 use super::yamf_hash::YamfHash;
@@ -191,17 +191,20 @@ where
         //Pluck off the signature before we encode it
         let sig = self.sig.take();
 
-        let ssb_sig = SsbSignature::from_slice(sig.as_ref().unwrap().0.as_ref())
-            .context(DecodeSsbSigError)?;
+        let ssb_sig = DalekSignature::from_bytes(sig.as_ref().unwrap().0.as_ref())
+            .map_err(|_| Error::DecodeSsbSigError)?;
 
         let mut buff = Vec::new();
         self.encode_write(&mut buff).unwrap();
 
         let result = match self.author {
             YamfSignatory::Ed25519(ref author, _) => {
-                let pub_key =
-                    PublicKey::from_slice(author.as_ref()).context(DecodeSsbPubKeyError)?;
-                verify_detached(&ssb_sig, &buff, &pub_key)
+                let pub_key = DalekPublicKey::from_bytes(author.as_ref())
+                    .map_err(|_| Error::DecodeSsbPubKeyError)?;
+                pub_key
+                    .verify(&buff, &ssb_sig)
+                    .map(|_| true)
+                    .unwrap_or(false)
             }
         };
 
@@ -275,7 +278,8 @@ mod tests {
     use crate::entry_store::MemoryEntryStore;
     use crate::yamf_hash::BLAKE2B_HASH_SIZE;
     use crate::{EntryStore, Log};
-    use ssb_crypto::{generate_longterm_keypair, init};
+    use ed25519_dalek::Keypair;
+    use rand::rngs::OsRng;
     use varu64::encode_write as varu64_encode_write;
 
     #[test]
@@ -349,10 +353,14 @@ mod tests {
 
     #[test]
     fn serde_entry() {
-        init();
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let keypair: Keypair = Keypair::generate(&mut csprng);
 
-        let (pub_key, secret_key) = generate_longterm_keypair();
-        let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+        let mut log = Log::new(
+            MemoryEntryStore::new(),
+            keypair.public.clone(),
+            Some(keypair),
+        );
         let payload = "hello bamboo!";
         log.publish(payload.as_bytes(), false).unwrap();
 

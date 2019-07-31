@@ -15,4 +15,3 @@ pub use entry::Entry;
 pub use entry_store::EntryStore;
 pub use lipmaa_link::lipmaa;
 pub use log::Log;
-pub use ssb_crypto::*;

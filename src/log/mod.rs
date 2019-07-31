@@ -1,5 +1,5 @@
 pub use crate::entry_store::{EntryStore, Error as EntryStoreError};
-use ssb_crypto::{PublicKey, SecretKey};
+use ed25519_dalek::{Keypair, PublicKey};
 
 pub mod add;
 pub mod error;
@@ -12,15 +12,15 @@ pub use publish::*;
 pub struct Log<Store: EntryStore> {
     pub store: Store,
     pub public_key: PublicKey,
-    secret_key: Option<SecretKey>,
+    key_pair: Option<Keypair>,
 }
 
 impl<Store: EntryStore> Log<Store> {
-    pub fn new(store: Store, public_key: PublicKey, secret_key: Option<SecretKey>) -> Log<Store> {
+    pub fn new(store: Store, public_key: PublicKey, key_pair: Option<Keypair>) -> Log<Store> {
         Log {
             store,
             public_key,
-            secret_key,
+            key_pair,
         }
     }
 }

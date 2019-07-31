@@ -1,6 +1,8 @@
 use snafu::Snafu;
 
+#[cfg(feature = "std")]
 pub mod memory_entry_store;
+#[cfg(feature = "std")]
 pub use memory_entry_store::*;
 
 #[derive(Debug, Snafu)]

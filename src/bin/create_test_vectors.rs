@@ -2,12 +2,16 @@ pub fn main() {}
 //#[macro_use]
 //extern crate serde_json;
 //extern crate bamboo_rs;
+//extern crate rand;
 //
 //use bamboo_rs::entry::decode;
 //use bamboo_rs::entry_store::MemoryEntryStore;
 //use bamboo_rs::{lipmaa, Entry, EntryStore, Log};
 //use serde_json::Value;
 //use ssb_crypto::{generate_longterm_keypair, init};
+//
+//use rand::rngs::OsRng;
+//use ed25519_dalek::Keypair;
 //
 //#[cfg_attr(tarpaulin, skip)]
 //pub fn main() {
@@ -25,8 +29,10 @@ pub fn main() {}
 //fn valid_first_entry() -> Value {
 //    init();
 //
-//    let (pub_key, secret_key) = generate_longterm_keypair();
-//    let mut log = Log::new(MemoryEntryStore::new(), pub_key, Some(secret_key));
+//    let mut csprng: OsRng = OsRng::new().unwrap();
+//    let keypair: Keypair = Keypair::generate(&mut csprng);
+//
+//    let mut log = Log::new(MemoryEntryStore::new(), keypair.public.clone(), Some(keypair));
 //    let payload = "hello bamboo!";
 //    log.publish(payload.as_bytes(), false).unwrap();
 //
