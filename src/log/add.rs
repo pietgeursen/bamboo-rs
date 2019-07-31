@@ -156,7 +156,7 @@ mod tests {
         let mut log: Log<MemoryEntryStore> =
             Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let mut first_entry: Entry<&[u8]> = remote_log
+        let mut first_entry: Entry<&[u8], &[u8]> = remote_log
             .store
             .get_entry_ref(1)
             .unwrap()
@@ -212,7 +212,7 @@ mod tests {
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
-            author: YamfSignatory::Ed25519(remote_log.public_key.as_ref().into(), None),
+            author: YamfSignatory::Ed25519(&remote_log.public_key.as_bytes()[..], None),
             seq_num: 2,
             backlink: Some(backlink),
             lipmaa_link: Some(lipmaa_link),
@@ -264,7 +264,7 @@ mod tests {
         let mut log: Log<MemoryEntryStore> =
             Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let mut first_entry: Entry<&[u8]> = remote_log
+        let mut first_entry: Entry<&[u8], &[u8]> = remote_log
             .store
             .get_entry_ref(1)
             .unwrap()
@@ -297,7 +297,7 @@ mod tests {
             Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
         let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
-        let mut second_entry: Entry<&[u8]> = remote_log
+        let mut second_entry: Entry<&[u8], &[u8]> = remote_log
             .store
             .get_entry_ref(2)
             .unwrap()
@@ -332,7 +332,7 @@ mod tests {
 
         let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
 
-        let mut second_entry: Entry<_> = remote_log
+        let mut second_entry: Entry<_, _> = remote_log
             .store
             .get_entry_ref(2)
             .unwrap()
@@ -378,7 +378,7 @@ mod tests {
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
-            author: YamfSignatory::Ed25519(remote_log.public_key.as_ref().into(), None),
+            author: YamfSignatory::Ed25519(&remote_log.public_key.as_bytes()[..], None),
             seq_num: 2,
             backlink: Some(backlink),
             lipmaa_link: None,
@@ -429,7 +429,7 @@ mod tests {
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
-            author: YamfSignatory::Ed25519(remote_log.public_key.as_ref().into(), None),
+            author: YamfSignatory::Ed25519(&remote_log.public_key.as_ref()[..], None),
             seq_num: 2,
             backlink: None,
             lipmaa_link: Some(lipmaa_link),

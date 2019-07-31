@@ -20,9 +20,10 @@ pub use error::*;
 const TAG_BYTE_LENGTH: usize = 1;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct Entry<'a, B>
+pub struct Entry<'a, B, S>
 where
     B: Borrow<[u8]>,
+    S: Borrow<[u8]>,
 {
     #[serde(rename = "isEndOfFeed")]
     pub is_end_of_feed: bool,
@@ -31,7 +32,8 @@ where
     pub payload_hash: YamfHash<B>,
     #[serde(rename = "payloadSize")]
     pub payload_size: u64,
-    pub author: YamfSignatory<'a>,
+    #[serde(bound(deserialize = "S: From<Vec<u8>>"))]
+    pub author: YamfSignatory<'a, S>,
     #[serde(rename = "sequenceNumber")]
     pub seq_num: u64,
     #[serde(rename = "backLink")]
@@ -47,30 +49,32 @@ where
 //    #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
 //);
 
-impl<'a> TryFrom<&'a [u8]> for Entry<'a, &'a [u8]> {
+impl<'a> TryFrom<&'a [u8]> for Entry<'a, &'a [u8], &'a [u8]> {
     type Error = Error;
 
-    fn try_from(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8]>, Self::Error> {
+    fn try_from(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8]>, Self::Error> {
         decode(bytes)
     }
 }
 
-impl<'a, B> TryFrom<Entry<'a, B>> for ArrayVec<[u8; 512]>
+impl<'a, B, S> TryFrom<Entry<'a, B, S>> for ArrayVec<[u8; 512]>
 where
-    B: Borrow<[u8]> + PartialEq + Eq,
+    B: Borrow<[u8]>,
+    S: Borrow<[u8]>,
 {
     type Error = Error;
 
-    fn try_from(entry: Entry<'a, B>) -> Result<ArrayVec<[u8; 512]>, Self::Error> {
+    fn try_from(entry: Entry<'a, B, S>) -> Result<ArrayVec<[u8; 512]>, Self::Error> {
         let mut buff = ArrayVec::<[u8; 512]>::new();
         entry.encode_write(&mut buff)?;
         Ok(buff)
     }
 }
 
-impl<'a, B> Entry<'a, B>
+impl<'a, B, S> Entry<'a, B, S>
 where
     B: Borrow<[u8]>,
+    S: Borrow<[u8]>,
 {
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
         if out.len() < self.encoding_length() {
@@ -199,7 +203,7 @@ where
 
         let result = match self.author {
             YamfSignatory::Ed25519(ref author, _) => {
-                let pub_key = DalekPublicKey::from_bytes(author.as_ref())
+                let pub_key = DalekPublicKey::from_bytes(author.borrow())
                     .map_err(|_| Error::DecodeSsbPubKeyError)?;
                 pub_key
                     .verify(&buff, &ssb_sig)
@@ -215,7 +219,7 @@ where
     }
 }
 
-pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8]>, Error> {
+pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8]>, Error> {
     // Decode is end of feed
     if bytes.len() == 0 {
         return Err(Error::DecodeInputIsLengthZero);
@@ -233,7 +237,7 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8]>, Error> {
 
     // Decode the author
     let (author, remaining_bytes) =
-        YamfSignatory::decode(remaining_bytes).context(DecodeAuthorError)?;
+        YamfSignatory::<&[u8]>::decode(remaining_bytes).context(DecodeAuthorError)?;
 
     // Decode the sequence number
     let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
@@ -295,7 +299,7 @@ mod tests {
         let sig_bytes = [0xDD; 128];
         let sig = Signature(sig_bytes[..].into());
         let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519((&author_bytes[..]).into(), None);
+        let author = YamfSignatory::Ed25519(&author_bytes[..], None);
 
         let mut entry_vec = Vec::new();
 
@@ -369,7 +373,7 @@ mod tests {
         let entry = decode(entry_bytes).unwrap();
 
         let string = serde_json::to_string(&entry).unwrap();
-        let parsed: Entry<Vec<u8>> = serde_json::from_str(&string).unwrap();
+        let parsed: Entry<Vec<u8>, Vec<u8>> = serde_json::from_str(&string).unwrap();
 
         assert_eq!(parsed.payload_hash, entry.payload_hash);
     }

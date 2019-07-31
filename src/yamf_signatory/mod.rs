@@ -1,10 +1,11 @@
+use core::borrow::Borrow;
 #[cfg(feature = "std")]
 use std::io::{Error as IoError, Write};
 
-use crate::util::hex_serde::{cow_from_hex, hex_from_cow};
+use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
+use arrayvec::ArrayVec;
 use ed25519_dalek::PUBLIC_KEY_LENGTH;
 use snafu::{ResultExt, Snafu};
-use std::borrow::Cow;
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encoding_length,
     DecodeError as varu64DecodeError,
@@ -31,15 +32,25 @@ pub enum Error {
 /// Ed25519 keys at the moment but more will be added in time.
 ///
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
-pub enum YamfSignatory<'a> {
+pub enum YamfSignatory<'a, T: Borrow<[u8]>> {
     /// Tuple of public and optional secret key
     Ed25519(
-        #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
+        #[serde(deserialize_with = "vec_from_hex", serialize_with = "hex_from_bytes")]
+        #[serde(bound(deserialize = "T: From<Vec<u8>>"))]
+        T,
         #[serde(skip)] Option<&'a [u8]>,
     ),
 }
 
-impl<'a> YamfSignatory<'a> {
+impl<'a> From<&'a YamfSignatory<'a, ArrayVec<[u8; ED25519_SIZE]>>> for YamfSignatory<'a, &'a [u8]> {
+    fn from(hash: &'a YamfSignatory<ArrayVec<[u8; ED25519_SIZE]>>) -> YamfSignatory<'a, &'a [u8]> {
+        match hash {
+            YamfSignatory::Ed25519(bytes, secret) => YamfSignatory::Ed25519(&bytes[..], *secret),
+        }
+    }
+}
+
+impl<'a, T: Borrow<[u8]>> YamfSignatory<'a, T> {
     /// Encode this signatory into the `out` byte slice.
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
         let encoded_size = self.encoding_length();
@@ -48,7 +59,7 @@ impl<'a> YamfSignatory<'a> {
             (YamfSignatory::Ed25519(vec, _), buffer_length) if buffer_length >= encoded_size => {
                 varu64_encode(ED25519_NUMERIC_ID, &mut out[0..1]);
                 varu64_encode(ED25519_SIZE as u64, &mut out[1..2]);
-                out[2..].copy_from_slice(&vec);
+                out[2..].copy_from_slice(vec.borrow());
                 Ok(encoded_size)
             }
             _ => Err(Error::EncodeError),
@@ -58,6 +69,7 @@ impl<'a> YamfSignatory<'a> {
     /// Encode this signatory into a Write.
     ///
     /// Returns errors if the Writer errors.
+    #[cfg(feature = "std")]
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
         let mut out = [0; 2];
         match self {
@@ -65,7 +77,7 @@ impl<'a> YamfSignatory<'a> {
                 varu64_encode(ED25519_NUMERIC_ID, &mut out[0..1]);
                 varu64_encode(ED25519_SIZE as u64, &mut out[1..2]);
                 w.write_all(&out).context(EncodeWriteError)?;
-                w.write_all(&vec).context(EncodeWriteError)?;
+                w.write_all(vec.borrow()).context(EncodeWriteError)?;
                 Ok(())
             }
         }
@@ -76,7 +88,7 @@ impl<'a> YamfSignatory<'a> {
             YamfSignatory::Ed25519(_, _) => {
                 encoding_length(ED25519_NUMERIC_ID)
                     + encoding_length(ED25519_SIZE as u64)
-                    + PUBLIC_KEY_LENGTH
+                    + ED25519_SIZE
             }
         }
     }
@@ -85,7 +97,7 @@ impl<'a> YamfSignatory<'a> {
     ///
     /// Returns errors if the provided byte slice was not long enough or if the incoding was
     /// invalid.
-    pub fn decode(bytes: &'a [u8]) -> Result<(YamfSignatory<'a>, &'a [u8]), Error> {
+    pub fn decode(bytes: &'a [u8]) -> Result<(YamfSignatory<'a, &'a [u8]>, &'a [u8]), Error> {
         match varu64_decode(&bytes) {
             Ok((ED25519_NUMERIC_ID, remaining_bytes)) if remaining_bytes.len() >= 33 => {
                 let hash = &remaining_bytes[1..33];
@@ -107,7 +119,7 @@ mod tests {
     #[test]
     fn encode_yamf() {
         let hash_bytes = vec![0xFF; ED25519_SIZE];
-        let yamf_hash = YamfSignatory::Ed25519(hash_bytes.into(), None);
+        let yamf_hash = YamfSignatory::Ed25519(&hash_bytes[..], None);
         let expected = [
             ED25519_NUMERIC_ID as u8,
             ED25519_SIZE as u8,
@@ -125,7 +137,7 @@ mod tests {
     #[test]
     fn encode_yamf_write() {
         let hash_bytes = vec![0xFF; ED25519_SIZE];
-        let yamf_hash = YamfSignatory::Ed25519(hash_bytes.into(), None);
+        let yamf_hash = YamfSignatory::Ed25519(&hash_bytes[..], None);
         let expected = [
             ED25519_NUMERIC_ID as u8,
             ED25519_SIZE as u8,
@@ -146,7 +158,7 @@ mod tests {
         hash_bytes[0] = ED25519_NUMERIC_ID as u8;
         hash_bytes[1] = ED25519_SIZE as u8;
         hash_bytes[34] = 0xAA;
-        let result = YamfSignatory::decode(&hash_bytes);
+        let result = YamfSignatory::<&[u8]>::decode(&hash_bytes);
 
         match result {
             Ok((YamfSignatory::Ed25519(vec, _), remaining_bytes)) => {

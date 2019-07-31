@@ -1,5 +1,4 @@
 use lipmaa_link::lipmaa;
-use std::borrow::Cow;
 
 use super::error::*;
 use crate::entry::{decode, Entry};
@@ -15,8 +14,8 @@ impl<Store: EntryStore> Log<Store> {
     pub fn publish(&mut self, payload: &[u8], is_end_of_feed: bool) -> Result<()> {
         // get the last seq number
         let last_seq_num = self.store.get_last_seq();
-        let author: YamfSignatory =
-            YamfSignatory::Ed25519(Cow::Owned(self.public_key.as_ref().to_vec()), None);
+
+        let author = YamfSignatory::<&[u8]>::Ed25519(&self.public_key.as_bytes()[..], None);
 
         // calc the payload hash
         let payload_hash = new_blake2b(payload);
