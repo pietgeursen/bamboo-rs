@@ -6,7 +6,7 @@ use bamboo_rs::entry::decode;
 use bamboo_rs::entry::Entry;
 use bamboo_rs::entry_store::MemoryEntryStore;
 use bamboo_rs::signature::Signature;
-use bamboo_rs::yamf_hash::YamfHash;
+use bamboo_rs::yamf_hash::{YamfHash, BLAKE2B_HASH_SIZE};
 use bamboo_rs::yamf_signatory::YamfSignatory;
 use bamboo_rs::{EntryStore, Log};
 
@@ -42,18 +42,18 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| entry.verify_signature())
     });
     c.bench_function("encode entry into writer", |b| {
-        let backlink_bytes = [0xAA; 64];
-        let backlink = YamfHash::Blake2b(backlink_bytes[..].into());
-        let payload_hash_bytes = [0xAB; 64];
-        let payload_hash = YamfHash::Blake2b(payload_hash_bytes[..].into());
-        let lipmaa_link_bytes = [0xAC; 64];
-        let lipmaa_link = YamfHash::Blake2b(lipmaa_link_bytes[..].into());
+        let backlink_bytes = [0xAA; BLAKE2B_HASH_SIZE];
+        let backlink = YamfHash::<&[u8]>::Blake2b(backlink_bytes[..].into());
+        let payload_hash_bytes = [0xAB; BLAKE2B_HASH_SIZE];
+        let payload_hash = YamfHash::<&[u8]>::Blake2b(payload_hash_bytes[..].into());
+        let lipmaa_link_bytes = [0xAC; BLAKE2B_HASH_SIZE];
+        let lipmaa_link = YamfHash::<&[u8]>::Blake2b(lipmaa_link_bytes[..].into());
         let payload_size = 512;
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];
         let sig = Signature(sig_bytes[..].into());
         let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519(author_bytes[..].into(), None);
+        let author = YamfSignatory::Ed25519((&author_bytes[..]).into(), None);
 
         let entry = Entry {
             is_end_of_feed: false,
@@ -72,19 +72,18 @@ fn criterion_benchmark(c: &mut Criterion) {
         })
     });
     c.bench_function("decode entry", |b| {
-        let backlink_bytes = [0xAA; 64];
-        let backlink = YamfHash::Blake2b(backlink_bytes[..].into());
-        let payload_hash_bytes = [0xAB; 64];
-        let payload_hash = YamfHash::Blake2b(payload_hash_bytes[..].into());
-        let lipmaa_link_bytes = [0xAC; 64];
-        let lipmaa_link = YamfHash::Blake2b(lipmaa_link_bytes[..].into());
+        let backlink_bytes = [0xAA; BLAKE2B_HASH_SIZE];
+        let backlink = YamfHash::<&[u8]>::Blake2b(backlink_bytes[..].into());
+        let payload_hash_bytes = [0xAB; BLAKE2B_HASH_SIZE];
+        let payload_hash = YamfHash::<&[u8]>::Blake2b(payload_hash_bytes[..].into());
+        let lipmaa_link_bytes = [0xAC; BLAKE2B_HASH_SIZE];
+        let lipmaa_link = YamfHash::<&[u8]>::Blake2b(lipmaa_link_bytes[..].into());
         let payload_size = 512;
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];
         let sig = Signature(sig_bytes[..].into());
         let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519(author_bytes[..].into(), None);
-
+        let author = YamfSignatory::Ed25519((&author_bytes[..]).into(), None);
         let mut entry_vec = Vec::new();
 
         entry_vec.push(1u8); // end of feed is true
