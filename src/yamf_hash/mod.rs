@@ -1,9 +1,9 @@
+use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
 use arrayvec::ArrayVec;
 use blake2b_simd::{blake2b, OUTBYTES};
 use core::borrow::Borrow;
 use core::iter::FromIterator;
 use snafu::{ResultExt, Snafu};
-use crate::util::hex_serde::{vec_from_hex, hex_from_bytes};
 
 #[cfg(feature = "std")]
 use std::io::{Error as IoError, Write};
@@ -53,12 +53,10 @@ pub fn new_blake2b(bytes: &[u8]) -> YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>> 
     YamfHash::Blake2b(vec_bytes)
 }
 
-impl<'a> From<&'a YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>> for YamfHash<&'a[u8]>{
-    fn from(hash: & YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>) -> YamfHash<&[u8]>{
+impl<'a> From<&'a YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>> for YamfHash<&'a [u8]> {
+    fn from(hash: &YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>) -> YamfHash<&[u8]> {
         match hash {
-            YamfHash::Blake2b(bytes) => {
-                YamfHash::Blake2b(&bytes[..])
-            }
+            YamfHash::Blake2b(bytes) => YamfHash::Blake2b(&bytes[..]),
         }
     }
 }

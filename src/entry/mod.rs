@@ -4,8 +4,7 @@ use snafu::{OptionExt, ResultExt};
 use std::convert::TryFrom;
 use std::io::Write;
 use varu64::{
-    decode as varu64_decode, encode_write as varu64_encode_write,
-    encode as varu64_encode,
+    decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
     encoding_length as varu64_encoding_length,
 };
 
@@ -75,7 +74,7 @@ where
 {
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
         if out.len() < self.encoding_length() {
-            return Err(Error::EncodeBufferLength)
+            return Err(Error::EncodeBufferLength);
         }
 
         let mut next_byte_num = 0;
@@ -88,16 +87,26 @@ where
         }
         next_byte_num += 1;
 
-        next_byte_num += self.payload_hash.encode(&mut out[next_byte_num..]).context(EncodePayloadHashError)?;
+        next_byte_num += self
+            .payload_hash
+            .encode(&mut out[next_byte_num..])
+            .context(EncodePayloadHashError)?;
         next_byte_num += varu64_encode(self.payload_size, &mut out[next_byte_num..]);
-        next_byte_num += self.author.encode(&mut out[next_byte_num..]).context(EncodeAuthorError)?;
+        next_byte_num += self
+            .author
+            .encode(&mut out[next_byte_num..])
+            .context(EncodeAuthorError)?;
         next_byte_num += varu64_encode(self.seq_num, &mut out[next_byte_num..]);
 
         // Encode the backlink and lipmaa links if its not the first sequence
         next_byte_num = match (self.seq_num, &self.backlink, &self.lipmaa_link) {
             (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
-                next_byte_num += backlink.encode(&mut out[next_byte_num..]).context(EncodeBacklinkError)?;
-                next_byte_num += lipmaa_link.encode(&mut out[next_byte_num..]).context(EncodeLipmaaError)?;
+                next_byte_num += backlink
+                    .encode(&mut out[next_byte_num..])
+                    .context(EncodeBacklinkError)?;
+                next_byte_num += lipmaa_link
+                    .encode(&mut out[next_byte_num..])
+                    .context(EncodeLipmaaError)?;
                 Ok(next_byte_num)
             }
             (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
@@ -106,7 +115,9 @@ where
 
         // Encode the signature
         if let Some(ref sig) = self.sig {
-            next_byte_num += sig.encode(&mut out[next_byte_num..]).context(EncodeSigError)?;
+            next_byte_num += sig
+                .encode(&mut out[next_byte_num..])
+                .context(EncodeSigError)?;
         }
 
         Ok(next_byte_num as usize)
@@ -260,9 +271,9 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8]>, Error> {
 #[cfg(test)]
 mod tests {
     use super::{Entry, Signature, YamfHash, YamfSignatory};
-    use crate::yamf_hash::BLAKE2B_HASH_SIZE;
     use crate::entry::decode;
     use crate::entry_store::MemoryEntryStore;
+    use crate::yamf_hash::BLAKE2B_HASH_SIZE;
     use crate::{EntryStore, Log};
     use ssb_crypto::{generate_longterm_keypair, init};
     use varu64::encode_write as varu64_encode_write;

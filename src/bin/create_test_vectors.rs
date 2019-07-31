@@ -1,4 +1,4 @@
-pub fn main(){}
+pub fn main() {}
 //#[macro_use]
 //extern crate serde_json;
 //extern crate bamboo_rs;
