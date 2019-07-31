@@ -3,7 +3,7 @@ use blake2b_simd::{blake2b, OUTBYTES};
 use core::borrow::Borrow;
 use core::iter::FromIterator;
 use snafu::{ResultExt, Snafu};
-use crate::util::hex_serde::{hex_from_bytes};
+use crate::util::hex_serde::{vec_from_hex, hex_from_bytes};
 
 #[cfg(feature = "std")]
 use std::io::{Error as IoError, Write};
@@ -31,7 +31,8 @@ pub enum Error {
 /// Variants of `YamfHash`
 #[derive(Deserialize, Serialize, Debug, Eq)]
 pub enum YamfHash<T: Borrow<[u8]>> {
-    #[serde(serialize_with = "hex_from_bytes")]
+    #[serde(serialize_with = "hex_from_bytes", deserialize_with = "vec_from_hex")]
+    #[serde(bound(deserialize = "T: From<Vec<u8>>"))]
     Blake2b(T),
 }
 

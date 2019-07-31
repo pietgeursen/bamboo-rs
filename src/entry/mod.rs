@@ -28,6 +28,7 @@ where
     #[serde(rename = "isEndOfFeed")]
     pub is_end_of_feed: bool,
     #[serde(rename = "payloadHash")]
+    #[serde(bound(deserialize = "B: From<Vec<u8>>"))]
     pub payload_hash: YamfHash<B>,
     #[serde(rename = "payloadSize")]
     pub payload_size: u64,
@@ -349,8 +350,8 @@ mod tests {
         let entry = decode(entry_bytes).unwrap();
 
         let string = serde_json::to_string(&entry).unwrap();
-        let parsed: Entry<&[u8]> = serde_json::from_str(&string).unwrap();
+        let parsed: Entry<Vec<u8>> = serde_json::from_str(&string).unwrap();
 
-        assert_eq!(parsed, entry);
+        assert_eq!(parsed.payload_hash, entry.payload_hash);
     }
 }
