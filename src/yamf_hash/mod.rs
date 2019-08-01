@@ -23,6 +23,7 @@ pub enum Error {
     #[snafu(display("Error when decoding hash."))]
     DecodeError,
     #[snafu(display("IO Error when encoding hash to writer. {}", source))]
+    #[cfg(feature = "std")]
     EncodeWriteError { source: IoError },
     #[snafu(display("Error when encoding hash."))]
     EncodeError,
@@ -70,7 +71,7 @@ impl<T: Borrow<[u8]>> YamfHash<T> {
             (YamfHash::Blake2b(vec), len) if len >= encoded_size => {
                 varu64_encode(BLAKE2B_NUMERIC_ID, &mut out[0..1]);
                 varu64_encode(BLAKE2B_HASH_SIZE as u64, &mut out[1..2]);
-                out[2..].copy_from_slice(vec.borrow());
+                out[2..encoded_size].copy_from_slice(vec.borrow());
                 Ok(encoded_size)
             }
             _ => Err(Error::EncodeError),
@@ -120,7 +121,6 @@ mod tests {
     use super::{Error, YamfHash, BLAKE2B_HASH_SIZE};
     use arrayvec::ArrayVec;
     use blake2b_simd::blake2b;
-    use core::convert::TryInto;
     use core::iter::FromIterator;
 
     #[test]
@@ -219,7 +219,7 @@ mod tests {
                 ArrayVec::from_iter(hash_bytes.as_bytes().iter().map(|b| *b));
             YamfHash::Blake2b(vec_bytes)
         };
-        let result = lam();
+        let _ = lam();
     }
 
     #[test]
@@ -246,7 +246,7 @@ mod tests {
             hash_bytes.push(64);
             YamfHash::Blake2b(hash_bytes)
         };
-        let result = lam();
+        let _ = lam();
     }
     #[test]
     fn ref_yamf_hash() {
@@ -264,6 +264,6 @@ mod tests {
             YamfHash::Blake2b(hash_bytes)
         };
         let result = lam();
-        let borrowed: YamfHash<&[u8]> = YamfHash::from(&result);
+        let _: YamfHash<&[u8]> = YamfHash::from(&result);
     }
 }

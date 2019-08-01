@@ -121,14 +121,13 @@ impl<Store: EntryStore> Log<Store> {
 mod tests {
     use crate::entry_store::MemoryEntryStore;
     use crate::log::{Error, Log};
-    use crate::signature::Signature;
+    use crate::signature::{Signature, ED25519_SIGNATURE_SIZE};
     use crate::yamf_hash::{new_blake2b, YamfHash};
     use crate::yamf_signatory::YamfSignatory;
     use crate::{Entry, EntryStore};
     use arrayvec::ArrayVec;
     use ed25519_dalek::Keypair;
     use rand::rngs::OsRng;
-    use std::borrow::Cow;
     use std::convert::TryInto;
 
     fn n_valid_entries(n: u64) -> Log<MemoryEntryStore> {
@@ -156,7 +155,7 @@ mod tests {
         let mut log: Log<MemoryEntryStore> =
             Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let mut first_entry: Entry<&[u8], &[u8]> = remote_log
+        let mut first_entry: Entry<&[u8], &[u8], &[u8]> = remote_log
             .store
             .get_entry_ref(1)
             .unwrap()
@@ -208,7 +207,7 @@ mod tests {
         let backlink = new_blake2b(first_entry);
         let lipmaa_link = new_blake2b(first_entry);
 
-        let mut second_entry = Entry {
+        let mut second_entry = Entry::<_,_,&[u8]> {
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
@@ -264,7 +263,7 @@ mod tests {
         let mut log: Log<MemoryEntryStore> =
             Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
-        let mut first_entry: Entry<&[u8], &[u8]> = remote_log
+        let mut first_entry: Entry<&[u8], &[u8], &[u8]> = remote_log
             .store
             .get_entry_ref(1)
             .unwrap()
@@ -272,11 +271,10 @@ mod tests {
             .try_into()
             .unwrap();
 
+        let incorrect_sig_bytes = [0u8; ED25519_SIGNATURE_SIZE];
         first_entry.sig = match first_entry.sig {
-            Some(Signature(mut bytes)) => {
-                let mut_bytes = bytes.to_mut();
-                mut_bytes[0] ^= mut_bytes[0];
-                Some(Signature(Cow::Owned(mut_bytes.to_owned())))
+            Some(Signature(_)) => {
+                Some(Signature(&incorrect_sig_bytes))
             }
             link => link,
         };
@@ -297,7 +295,7 @@ mod tests {
             Log::new(MemoryEntryStore::new(), remote_log.public_key, None);
 
         let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
-        let mut second_entry: Entry<&[u8], &[u8]> = remote_log
+        let mut second_entry: Entry<&[u8], &[u8], &[u8]> = remote_log
             .store
             .get_entry_ref(2)
             .unwrap()
@@ -332,7 +330,7 @@ mod tests {
 
         let first_entry_bytes = remote_log.store.get_entry(1).unwrap().unwrap();
 
-        let mut second_entry: Entry<_, _> = remote_log
+        let mut second_entry: Entry<_, _, _> = remote_log
             .store
             .get_entry_ref(2)
             .unwrap()
@@ -374,7 +372,7 @@ mod tests {
 
         let backlink = new_blake2b(first_entry);
 
-        let mut second_entry = Entry {
+        let mut second_entry = Entry::<_,_, &[u8]> {
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
@@ -425,7 +423,7 @@ mod tests {
 
         let lipmaa_link = new_blake2b(first_entry);
 
-        let mut second_entry = Entry {
+        let mut second_entry = Entry::<_, _, &[u8]> {
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,

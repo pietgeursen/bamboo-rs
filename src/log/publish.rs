@@ -3,7 +3,7 @@ use lipmaa_link::lipmaa;
 use super::error::*;
 use crate::entry::{decode, Entry};
 use crate::entry_store::EntryStore;
-use crate::signature::Signature;
+use crate::signature::{Signature};
 use crate::yamf_hash::new_blake2b;
 use crate::yamf_signatory::YamfSignatory;
 use snafu::{ensure, ResultExt};
@@ -23,7 +23,7 @@ impl<Store: EntryStore> Log<Store> {
 
         let seq_num = last_seq_num + 1;
 
-        let mut entry = Entry {
+        let mut entry : Entry<_,_,&[u8]> = Entry {
             is_end_of_feed,
             payload_hash,
             payload_size,
@@ -68,9 +68,9 @@ impl<Store: EntryStore> Log<Store> {
             entry.lipmaa_link = Some(lipmaa_link);
         }
 
-        let mut buff = Vec::new();
-        entry
-            .encode_write(&mut buff)
+        let mut buff = [0u8; 512];
+        let buff_size = entry
+            .encode(&mut buff)
             .context(EncodingForSigningFailed)?;
 
         let key_pair = self
@@ -78,18 +78,18 @@ impl<Store: EntryStore> Log<Store> {
             .as_ref()
             .ok_or(Error::TriedToPublishWithoutSecretKey)?;
 
-        let signature = key_pair.sign(&buff);
+        let signature = key_pair.sign(&buff[..buff_size]);
         let sig_bytes = &signature.to_bytes()[..];
         let signature = Signature(sig_bytes.into());
 
         entry.sig = Some(signature);
 
-        let mut buff = Vec::new();
-        entry
-            .encode_write(&mut buff)
+        let mut buff = [0u8; 512];
+        let buff_size = entry
+            .encode(&mut buff)
             .context(EncodingForStoringFailed)?;
 
-        self.store.add_entry(&buff, seq_num).context(AppendFailed)
+        self.store.add_entry(&buff[..buff_size], seq_num).context(AppendFailed)
     }
 }
 

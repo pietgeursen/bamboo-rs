@@ -10,7 +10,7 @@ use varu64::{
 
 use ed25519_dalek::{PublicKey as DalekPublicKey, Signature as DalekSignature};
 
-use super::signature::Signature;
+use super::signature::{Signature, ED25519_SIGNATURE_SIZE};
 use super::yamf_hash::YamfHash;
 use super::yamf_signatory::YamfSignatory;
 
@@ -20,28 +20,30 @@ pub use error::*;
 const TAG_BYTE_LENGTH: usize = 1;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct Entry<'a, B, S>
+pub struct Entry<'a, H, A, S>
 where
-    B: Borrow<[u8]>,
+    H: Borrow<[u8]>,
+    A: Borrow<[u8]>,
     S: Borrow<[u8]>,
 {
     #[serde(rename = "isEndOfFeed")]
     pub is_end_of_feed: bool,
     #[serde(rename = "payloadHash")]
-    #[serde(bound(deserialize = "B: From<Vec<u8>>"))]
-    pub payload_hash: YamfHash<B>,
+    #[serde(bound(deserialize = "H: From<Vec<u8>>"))]
+    pub payload_hash: YamfHash<H>,
     #[serde(rename = "payloadSize")]
     pub payload_size: u64,
-    #[serde(bound(deserialize = "S: From<Vec<u8>>"))]
-    pub author: YamfSignatory<'a, S>,
+    #[serde(bound(deserialize = "A: From<Vec<u8>>"))]
+    pub author: YamfSignatory<'a, A>,
     #[serde(rename = "sequenceNumber")]
     pub seq_num: u64,
     #[serde(rename = "backLink")]
-    pub backlink: Option<YamfHash<B>>,
+    pub backlink: Option<YamfHash<H>>,
     #[serde(rename = "lipmaaLink")]
-    pub lipmaa_link: Option<YamfHash<B>>,
+    pub lipmaa_link: Option<YamfHash<H>>,
     #[serde(rename = "signature")]
-    pub sig: Option<Signature<'a>>,
+    #[serde(bound(deserialize = "S: From<Vec<u8>>"))]
+    pub sig: Option<Signature<S>>,
 }
 
 //#[derive(Serialize, Deserialize)]
@@ -49,31 +51,35 @@ where
 //    #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
 //);
 
-impl<'a> TryFrom<&'a [u8]> for Entry<'a, &'a [u8], &'a [u8]> {
+impl<'a> TryFrom<&'a [u8]> for Entry<'a, &'a [u8], &'a [u8], &'a [u8]> {
     type Error = Error;
 
-    fn try_from(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8]>, Self::Error> {
+    fn try_from(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [u8]>, Self::Error> {
         decode(bytes)
     }
 }
 
-impl<'a, B, S> TryFrom<Entry<'a, B, S>> for ArrayVec<[u8; 512]>
+impl<'a, H, A, S> TryFrom<Entry<'a, H, A, S>> for ArrayVec<[u8; 512]>
 where
-    B: Borrow<[u8]>,
+    H: Borrow<[u8]>,
+    A: Borrow<[u8]>,
     S: Borrow<[u8]>,
 {
     type Error = Error;
 
-    fn try_from(entry: Entry<'a, B, S>) -> Result<ArrayVec<[u8; 512]>, Self::Error> {
-        let mut buff = ArrayVec::<[u8; 512]>::new();
-        entry.encode_write(&mut buff)?;
-        Ok(buff)
+    fn try_from(entry: Entry<'a, H, A, S>) -> Result<ArrayVec<[u8; 512]>, Self::Error> {
+        let mut buff = [0u8; 512];
+        let len = entry.encode(&mut buff)?;
+        let mut vec = ArrayVec::<[u8;512]>::from(buff);
+        unsafe{vec.set_len(len);}
+        Ok(vec)
     }
 }
 
-impl<'a, B, S> Entry<'a, B, S>
+impl<'a, H, A, S> Entry<'a, H, A, S>
 where
-    B: Borrow<[u8]>,
+    H: Borrow<[u8]>,
+    A: Borrow<[u8]>,
     S: Borrow<[u8]>,
 {
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
@@ -195,18 +201,19 @@ where
         //Pluck off the signature before we encode it
         let sig = self.sig.take();
 
-        let ssb_sig = DalekSignature::from_bytes(sig.as_ref().unwrap().0.as_ref())
+        let ssb_sig = DalekSignature::from_bytes(sig.as_ref().unwrap().0.borrow())
             .map_err(|_| Error::DecodeSsbSigError)?;
 
-        let mut buff = Vec::new();
-        self.encode_write(&mut buff).unwrap();
+        let mut buff = [0u8; 512];
+
+        let encoded_size = self.encode(&mut buff).unwrap();
 
         let result = match self.author {
             YamfSignatory::Ed25519(ref author, _) => {
                 let pub_key = DalekPublicKey::from_bytes(author.borrow())
                     .map_err(|_| Error::DecodeSsbPubKeyError)?;
                 pub_key
-                    .verify(&buff, &ssb_sig)
+                    .verify(&buff[..encoded_size], &ssb_sig)
                     .map(|_| true)
                     .unwrap_or(false)
             }
@@ -219,7 +226,7 @@ where
     }
 }
 
-pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8]>, Error> {
+pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8] , &'a [u8]>, Error> {
     // Decode is end of feed
     if bytes.len() == 0 {
         return Err(Error::DecodeInputIsLengthZero);
@@ -261,7 +268,7 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8]>, Erro
     };
 
     // Decode the signature
-    let (sig, _) = Signature::decode(remaining_bytes).context(DecodeSigError)?;
+    let (sig, _) = Signature::<&[u8]>::decode(remaining_bytes).context(DecodeSigError)?;
 
     Ok(Entry {
         is_end_of_feed,
@@ -297,7 +304,7 @@ mod tests {
         let payload_size = 512;
         let seq_num = 2;
         let sig_bytes = [0xDD; 128];
-        let sig = Signature(sig_bytes[..].into());
+        let sig = Signature(&sig_bytes[..]);
         let author_bytes = [0xEE; 32];
         let author = YamfSignatory::Ed25519(&author_bytes[..], None);
 
@@ -373,7 +380,7 @@ mod tests {
         let entry = decode(entry_bytes).unwrap();
 
         let string = serde_json::to_string(&entry).unwrap();
-        let parsed: Entry<Vec<u8>, Vec<u8>> = serde_json::from_str(&string).unwrap();
+        let parsed: Entry<Vec<u8>, Vec<u8>, Vec<u8>> = serde_json::from_str(&string).unwrap();
 
         assert_eq!(parsed.payload_hash, entry.payload_hash);
     }

@@ -1,5 +1,4 @@
 use core::borrow::Borrow;
-#[cfg(feature = "std")]
 use std::io::{Error as IoError, Write};
 
 use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
@@ -21,6 +20,7 @@ pub enum Error {
     #[snafu(display("Error when decoding signatory."))]
     DecodeError,
     #[snafu(display("IO Error when encoding signatory to writer. {}", source))]
+    #[cfg(feature = "std")]
     EncodeWriteError { source: IoError },
     #[snafu(display("Error when encoding signatory."))]
     EncodeError,
@@ -59,7 +59,7 @@ impl<'a, T: Borrow<[u8]>> YamfSignatory<'a, T> {
             (YamfSignatory::Ed25519(vec, _), buffer_length) if buffer_length >= encoded_size => {
                 varu64_encode(ED25519_NUMERIC_ID, &mut out[0..1]);
                 varu64_encode(ED25519_SIZE as u64, &mut out[1..2]);
-                out[2..].copy_from_slice(vec.borrow());
+                out[2..encoded_size].copy_from_slice(vec.borrow());
                 Ok(encoded_size)
             }
             _ => Err(Error::EncodeError),
@@ -120,7 +120,8 @@ mod tests {
     fn encode_yamf() {
         let hash_bytes = vec![0xFF; ED25519_SIZE];
         let yamf_hash = YamfSignatory::Ed25519(&hash_bytes[..], None);
-        let expected = [
+        //TODO: this test is not good, we need equality check between types.
+        let _ = [
             ED25519_NUMERIC_ID as u8,
             ED25519_SIZE as u8,
             0xFF,
@@ -129,8 +130,9 @@ mod tests {
             0xFF,
         ];
 
+
         let mut encoded = vec![0; ED25519_SIZE + 2];
-        yamf_hash.encode(&mut encoded);
+        yamf_hash.encode(&mut encoded).unwrap();
         assert_eq!(encoded[0], ED25519_NUMERIC_ID as u8);
         assert_eq!(encoded[1], ED25519_SIZE as u8);
     }
@@ -138,7 +140,8 @@ mod tests {
     fn encode_yamf_write() {
         let hash_bytes = vec![0xFF; ED25519_SIZE];
         let yamf_hash = YamfSignatory::Ed25519(&hash_bytes[..], None);
-        let expected = [
+        //TODO: this test is not good, we need equality check between types.
+        let _ = [
             ED25519_NUMERIC_ID as u8,
             ED25519_SIZE as u8,
             0xFF,
