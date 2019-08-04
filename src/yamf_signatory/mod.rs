@@ -130,7 +130,6 @@ mod tests {
             0xFF,
         ];
 
-
         let mut encoded = vec![0; ED25519_SIZE + 2];
         yamf_hash.encode(&mut encoded).unwrap();
         assert_eq!(encoded[0], ED25519_NUMERIC_ID as u8);

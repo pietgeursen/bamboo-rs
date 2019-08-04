@@ -1,7 +1,7 @@
 use arrayvec::ArrayVec;
 use core::borrow::Borrow;
 use core::convert::TryFrom;
-use snafu::ResultExt;
+use snafu::{ensure, OptionExt, ResultExt};
 use std::io::Write;
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
@@ -13,6 +13,9 @@ use ed25519_dalek::{PublicKey as DalekPublicKey, Signature as DalekSignature};
 use super::signature::{Signature, ED25519_SIGNATURE_SIZE};
 use super::yamf_hash::YamfHash;
 use super::yamf_signatory::YamfSignatory;
+use crate::yamf_hash::new_blake2b;
+use ed25519_dalek::{Keypair, PublicKey};
+use lipmaa_link::lipmaa;
 
 pub mod error;
 pub use error::*;
@@ -46,11 +49,6 @@ where
     pub sig: Option<Signature<S>>,
 }
 
-//#[derive(Serialize, Deserialize)]
-//pub struct EntryBytes<'a>(
-//    #[serde(deserialize_with = "cow_from_hex", serialize_with = "hex_from_cow")] Cow<'a, [u8]>,
-//);
-
 impl<'a> TryFrom<&'a [u8]> for Entry<'a, &'a [u8], &'a [u8], &'a [u8]> {
     type Error = Error;
 
@@ -70,8 +68,10 @@ where
     fn try_from(entry: Entry<'a, H, A, S>) -> Result<ArrayVec<[u8; 512]>, Self::Error> {
         let mut buff = [0u8; 512];
         let len = entry.encode(&mut buff)?;
-        let mut vec = ArrayVec::<[u8;512]>::from(buff);
-        unsafe{vec.set_len(len);}
+        let mut vec = ArrayVec::<[u8; 512]>::from(buff);
+        unsafe {
+            vec.set_len(len);
+        }
         Ok(vec)
     }
 }
@@ -82,6 +82,66 @@ where
     A: Borrow<[u8]>,
     S: Borrow<[u8]>,
 {
+    pub fn publish(
+        out: &mut [u8],
+        key_pair: &Option<Keypair>,
+        public_key: &PublicKey,
+        payload: &[u8],
+        is_end_of_feed: bool,
+        last_seq_num: u64,
+        lipmaa_entry_bytes: Option<&[u8]>,
+        backlink_bytes: Option<&[u8]>,
+    ) -> Result<usize, Error> {
+        let author = YamfSignatory::<&[u8]>::Ed25519(&public_key.as_bytes()[..], None);
+
+        // calc the payload hash
+        let payload_hash = new_blake2b(payload);
+        let payload_size = payload.len() as u64;
+
+        let seq_num = last_seq_num + 1;
+
+        let mut entry: Entry<_, _, &[u8]> = Entry {
+            is_end_of_feed,
+            payload_hash,
+            payload_size,
+            author,
+            seq_num,
+            backlink: None,
+            lipmaa_link: None,
+            sig: None,
+        };
+
+        // if the seq is larger than 1, we need to append the lipmaa and backlink hashes.
+        if seq_num > 1 {
+            let lipmaa_link_seq = lipmaa(seq_num);
+
+            let lipmaa_link = new_blake2b(lipmaa_entry_bytes.context(PublishWithoutLipmaaEntry)?);
+
+            //Make sure we're not trying to publish after the end of a feed.
+            let backlink_entry = decode(&backlink_bytes.context(PublishWithoutBacklinkEntry)?[..])?;
+            ensure!(!backlink_entry.is_end_of_feed, PublishAfterEndOfFeed);
+
+            let backlink = new_blake2b(backlink_bytes.context(PublishWithoutBacklinkEntry)?);
+
+            entry.backlink = Some(backlink);
+            entry.lipmaa_link = Some(lipmaa_link);
+        }
+
+        let mut buff = [0u8; 512];
+        let buff_size = entry.encode(&mut buff)?;
+
+        let key_pair = key_pair
+            .as_ref()
+            .ok_or(Error::TriedToPublishWithoutSecretKey)?;
+
+        let signature = key_pair.sign(&buff[..buff_size]);
+        let sig_bytes = &signature.to_bytes()[..];
+        let signature = Signature(sig_bytes.into());
+
+        entry.sig = Some(signature);
+
+        entry.encode(out)
+    }
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
         if out.len() < self.encoding_length() {
             return Err(Error::EncodeBufferLength);
@@ -226,7 +286,7 @@ where
     }
 }
 
-pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8] , &'a [u8]>, Error> {
+pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [u8]>, Error> {
     // Decode is end of feed
     if bytes.len() == 0 {
         return Err(Error::DecodeInputIsLengthZero);

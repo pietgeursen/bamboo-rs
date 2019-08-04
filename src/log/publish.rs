@@ -3,7 +3,7 @@ use lipmaa_link::lipmaa;
 use super::error::*;
 use crate::entry::{decode, Entry};
 use crate::entry_store::EntryStore;
-use crate::signature::{Signature};
+use crate::signature::Signature;
 use crate::yamf_hash::new_blake2b;
 use crate::yamf_signatory::YamfSignatory;
 use snafu::{ensure, ResultExt};
@@ -12,84 +12,40 @@ use super::Log;
 
 impl<Store: EntryStore> Log<Store> {
     pub fn publish(&mut self, payload: &[u8], is_end_of_feed: bool) -> Result<()> {
-        // get the last seq number
+        let mut buff = [0u8; 512];
+
         let last_seq_num = self.store.get_last_seq();
-
-        let author = YamfSignatory::<&[u8]>::Ed25519(&self.public_key.as_bytes()[..], None);
-
-        // calc the payload hash
-        let payload_hash = new_blake2b(payload);
-        let payload_size = payload.len() as u64;
-
         let seq_num = last_seq_num + 1;
+        let lipmaa_link_seq = lipmaa(seq_num);
 
-        let mut entry : Entry<_,_,&[u8]> = Entry {
-            is_end_of_feed,
-            payload_hash,
-            payload_size,
-            author,
-            seq_num,
-            backlink: None,
-            lipmaa_link: None,
-            sig: None,
-        };
-
-        // if the seq is larger than 1, we need to append the lipmaa and backlink hashes.
-        if seq_num > 1 {
-            let lipmaa_link_seq = lipmaa(seq_num);
-
-            let lipmaa_entry_bytes = self
-                .store
+        let lipmaa_entry_bytes =
+            self.store
                 .get_entry_ref(lipmaa_link_seq)
                 .context(GetEntryFailed {
                     seq_num: lipmaa_link_seq,
-                })?
-                .ok_or(Error::EntryNotFound {
-                    seq_num: lipmaa_link_seq,
                 })?;
+        let backlink_bytes = self
+            .store
+            .get_entry_ref(last_seq_num)
+            .context(GetEntryFailed {
+                seq_num: last_seq_num,
+            })?;
 
-            let lipmaa_link = new_blake2b(lipmaa_entry_bytes);
+        let length = Entry::<&[u8], &[u8], &[u8]>::publish(
+            &mut buff,
+            &self.key_pair,
+            &self.public_key,
+            payload,
+            is_end_of_feed,
+            last_seq_num,
+            lipmaa_entry_bytes,
+            backlink_bytes,
+        )
+        .context(PublishNewEntryFailed)?;
 
-            let backlink_bytes = self
-                .store
-                .get_last_entry_ref()
-                .context(GetEntryFailed {
-                    seq_num: lipmaa_link_seq,
-                })?
-                .unwrap();
-
-            //Make sure we're not trying to publish after the end of a feed.
-            let backlink_entry = decode(&backlink_bytes[..]).context(PreviousDecodeFailed)?;
-            ensure!(!backlink_entry.is_end_of_feed, PublishAfterEndOfFeed);
-
-            let backlink = new_blake2b(backlink_bytes);
-
-            entry.backlink = Some(backlink);
-            entry.lipmaa_link = Some(lipmaa_link);
-        }
-
-        let mut buff = [0u8; 512];
-        let buff_size = entry
-            .encode(&mut buff)
-            .context(EncodingForSigningFailed)?;
-
-        let key_pair = self
-            .key_pair
-            .as_ref()
-            .ok_or(Error::TriedToPublishWithoutSecretKey)?;
-
-        let signature = key_pair.sign(&buff[..buff_size]);
-        let sig_bytes = &signature.to_bytes()[..];
-        let signature = Signature(sig_bytes.into());
-
-        entry.sig = Some(signature);
-
-        let mut buff = [0u8; 512];
-        let buff_size = entry
-            .encode(&mut buff)
-            .context(EncodingForStoringFailed)?;
-
-        self.store.add_entry(&buff[..buff_size], seq_num).context(AppendFailed)
+        self.store
+            .add_entry(&buff[..length], seq_num)
+            .context(AppendFailed)
     }
 }
 
@@ -137,7 +93,9 @@ mod tests {
         log.publish(&payload, true).unwrap();
 
         match log.publish(&payload, false) {
-            Err(Error::PublishAfterEndOfFeed { backtrace: _ }) => {}
+            Err(Error::PublishNewEntryFailed {
+                source: crate::entry::Error::PublishAfterEndOfFeed { backtrace: _ },
+            }) => {}
             _ => panic!("expected publish to fail with an error"),
         }
     }
@@ -150,7 +108,9 @@ mod tests {
         let payload = [1, 2, 3];
 
         match log.publish(&payload, false) {
-            Err(Error::TriedToPublishWithoutSecretKey) => {}
+            Err(Error::PublishNewEntryFailed {
+                source: crate::entry::Error::TriedToPublishWithoutSecretKey,
+            }) => {}
             e => panic!("expected publish to fail with an error, got: {:?}", e),
         }
     }

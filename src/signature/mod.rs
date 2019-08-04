@@ -1,10 +1,10 @@
-use std::io::{Error as IoError, Write};
 use ed25519_dalek::SIGNATURE_LENGTH;
+use std::io::{Error as IoError, Write};
 
 pub const ED25519_SIGNATURE_SIZE: usize = SIGNATURE_LENGTH;
 
-use core::borrow::Borrow;
 use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
+use core::borrow::Borrow;
 use snafu::{ResultExt, Snafu};
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
@@ -25,7 +25,7 @@ pub enum Error {
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Signature<B: Borrow<[u8]>>(
-    #[serde(deserialize_with = "vec_from_hex", serialize_with = "hex_from_bytes")] 
+    #[serde(deserialize_with = "vec_from_hex", serialize_with = "hex_from_bytes")]
     #[serde(bound(deserialize = "B: From<Vec<u8>>"))]
     pub B,
 );
@@ -59,11 +59,12 @@ impl<B: Borrow<[u8]>> Signature<B> {
     #[cfg(feature = "std")]
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
         varu64_encode_write(self.len() as u64, &mut w).context(EncodeWriteError)?;
-        w.write_all(&self.0.borrow()[..]).context(EncodeWriteError)?;
+        w.write_all(&self.0.borrow()[..])
+            .context(EncodeWriteError)?;
         Ok(())
     }
 
-    pub fn decode<'a>(bytes: &'a [u8]) -> Result<(Signature< &'a[u8] >, &'a [u8]), Error> {
+    pub fn decode<'a>(bytes: &'a [u8]) -> Result<(Signature<&'a [u8]>, &'a [u8]), Error> {
         match varu64_decode(&bytes) {
             Ok((size, remaining_bytes)) if remaining_bytes.len() >= size as usize => Ok((
                 Signature(remaining_bytes[..size as usize].into()),

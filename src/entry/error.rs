@@ -1,4 +1,4 @@
-use snafu::Snafu;
+use snafu::{Backtrace, Snafu};
 use std::io::Error as IoError;
 use varu64::DecodeError as varu64DecodeError;
 
@@ -30,6 +30,23 @@ pub enum Error {
     EncodeEntryHasBacklinksWhenSeqZero,
     #[snafu(display("Error when encoding entry, buffer was not large enough"))]
     EncodeBufferLength,
+
+    #[snafu(display(
+        "Attempted to publish a message on a feed that has published an end of feed message"
+    ))]
+    PublishAfterEndOfFeed { backtrace: Backtrace },
+    #[snafu(display(
+        "Error unwrapping a None value of the secret key, it must be provided in the constructor"
+    ))]
+    TriedToPublishWithoutSecretKey,
+    #[snafu(display(
+        "Attempted to publish an entry without providing the Lipmaa entry that was needed"
+    ))]
+    PublishWithoutLipmaaEntry,
+    #[snafu(display(
+        "Attempted to publish an entry without providing the Backlink entry that was needed"
+    ))]
+    PublishWithoutBacklinkEntry,
 
     //All the ways decoding an entry can fail
     #[snafu(display("Error when decoding is_end_of_feed: {}", source))]

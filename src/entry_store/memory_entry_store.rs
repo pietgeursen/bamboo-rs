@@ -22,14 +22,14 @@ impl EntryStore for MemoryEntryStore {
     }
     fn get_entry(&self, seq_num: u64) -> Result<Option<Vec<u8>>> {
         if seq_num == 0 {
-            return Err(Error::GetEntrySequenceInvalid { seq_num });
+            return Ok(None);
         }
         let result = self.store.get(&seq_num).map(|vec| vec.to_vec());
         Ok(result)
     }
     fn get_entry_ref<'a>(&'a self, seq_num: u64) -> Result<Option<&'a [u8]>> {
         if seq_num == 0 {
-            return Err(Error::GetEntrySequenceInvalid { seq_num });
+            return Ok(None);
         }
         let result = self.store.get(&seq_num).map(|vec| vec.as_slice());
         Ok(result)

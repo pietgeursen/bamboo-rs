@@ -207,7 +207,7 @@ mod tests {
         let backlink = new_blake2b(first_entry);
         let lipmaa_link = new_blake2b(first_entry);
 
-        let mut second_entry = Entry::<_,_,&[u8]> {
+        let mut second_entry = Entry::<_, _, &[u8]> {
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,
@@ -273,9 +273,7 @@ mod tests {
 
         let incorrect_sig_bytes = [0u8; ED25519_SIGNATURE_SIZE];
         first_entry.sig = match first_entry.sig {
-            Some(Signature(_)) => {
-                Some(Signature(&incorrect_sig_bytes))
-            }
+            Some(Signature(_)) => Some(Signature(&incorrect_sig_bytes)),
             link => link,
         };
 
@@ -372,7 +370,7 @@ mod tests {
 
         let backlink = new_blake2b(first_entry);
 
-        let mut second_entry = Entry::<_,_, &[u8]> {
+        let mut second_entry = Entry::<_, _, &[u8]> {
             is_end_of_feed: false,
             payload_hash: new_blake2b(&payload.as_bytes()),
             payload_size: payload.len() as u64,

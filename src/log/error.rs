@@ -31,6 +31,8 @@ pub enum Error {
     PublishAfterEndOfFeed { backtrace: Backtrace },
     #[snafu(display("Failed to decode the previous message as an entry"))]
     PreviousDecodeFailed { source: EntryError },
+    #[snafu(display("Failed to generate a new entry to valid entry to publish to the store"))]
+    PublishNewEntryFailed { source: EntryError },
 
     #[snafu(display("Failed to decode the entry message as an entry"))]
     AddEntryDecodeFailed { source: EntryError },
