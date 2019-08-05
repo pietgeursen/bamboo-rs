@@ -1,12 +1,9 @@
 use lipmaa_link::lipmaa;
 
 use super::error::*;
-use crate::entry::{decode, Entry};
+use crate::entry::{Entry};
 use crate::entry_store::EntryStore;
-use crate::signature::Signature;
-use crate::yamf_hash::new_blake2b;
-use crate::yamf_signatory::YamfSignatory;
-use snafu::{ensure, ResultExt};
+use snafu::{ResultExt};
 
 use super::Log;
 

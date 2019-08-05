@@ -10,12 +10,11 @@ use varu64::{
 
 use ed25519_dalek::{PublicKey as DalekPublicKey, Signature as DalekSignature};
 
-use super::signature::{Signature, ED25519_SIGNATURE_SIZE};
+use super::signature::{Signature};
 use super::yamf_hash::YamfHash;
 use super::yamf_signatory::YamfSignatory;
 use crate::yamf_hash::new_blake2b;
 use ed25519_dalek::{Keypair, PublicKey};
-use lipmaa_link::lipmaa;
 
 pub mod error;
 pub use error::*;
@@ -113,8 +112,6 @@ where
 
         // if the seq is larger than 1, we need to append the lipmaa and backlink hashes.
         if seq_num > 1 {
-            let lipmaa_link_seq = lipmaa(seq_num);
-
             let lipmaa_link = new_blake2b(lipmaa_entry_bytes.context(PublishWithoutLipmaaEntry)?);
 
             //Make sure we're not trying to publish after the end of a feed.
