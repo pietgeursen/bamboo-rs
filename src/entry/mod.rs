@@ -10,7 +10,7 @@ use varu64::{
 
 use ed25519_dalek::{PublicKey as DalekPublicKey, Signature as DalekSignature};
 
-use super::signature::{Signature};
+use super::signature::Signature;
 use super::yamf_hash::YamfHash;
 use super::yamf_signatory::YamfSignatory;
 use crate::yamf_hash::new_blake2b;
@@ -127,11 +127,10 @@ where
         let mut buff = [0u8; 512];
         let buff_size = entry.encode(&mut buff)?;
 
-        let key_pair = key_pair
+        let signature = key_pair
             .as_ref()
-            .ok_or(Error::TriedToPublishWithoutSecretKey)?;
-
-        let signature = key_pair.sign(&buff[..buff_size]);
+            .context(TriedToPublishWithoutSecretKey)?
+            .sign(&buff[..buff_size]);
         let sig_bytes = &signature.to_bytes()[..];
         let signature = Signature(sig_bytes.into());
 

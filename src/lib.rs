@@ -12,6 +12,7 @@ pub mod yamf_signatory;
 
 mod util;
 
+pub use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 pub use entry::Entry;
 pub use entry_store::EntryStore;
 pub use lipmaa_link::lipmaa;

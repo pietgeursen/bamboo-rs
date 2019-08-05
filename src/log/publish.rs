@@ -1,9 +1,9 @@
 use lipmaa_link::lipmaa;
 
 use super::error::*;
-use crate::entry::{Entry};
+use crate::entry::Entry;
 use crate::entry_store::EntryStore;
-use snafu::{ResultExt};
+use snafu::ResultExt;
 
 use super::Log;
 
