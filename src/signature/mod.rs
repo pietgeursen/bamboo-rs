@@ -1,32 +1,24 @@
+use crate::error::*;
 use ed25519_dalek::SIGNATURE_LENGTH;
+#[cfg(feature = "std")]
 use std::io::{Error as IoError, Write};
 
 pub const ED25519_SIGNATURE_SIZE: usize = SIGNATURE_LENGTH;
 
+#[cfg(feature = "std")]
 use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
 use core::borrow::Borrow;
-use snafu::{ResultExt, Snafu};
 use varu64::{
-    decode as varu64_decode, encode as varu64_encode, encode_write as varu64_encode_write,
+    decode as varu64_decode, encode as varu64_encode,
     encoding_length, DecodeError as varu64DecodeError,
 };
-
-#[derive(Debug, Snafu)]
-pub enum Error {
-    #[snafu(display("Error when decoding var64 for signature. {}", source))]
-    DecodeVaru64Error { source: varu64DecodeError },
-    #[snafu(display("Error when decoding signature."))]
-    DecodeError,
-    #[snafu(display("IO Error when encoding signature to writer. {}", source))]
-    EncodeWriteError { source: IoError },
-    #[snafu(display("Error when encoding signature"))]
-    EncodeError,
-}
+#[cfg(feature = "std")]
+use varu64::encode_write as varu64_encode_write;
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Signature<B: Borrow<[u8]>>(
-    #[serde(deserialize_with = "vec_from_hex", serialize_with = "hex_from_bytes")]
-    #[serde(bound(deserialize = "B: From<Vec<u8>>"))]
+    #[cfg_attr(feature = "std", serde(serialize_with = "hex_from_bytes", deserialize_with = "vec_from_hex"))]
+    #[cfg_attr(feature = "std", serde(bound(deserialize = "B: From<Vec<u8>>")))]
     pub B,
 );
 
@@ -58,9 +50,9 @@ impl<B: Borrow<[u8]>> Signature<B> {
     /// Encodes signature into a writer.
     #[cfg(feature = "std")]
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
-        varu64_encode_write(self.len() as u64, &mut w).context(EncodeWriteError)?;
+        varu64_encode_write(self.len() as u64, &mut w).map_err(|_|Error::EncodeWriteError)?;
         w.write_all(&self.0.borrow()[..])
-            .context(EncodeWriteError)?;
+            .map_err(|_|Error::EncodeWriteError)?;
         Ok(())
     }
 
@@ -70,7 +62,7 @@ impl<B: Borrow<[u8]>> Signature<B> {
                 Signature(remaining_bytes[..size as usize].into()),
                 &remaining_bytes[size as usize..],
             )),
-            Err((err, _)) => Err(Error::DecodeVaru64Error { source: err }),
+            Err((err, _)) => Err(Error::DecodeVaru64Error),
             _ => Err(Error::DecodeError),
         }
     }

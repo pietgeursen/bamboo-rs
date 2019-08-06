@@ -1,12 +1,10 @@
-pub use crate::entry_store::{EntryStore, Error as EntryStoreError};
+pub use crate::entry_store::{EntryStore};
 use ed25519_dalek::{Keypair, PublicKey};
 
 pub mod add;
-pub mod error;
 pub mod publish;
 
 pub use add::*;
-pub use error::*;
 pub use publish::*;
 
 pub struct Log<Store: EntryStore> {

@@ -1,9 +1,10 @@
+#[cfg(feature = "std")]
 use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
 use arrayvec::ArrayVec;
 use blake2b_simd::{blake2b, OUTBYTES};
 use core::borrow::Borrow;
 use core::iter::FromIterator;
-use snafu::{ResultExt, Snafu};
+use crate::error::*;
 
 #[cfg(feature = "std")]
 use std::io::{Error as IoError, Write};
@@ -16,24 +17,11 @@ use varu64::{
 pub const BLAKE2B_HASH_SIZE: usize = OUTBYTES;
 pub const BLAKE2B_NUMERIC_ID: u64 = 0;
 
-#[derive(Debug, Snafu)]
-pub enum Error {
-    #[snafu(display("Error when decoding var64 for hash. {}", source))]
-    DecodeVaru64Error { source: varu64DecodeError },
-    #[snafu(display("Error when decoding hash."))]
-    DecodeError,
-    #[snafu(display("IO Error when encoding hash to writer. {}", source))]
-    #[cfg(feature = "std")]
-    EncodeWriteError { source: IoError },
-    #[snafu(display("Error when encoding hash."))]
-    EncodeError,
-}
-
 /// Variants of `YamfHash`
 #[derive(Deserialize, Serialize, Debug, Eq)]
 pub enum YamfHash<T: Borrow<[u8]>> {
-    #[serde(serialize_with = "hex_from_bytes", deserialize_with = "vec_from_hex")]
-    #[serde(bound(deserialize = "T: From<Vec<u8>>"))]
+    #[cfg_attr(feature = "std", serde(serialize_with = "hex_from_bytes", deserialize_with = "vec_from_hex"))]
+    #[cfg_attr(feature = "std", serde(bound(deserialize = "T: From<Vec<u8>>")))]
     Blake2b(T),
 }
 
@@ -95,7 +83,7 @@ impl<T: Borrow<[u8]>> YamfHash<T> {
                 let hash = &remaining_bytes[1..65];
                 Ok((YamfHash::Blake2b(hash), &remaining_bytes[65..]))
             }
-            Err((err, _)) => Err(Error::DecodeVaru64Error { source: err }),
+            Err((err, _)) => Err(Error::DecodeVaru64Error),
             _ => Err(Error::DecodeError {}),
         }
     }
@@ -108,8 +96,8 @@ impl<T: Borrow<[u8]>> YamfHash<T> {
             YamfHash::Blake2b(vec) => {
                 varu64_encode(BLAKE2B_NUMERIC_ID, &mut out[0..1]);
                 varu64_encode(BLAKE2B_HASH_SIZE as u64, &mut out[1..2]);
-                w.write_all(&out).context(EncodeWriteError)?;
-                w.write_all(vec.borrow()).context(EncodeWriteError)?;
+                w.write_all(&out).map_err(|_|Error::EncodeWriteError)?;
+                w.write_all(vec.borrow()).map_err(|_|Error::EncodeWriteError)?;
                 Ok(())
             }
         }

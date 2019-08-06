@@ -1,10 +1,12 @@
 use core::borrow::Borrow;
-use std::io::{Error as IoError, Write};
-
+#[cfg(feature = "std")]
+use std::io::{Write};
+use crate::error::*;
+ 
+#[cfg(feature = "std")]
 use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
 use arrayvec::ArrayVec;
 use ed25519_dalek::PUBLIC_KEY_LENGTH;
-use snafu::{ResultExt, Snafu};
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encoding_length,
     DecodeError as varu64DecodeError,
@@ -12,19 +14,6 @@ use varu64::{
 
 pub const ED25519_NUMERIC_ID: u64 = 0;
 pub const ED25519_SIZE: usize = PUBLIC_KEY_LENGTH;
-
-#[derive(Debug, Snafu)]
-pub enum Error {
-    #[snafu(display("Error when decoding var64 for signatory. {}", source))]
-    DecodeVaru64Error { source: varu64DecodeError },
-    #[snafu(display("Error when decoding signatory."))]
-    DecodeError,
-    #[snafu(display("IO Error when encoding signatory to writer. {}", source))]
-    #[cfg(feature = "std")]
-    EncodeWriteError { source: IoError },
-    #[snafu(display("Error when encoding signatory."))]
-    EncodeError,
-}
 
 /// A Yamf Signatory holds a public key and a ref to an optional private key.
 ///
@@ -35,8 +24,8 @@ pub enum Error {
 pub enum YamfSignatory<'a, T: Borrow<[u8]>> {
     /// Tuple of public and optional secret key
     Ed25519(
-        #[serde(deserialize_with = "vec_from_hex", serialize_with = "hex_from_bytes")]
-        #[serde(bound(deserialize = "T: From<Vec<u8>>"))]
+        #[cfg_attr(feature = "std", serde(serialize_with = "hex_from_bytes", deserialize_with = "vec_from_hex"))]
+        #[cfg_attr(feature = "std", serde(bound(deserialize = "T: From<Vec<u8>>")))]
         T,
         #[serde(skip)] Option<&'a [u8]>,
     ),
@@ -76,8 +65,8 @@ impl<'a, T: Borrow<[u8]>> YamfSignatory<'a, T> {
             YamfSignatory::Ed25519(vec, _) => {
                 varu64_encode(ED25519_NUMERIC_ID, &mut out[0..1]);
                 varu64_encode(ED25519_SIZE as u64, &mut out[1..2]);
-                w.write_all(&out).context(EncodeWriteError)?;
-                w.write_all(vec.borrow()).context(EncodeWriteError)?;
+                w.write_all(&out).map_err(|_|Error::EncodeWriteError)?;
+                w.write_all(vec.borrow()).map_err(|_|Error::EncodeWriteError)?;
                 Ok(())
             }
         }
@@ -106,7 +95,7 @@ impl<'a, T: Borrow<[u8]>> YamfSignatory<'a, T> {
                     &remaining_bytes[33..],
                 ))
             }
-            Err((err, _)) => Err(Error::DecodeVaru64Error { source: err }),
+            Err((err, _)) => Err(Error::DecodeVaru64Error),
             _ => Err(Error::DecodeError {}),
         }
     }

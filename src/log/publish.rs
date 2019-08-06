@@ -1,9 +1,8 @@
 use lipmaa_link::lipmaa;
 
-use super::error::*;
 use crate::entry::Entry;
 use crate::entry_store::EntryStore;
-use snafu::ResultExt;
+use crate::error::*;
 
 use super::Log;
 
@@ -18,15 +17,11 @@ impl<Store: EntryStore> Log<Store> {
         let lipmaa_entry_bytes =
             self.store
                 .get_entry_ref(lipmaa_link_seq)
-                .context(GetEntryFailed {
-                    seq_num: lipmaa_link_seq,
-                })?;
+                .map_err(|_|Error::GetEntryFailed)?;
         let backlink_bytes = self
             .store
             .get_entry_ref(last_seq_num)
-            .context(GetEntryFailed {
-                seq_num: last_seq_num,
-            })?;
+            .map_err(|_|Error::GetEntryFailed )?;
 
         let length = Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut buff,
@@ -38,11 +33,11 @@ impl<Store: EntryStore> Log<Store> {
             lipmaa_entry_bytes,
             backlink_bytes,
         )
-        .context(PublishNewEntryFailed)?;
+        .map_err(|_|Error::PublishNewEntryFailed)?;
 
         self.store
             .add_entry(&buff[..length], seq_num)
-            .context(AppendFailed)
+            .map_err(|_|Error::AppendFailed)
     }
 }
 

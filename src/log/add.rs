@@ -1,10 +1,10 @@
-use super::error::*;
 use super::Log;
 use crate::entry::decode;
 use crate::entry_store::EntryStore;
 use crate::yamf_hash::new_blake2b;
 use lipmaa_link::lipmaa;
-use snafu::{ensure, ResultExt};
+
+use crate::error::*;
 
 impl<Store: EntryStore> Log<Store> {
     /// Add a valid message to the Log.
@@ -19,20 +19,20 @@ impl<Store: EntryStore> Log<Store> {
     /// from oldest to newest.
     pub fn add(&mut self, entry_bytes: &[u8], payload: Option<&[u8]>) -> Result<()> {
         // Decode the entry that we want to add.
-        let entry = decode(entry_bytes).context(AddEntryDecodeFailed)?;
+        let entry = decode(entry_bytes).map_err(|_| Error::AddEntryDecodeFailed)?;
 
         // If we have the payload, check that its hash and length match what is encoded in the
         // entry.
         if let Some(payload) = payload {
             let payload_hash = new_blake2b(payload);
-            ensure!(
-                payload_hash == entry.payload_hash,
-                AddEntryPayloadHashDidNotMatch
-            );
-            ensure!(
-                payload.len() as u64 == entry.payload_size,
-                AddEntryPayloadLengthDidNotMatch
-            );
+            //ensure!(
+            //    payload_hash == entry.payload_hash,
+            //    AddEntryPayloadHashDidNotMatch
+            //);
+            //ensure!(
+            //    payload.len() as u64 == entry.payload_size,
+            //    AddEntryPayloadLengthDidNotMatch
+            //);
         }
 
         let lipmaa_seq = match lipmaa(entry.seq_num) {
@@ -56,7 +56,7 @@ impl<Store: EntryStore> Log<Store> {
                 }
 
                 // Verify the author of the entry is the same as the author in the lipmaa link entry
-                let lipmaa_entry = decode(lipmaa).context(AddEntryDecodeLipmaalinkFromStore)?;
+                let lipmaa_entry = decode(lipmaa).map_err(|_| Error::AddEntryDecodeLipmaalinkFromStore)?;
 
                 if entry.author != lipmaa_entry.author {
                     return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry);
@@ -94,26 +94,25 @@ impl<Store: EntryStore> Log<Store> {
             let last_entry_bytes = self
                 .store
                 .get_last_entry_ref()
-                .context(AddEntryGetLastEntryError)?
+                .map_err(|_| Error::AddEntryGetLastEntryError)?
                 .ok_or(Error::AddEntryGetLastEntryNotFound)?;
 
-            let last_entry = decode(last_entry_bytes).context(AddEntryDecodeLastEntry)?;
-            ensure!(!last_entry.is_end_of_feed, AddEntryToFeedThatHasEnded)
+            let last_entry = decode(last_entry_bytes).map_err(|_| Error::AddEntryDecodeLastEntry)?;
+            //ensure!(!last_entry.is_end_of_feed, AddEntryToFeedThatHasEnded)
         }
 
         // Verify the signature.
-        let entry_bytes_to_verify = entry_bytes.to_owned();
         let mut entry_to_verify =
-            decode(&entry_bytes_to_verify).context(AddEntryDecodeEntryBytesForSigning)?;
+            decode(&entry_bytes).map_err(|_| Error::AddEntryDecodeEntryBytesForSigning)?;
         let is_valid = entry_to_verify
             .verify_signature()
-            .context(AddEntrySigNotValidError)?;
-        ensure!(is_valid, AddEntryWithInvalidSignature);
+            .map_err(|_| Error::AddEntrySigNotValidError)?;
+        //ensure!(is_valid, AddEntryWithInvalidSignature);
 
         //Ok, store it!
         self.store
             .add_entry(&entry_bytes, entry.seq_num)
-            .context(AppendFailed)
+            .map_err(|_| Error::AppendFailed)
     }
 }
 
