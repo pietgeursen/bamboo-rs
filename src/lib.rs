@@ -1,5 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(not(feature = "std"), feature(lang_items))]
 
 #[cfg(not(feature = "std"))]
 #[panic_handler]
@@ -13,10 +12,6 @@ pub extern "C" fn panic(panic_info: &core::panic::PanicInfo) -> ! {
     }
     loop {}
 }
-
-#[cfg(target_os = "none")]
-#[lang = "eh_personality"]
-extern "C" fn eh_personality() {}
 
 #[macro_use]
 extern crate serde_derive;
