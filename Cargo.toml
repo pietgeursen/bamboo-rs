@@ -1,14 +1,11 @@
-[package]
-name = "bamboo-rs"
-version = "0.1.0"
-authors = ["Piet Geursen <pietgeursen@gmail.com>"]
-edition = "2018"
-license = "AGPL-3.0"
-repository = "https://github.com/pietgeursen/bamboo-rs"
+[workspace]
 
-[lib]
-name = "bamboo_rs"
-crate-type = ["staticlib"]
+members = [
+    "core",
+    "core-test"
+    "generate-test-vectors"
+    "wasm"
+]
 
 [profile.release]
 codegen-units = 1
@@ -16,24 +13,4 @@ opt-level = 'z'  # Optimize for size.
 lto = true
 panic = 'abort'
 
-[features]
-default = ["std"]
-std = []
 
-[dependencies]
-arrayvec = { version = "0.4.11", default-features = false}
-serde = { version = "1.0.94", default-features = false , features = ["derive"] }
-serde_derive = { version = "1.0.94", default-features = false }
-hex = { git = "https://github.com/KokaKiwi/rust-hex", default-features = false }
-varu64 = { path = "../varu64-rs", default-features = false } 
-lipmaa-link = "0.1.1"
-blake2b_simd = { version = "0.5.5", default-features = false }
-ed25519-dalek = { git = "https://github.com/nickray/ed25519-dalek", branch = "towards-no-std", default-features = false, features = ["u64_backend"] }
-
-[dev-dependencies]
-#criterion = "0.2"
-#rand = "0.6.0"
-
-[[bench]]
-name = "bench"
-harness = false

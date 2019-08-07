@@ -12,7 +12,7 @@ cargo-fuzz = true
 ssb-crypto = "0.1.3"
 
 [dependencies.bamboo-rs]
-path = ".."
+path = "../core"
 
 [dependencies.libfuzzer-sys]
 git = "https://github.com/rust-fuzz/libfuzzer-sys.git"
