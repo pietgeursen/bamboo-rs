@@ -3,8 +3,8 @@
 members = [
     "core",
     "core-test"
-    "generate-test-vectors"
-    "wasm"
+    #"generate-test-vectors",
+    #"wasm"
 ]
 
 [profile.release]
@@ -12,5 +12,3 @@ codegen-units = 1
 opt-level = 'z'  # Optimize for size.
 lto = true
 panic = 'abort'
-
-

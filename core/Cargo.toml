@@ -12,7 +12,7 @@ crate-type = ["staticlib", "cdylib"]
 
 [features]
 default = ["std"]
-std = []
+std = ["varu64/std", "hex/std"]
 
 [dependencies]
 arrayvec = { version = "0.4.11", default-features = false}

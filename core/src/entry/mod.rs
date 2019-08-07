@@ -40,7 +40,7 @@ where
     pub payload_hash: YamfHash<H>,
     #[serde(rename = "payloadSize")]
     pub payload_size: u64,
-    #[cfg_attr(feature = "std", serde(bound(deserialize = "H: From<Vec<u8>>")))]
+    #[cfg_attr(feature = "std", serde(bound(deserialize = "A: From<Vec<u8>>")))]
     pub author: YamfSignatory<'a, A>,
     #[serde(rename = "sequenceNumber")]
     pub seq_num: u64,
@@ -49,7 +49,7 @@ where
     #[serde(rename = "lipmaaLink")]
     pub lipmaa_link: Option<YamfHash<H>>,
     #[serde(rename = "signature")]
-    #[cfg_attr(feature = "std", serde(bound(deserialize = "H: From<Vec<u8>>")))]
+    #[cfg_attr(feature = "std", serde(bound(deserialize = "S: From<Vec<u8>>")))]
     pub sig: Option<Signature<S>>,
 }
 
