@@ -7,11 +7,10 @@ use core::iter::FromIterator;
 use crate::error::*;
 
 #[cfg(feature = "std")]
-use std::io::{Error as IoError, Write};
+use std::io::{Write};
 
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encoding_length,
-    DecodeError as varu64DecodeError,
 };
 
 pub const BLAKE2B_HASH_SIZE: usize = OUTBYTES;
@@ -83,7 +82,7 @@ impl<T: Borrow<[u8]>> YamfHash<T> {
                 let hash = &remaining_bytes[1..65];
                 Ok((YamfHash::Blake2b(hash), &remaining_bytes[65..]))
             }
-            Err((err, _)) => Err(Error::DecodeVaru64Error),
+            Err((_, _)) => Err(Error::DecodeVaru64Error),
             _ => Err(Error::DecodeError {}),
         }
     }

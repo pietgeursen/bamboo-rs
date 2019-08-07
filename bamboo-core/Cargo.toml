@@ -1,5 +1,5 @@
 [package]
-name = "bamboo-rs-core"
+name = "bamboo-core"
 version = "0.1.0"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
@@ -7,8 +7,8 @@ license = "AGPL-3.0"
 repository = "https://github.com/pietgeursen/bamboo-rs"
 
 [lib]
-name = "bamboo_rs"
-crate-type = ["staticlib", "cdylib"]
+name = "bamboo_core"
+crate-type = ["staticlib", "cdylib", "rlib"]
 
 [features]
 default = ["std"]
@@ -24,6 +24,3 @@ lipmaa-link = "0.1.1"
 blake2b_simd = { version = "0.5.5", default-features = false }
 ed25519-dalek = { git = "https://github.com/nickray/ed25519-dalek", branch = "towards-no-std", default-features = false, features = ["u64_backend"] }
 
-#[[bench]]
-#name = "bench"
-#harness = false

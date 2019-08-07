@@ -25,14 +25,12 @@ impl<Store: EntryStore> Log<Store> {
         // entry.
         if let Some(payload) = payload {
             let payload_hash = new_blake2b(payload);
-            //ensure!(
-            //    payload_hash == entry.payload_hash,
-            //    AddEntryPayloadHashDidNotMatch
-            //);
-            //ensure!(
-            //    payload.len() as u64 == entry.payload_size,
-            //    AddEntryPayloadLengthDidNotMatch
-            //);
+            if payload_hash != entry.payload_hash {
+                return Err(Error::AddEntryPayloadHashDidNotMatch)
+            }
+            if payload.len() as u64 != entry.payload_size {
+                return Err(Error::AddEntryPayloadLengthDidNotMatch)
+            }
         }
 
         let lipmaa_seq = match lipmaa(entry.seq_num) {
@@ -98,7 +96,9 @@ impl<Store: EntryStore> Log<Store> {
                 .ok_or(Error::AddEntryGetLastEntryNotFound)?;
 
             let last_entry = decode(last_entry_bytes).map_err(|_| Error::AddEntryDecodeLastEntry)?;
-            //ensure!(!last_entry.is_end_of_feed, AddEntryToFeedThatHasEnded)
+            if last_entry.is_end_of_feed {
+                return Err(Error::AddEntryToFeedThatHasEnded)
+            }
         }
 
         // Verify the signature.
@@ -107,7 +107,9 @@ impl<Store: EntryStore> Log<Store> {
         let is_valid = entry_to_verify
             .verify_signature()
             .map_err(|_| Error::AddEntrySigNotValidError)?;
-        //ensure!(is_valid, AddEntryWithInvalidSignature);
+        if !is_valid {
+            return Err(Error::AddEntryWithInvalidSignature)
+        }
 
         //Ok, store it!
         self.store

@@ -28,6 +28,9 @@ mod util;
 
 pub use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 pub use entry::Entry;
+pub use signature::Signature;
+pub use yamf_hash::YamfHash;
+pub use yamf_signatory::YamfSignatory;
 pub use entry_store::EntryStore;
 pub use lipmaa_link::lipmaa;
 pub use log::Log;

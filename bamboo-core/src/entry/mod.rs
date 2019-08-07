@@ -121,7 +121,9 @@ where
 
             //Make sure we're not trying to publish after the end of a feed.
             let backlink_entry = decode(&backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?[..])?;
-            //ensure!(!backlink_entry.is_end_of_feed, PublishAfterEndOfFeed);
+            if backlink_entry.is_end_of_feed {
+                return Err(Error::PublishAfterEndOfFeed)
+            }
 
             let backlink = new_blake2b(backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?);
 

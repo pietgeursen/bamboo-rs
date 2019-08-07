@@ -1,7 +1,7 @@
 use crate::error::*;
 use ed25519_dalek::SIGNATURE_LENGTH;
 #[cfg(feature = "std")]
-use std::io::{Error as IoError, Write};
+use std::io::{Write};
 
 pub const ED25519_SIGNATURE_SIZE: usize = SIGNATURE_LENGTH;
 
@@ -10,7 +10,7 @@ use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
 use core::borrow::Borrow;
 use varu64::{
     decode as varu64_decode, encode as varu64_encode,
-    encoding_length, DecodeError as varu64DecodeError,
+    encoding_length 
 };
 #[cfg(feature = "std")]
 use varu64::encode_write as varu64_encode_write;
@@ -62,7 +62,7 @@ impl<B: Borrow<[u8]>> Signature<B> {
                 Signature(remaining_bytes[..size as usize].into()),
                 &remaining_bytes[size as usize..],
             )),
-            Err((err, _)) => Err(Error::DecodeVaru64Error),
+            Err((_, _)) => Err(Error::DecodeVaru64Error),
             _ => Err(Error::DecodeError),
         }
     }

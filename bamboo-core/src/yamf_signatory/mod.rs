@@ -9,7 +9,6 @@ use arrayvec::ArrayVec;
 use ed25519_dalek::PUBLIC_KEY_LENGTH;
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encoding_length,
-    DecodeError as varu64DecodeError,
 };
 
 pub const ED25519_NUMERIC_ID: u64 = 0;
@@ -95,7 +94,7 @@ impl<'a, T: Borrow<[u8]>> YamfSignatory<'a, T> {
                     &remaining_bytes[33..],
                 ))
             }
-            Err((err, _)) => Err(Error::DecodeVaru64Error),
+            Err((_, _)) => Err(Error::DecodeVaru64Error),
             _ => Err(Error::DecodeError {}),
         }
     }

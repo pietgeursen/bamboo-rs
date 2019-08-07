@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-    "core",
+    "bamboo-core",
     "core-test"
     #"generate-test-vectors",
     #"wasm"
