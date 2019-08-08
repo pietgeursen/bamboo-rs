@@ -2,114 +2,121 @@
 extern crate criterion;
 extern crate varu64;
 
-use bamboo_rs::entry::decode;
-use bamboo_rs::entry::Entry;
-use bamboo_rs::entry_store::MemoryEntryStore;
-use bamboo_rs::signature::Signature;
-use bamboo_rs::yamf_hash::{YamfHash, BLAKE2B_HASH_SIZE};
-use bamboo_rs::yamf_signatory::YamfSignatory;
-use bamboo_rs::{EntryStore, Log};
+use bamboo_core::entry::decode;
+use bamboo_core::entry::Entry;
 
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
 
-use varu64::encode_write as varu64_encode_write;
-
 use criterion::Criterion;
 
-#[cfg(feature = "std")]
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("publish", |b| {
         let mut csprng: OsRng = OsRng::new().unwrap();
-        let keypair: Keypair = Keypair::generate(&mut csprng);
+        let key_pair: Keypair = Keypair::generate(&mut csprng);
+        let public_key = key_pair.public.clone();
 
-        let mut log = Log::new(
-            MemoryEntryStore::new(),
-            keypair.public.clone(),
-            Some(keypair),
-        );
-        let payload = [1, 2, 3];
+        let payload = "hello bamboo!";
+        let mut out = [0u8; 512];
+
+        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+            &mut out,
+            Some(&key_pair),
+            &public_key,
+            payload.as_bytes(),
+            false,
+            0,
+            None,
+            None,
+        )
+        .unwrap();
 
         b.iter(|| {
-            log.publish(&payload, false).unwrap();
-            log.store.clear();
+            let mut out2 = [0u8; 512];
+            let _ = Entry::<&[u8], &[u8], &[u8]>::publish(
+                &mut out2,
+                Some(&key_pair),
+                &public_key,
+                payload.as_bytes(),
+                false,
+                1,
+                Some(&out[..size]),
+                Some(&out[..size]),
+            )
+            .unwrap();
         })
     });
     c.bench_function("verify", |b| {
         let mut csprng: OsRng = OsRng::new().unwrap();
-        let keypair: Keypair = Keypair::generate(&mut csprng);
+        let key_pair: Keypair = Keypair::generate(&mut csprng);
+        let public_key = key_pair.public.clone();
 
-        let mut log = Log::new(
-            MemoryEntryStore::new(),
-            keypair.public.clone(),
-            Some(keypair),
-        );
-        let payload = [1, 2, 3];
-        log.publish(&payload, false).unwrap();
+        let payload = "hello bamboo!";
+        let mut out = [0u8; 512];
 
-        let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
+        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+            &mut out,
+            Some(&key_pair),
+            &public_key,
+            payload.as_bytes(),
+            false,
+            0,
+            None,
+            None,
+        )
+        .unwrap();
+        let mut entry = decode(&out[..size]).unwrap();
 
-        let mut entry = decode(entry_bytes).unwrap();
         b.iter(|| entry.verify_signature())
     });
-    c.bench_function("encode entry into writer", |b| {
-        let backlink_bytes = [0xAA; BLAKE2B_HASH_SIZE];
-        let backlink = YamfHash::<&[u8]>::Blake2b(backlink_bytes[..].into());
-        let payload_hash_bytes = [0xAB; BLAKE2B_HASH_SIZE];
-        let payload_hash = YamfHash::<&[u8]>::Blake2b(payload_hash_bytes[..].into());
-        let lipmaa_link_bytes = [0xAC; BLAKE2B_HASH_SIZE];
-        let lipmaa_link = YamfHash::<&[u8]>::Blake2b(lipmaa_link_bytes[..].into());
-        let payload_size = 512;
-        let seq_num = 2;
-        let sig_bytes = [0xDD; 128];
-        let sig = Signature(sig_bytes[..].into());
-        let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519(&author_bytes[..], None);
+    c.bench_function("encode entry", |b| {
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let key_pair: Keypair = Keypair::generate(&mut csprng);
+        let public_key = key_pair.public.clone();
 
-        let entry = Entry {
-            is_end_of_feed: false,
-            payload_hash,
-            payload_size,
-            author,
-            seq_num,
-            lipmaa_link: Some(lipmaa_link),
-            backlink: Some(backlink),
-            sig: Some(sig),
-        };
-        let mut vec = Vec::new();
+        let payload = "hello bamboo!";
+        let mut out = [0u8; 512];
+
+        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+            &mut out,
+            Some(&key_pair),
+            &public_key,
+            payload.as_bytes(),
+            false,
+            0,
+            None,
+            None,
+        )
+        .unwrap();
+        let entry = decode(&out[..size]).unwrap();
+
         b.iter(|| {
-            entry.encode_write(&mut vec).unwrap();
-            vec.clear();
+            let mut encoded = [0u8; 512];
+            entry.encode(&mut encoded).unwrap();
         })
     });
     c.bench_function("decode entry", |b| {
-        let backlink_bytes = [0xAA; BLAKE2B_HASH_SIZE];
-        let backlink = YamfHash::<&[u8]>::Blake2b(backlink_bytes[..].into());
-        let payload_hash_bytes = [0xAB; BLAKE2B_HASH_SIZE];
-        let payload_hash = YamfHash::<&[u8]>::Blake2b(payload_hash_bytes[..].into());
-        let lipmaa_link_bytes = [0xAC; BLAKE2B_HASH_SIZE];
-        let lipmaa_link = YamfHash::<&[u8]>::Blake2b(lipmaa_link_bytes[..].into());
-        let payload_size = 512;
-        let seq_num = 2;
-        let sig_bytes = [0xDD; 128];
-        let sig = Signature(sig_bytes[..].into());
-        let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519(&author_bytes[..], None);
-        let mut entry_vec = Vec::new();
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let key_pair: Keypair = Keypair::generate(&mut csprng);
+        let public_key = key_pair.public.clone();
 
-        entry_vec.push(1u8); // end of feed is true
+        let payload = "hello bamboo!";
+        let mut out = [0u8; 512];
 
-        payload_hash.encode_write(&mut entry_vec).unwrap();
-        varu64_encode_write(payload_size, &mut entry_vec).unwrap();
-        author.encode_write(&mut entry_vec).unwrap();
-        varu64_encode_write(seq_num, &mut entry_vec).unwrap();
-        backlink.encode_write(&mut entry_vec).unwrap();
-        lipmaa_link.encode_write(&mut entry_vec).unwrap();
-        sig.encode_write(&mut entry_vec).unwrap();
+        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+            &mut out,
+            Some(&key_pair),
+            &public_key,
+            payload.as_bytes(),
+            false,
+            0,
+            None,
+            None,
+        )
+        .unwrap();
 
         b.iter(|| {
-            let entry = decode(&entry_vec).unwrap();
-            assert_eq!(entry.seq_num, seq_num);
+            let _ = decode(&out[..size]).unwrap();
         })
     });
 }
