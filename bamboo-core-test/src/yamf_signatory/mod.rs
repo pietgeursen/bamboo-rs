@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use super::{YamfSignatory, ED25519_NUMERIC_ID, ED25519_SIZE};
+    use bamboo_core::yamf_signatory::{YamfSignatory, ED25519_NUMERIC_ID, ED25519_SIZE};
 
     #[test]
     fn encode_yamf() {
