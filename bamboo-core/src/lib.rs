@@ -18,8 +18,6 @@ extern crate serde_derive;
 
 pub mod error;
 pub mod entry;
-pub mod entry_store;
-pub mod log;
 pub mod signature;
 pub mod yamf_hash;
 pub mod yamf_signatory;
@@ -31,7 +29,5 @@ pub use entry::Entry;
 pub use signature::Signature;
 pub use yamf_hash::YamfHash;
 pub use yamf_signatory::YamfSignatory;
-pub use entry_store::EntryStore;
 pub use lipmaa_link::lipmaa;
-pub use log::Log;
 pub use error::Error;

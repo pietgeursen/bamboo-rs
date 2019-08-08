@@ -1,9 +1,9 @@
 mod utils;
 
 use wasm_bindgen::prelude::*;
-use bamboo_rs::{lipmaa};
-use bamboo_rs::entry::{Entry};
-use bamboo_rs::{PublicKey, Keypair, SecretKey};
+use bamboo_core::{lipmaa};
+use bamboo_core::entry::{Entry};
+use bamboo_core::{PublicKey, Keypair, SecretKey};
 use rand::rngs::OsRng;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -32,8 +32,9 @@ pub fn lipmaa_link(seq: u64) -> u64 {
 //        lipmaa_entry_bytes: Option<&[u8]>,
 //        backlink_bytes: Option<&[u8]>,
 //    ) -> Result<usize, Error> {
+#[no_mangle]
 #[wasm_bindgen]
-pub fn publish(out: &mut[u8], public_key: &[u8], secret_key: &[u8], payload: &[u8], is_end_of_feed: bool, last_seq_num: u64, lipmaa_entry_vec: Option<Vec<u8>>, backlink_vec: Option<Vec<u8>>)  {
+pub extern "C" fn publish(out: &mut[u8], public_key: &[u8], secret_key: &[u8], payload: &[u8], is_end_of_feed: bool, last_seq_num: u64, lipmaa_entry_vec: Option<Vec<u8>>, backlink_vec: Option<Vec<u8>>)  {
     //TODO: remove unwrap
     let public_key = PublicKey::from_bytes(public_key).unwrap();
     //TODO: remove unwrap

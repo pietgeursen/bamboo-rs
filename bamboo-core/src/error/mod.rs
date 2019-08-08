@@ -12,7 +12,7 @@ pub enum Error {
     EncodeEntryHasBacklinksWhenSeqZero,
     EncodeBufferLength,
     PublishAfterEndOfFeed,
-    TriedToPublishWithoutSecretKey,
+    PublishWithoutSecretKey,
     PublishWithoutLipmaaEntry,
     PublishWithoutBacklinkEntry,
 

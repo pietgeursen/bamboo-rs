@@ -69,6 +69,7 @@ mod tests {
         let mut entry = decode(entry_bytes).unwrap();
         assert!(entry.verify_signature().unwrap());
     }
+
     #[test]
     fn publish_after_an_end_of_feed_message_errors() {
         let mut csprng: OsRng = OsRng::new().unwrap();
@@ -91,6 +92,7 @@ mod tests {
             _ => panic!("expected publish to fail with an error"),
         }
     }
+
     #[test]
     fn publish_without_secret_key_errors() {
         let mut csprng: OsRng = OsRng::new().unwrap();
@@ -101,7 +103,7 @@ mod tests {
 
         match log.publish(&payload, false) {
             Err(Error::PublishNewEntryFailed {
-                source: crate::entry::Error::TriedToPublishWithoutSecretKey,
+                source: crate::entry::Error::PublishWithoutSecretKey,
             }) => {}
             e => panic!("expected publish to fail with an error, got: {:?}", e),
         }

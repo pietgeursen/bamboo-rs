@@ -12,7 +12,7 @@ default = ["wee_alloc"]
 
 [dependencies]
 wasm-bindgen = "0.2"
-bamboo-rs = {path = "../core"}
+bamboo-core = {path = "../bamboo-core"}
 ed25519-dalek = { git = "https://github.com/nickray/ed25519-dalek", branch = "towards-no-std", default-features = false, features = ["u64_backend"] }
 rand = { version = "0.6.5", features = ["wasm-bindgen"] }
 
