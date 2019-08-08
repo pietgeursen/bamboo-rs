@@ -43,7 +43,7 @@ pub extern "C" fn publish(out: &mut[u8], public_key: &[u8], secret_key: &[u8], p
 
     //TODO: set the out length
     //TODO: remove unwrap
-    Entry::<&[u8], &[u8], &[u8]>::publish(out, &Some(key_pair), &public_key, payload, is_end_of_feed, last_seq_num, lipmaa_entry_vec.as_ref().map(|vec| vec.as_slice()), backlink_vec.as_ref().map(|vec| vec.as_slice()) ).unwrap();
+    Entry::<&[u8], &[u8], &[u8]>::publish(out, Some(&key_pair), &public_key, payload, is_end_of_feed, last_seq_num, lipmaa_entry_vec.as_ref().map(|vec| vec.as_slice()), backlink_vec.as_ref().map(|vec| vec.as_slice()) ).unwrap();
 }
 
 //TODO: deserialize from bytes

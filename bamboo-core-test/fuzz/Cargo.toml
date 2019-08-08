@@ -1,4 +1,3 @@
-
 [package]
 name = "bamboo-rs-fuzz"
 version = "0.0.1"
@@ -9,10 +8,9 @@ publish = false
 cargo-fuzz = true
 
 [dependencies]
-ssb-crypto = "0.1.3"
 
-[dependencies.bamboo-rs]
-path = "../core"
+[dependencies.bamboo-core]
+path = "../../bamboo-core"
 
 [dependencies.libfuzzer-sys]
 git = "https://github.com/rust-fuzz/libfuzzer-sys.git"
@@ -24,6 +22,6 @@ members = ["."]
 [[bin]]
 name = "fuzz_entry_decode"
 path = "fuzz_targets/fuzz_entry_decode.rs"
-[[bin]]
-name = "fuzz_entry_add"
-path = "fuzz_targets/fuzz_entry_add.rs"
+#[[bin]]
+#name = "fuzz_entry_add"
+#path = "fuzz_targets/fuzz_entry_add.rs"

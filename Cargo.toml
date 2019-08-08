@@ -2,9 +2,9 @@
 
 members = [
     "bamboo-core",
-    "bamboo-core-test"
+    "bamboo-core-test",
     #"generate-test-vectors",
-    #"wasm"
+    "bamboo-wasm"
 ]
 
 [profile.release]
