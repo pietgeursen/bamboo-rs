@@ -1,23 +1,29 @@
 use crate::error::*;
 use ed25519_dalek::SIGNATURE_LENGTH;
 #[cfg(feature = "std")]
-use std::io::{Write};
+use std::io::Write;
 
 pub const ED25519_SIGNATURE_SIZE: usize = SIGNATURE_LENGTH;
+
+/// The maximum number of bytes this will use.
+///
+/// This is a bit yuck because it knows the number of bytes varu64 uses to encode the
+/// signature.
+pub const MAX_SIGNATURE_SIZE: usize = ED25519_SIGNATURE_SIZE + 1;
 
 #[cfg(feature = "std")]
 use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
 use core::borrow::Borrow;
-use varu64::{
-    decode as varu64_decode, encode as varu64_encode,
-    encoding_length 
-};
 #[cfg(feature = "std")]
 use varu64::encode_write as varu64_encode_write;
+use varu64::{decode as varu64_decode, encode as varu64_encode, encoding_length};
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Signature<B: Borrow<[u8]>>(
-    #[cfg_attr(feature = "std", serde(serialize_with = "hex_from_bytes", deserialize_with = "vec_from_hex"))]
+    #[cfg_attr(
+        feature = "std",
+        serde(serialize_with = "hex_from_bytes", deserialize_with = "vec_from_hex")
+    )]
     #[cfg_attr(feature = "std", serde(bound(deserialize = "B: From<Vec<u8>>")))]
     pub B,
 );
@@ -50,9 +56,9 @@ impl<B: Borrow<[u8]>> Signature<B> {
     /// Encodes signature into a writer.
     #[cfg(feature = "std")]
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {
-        varu64_encode_write(self.len() as u64, &mut w).map_err(|_|Error::EncodeWriteError)?;
+        varu64_encode_write(self.len() as u64, &mut w).map_err(|_| Error::EncodeWriteError)?;
         w.write_all(&self.0.borrow()[..])
-            .map_err(|_|Error::EncodeWriteError)?;
+            .map_err(|_| Error::EncodeWriteError)?;
         Ok(())
     }
 

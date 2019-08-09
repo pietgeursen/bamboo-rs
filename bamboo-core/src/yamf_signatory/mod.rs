@@ -1,18 +1,23 @@
+use crate::error::*;
 use core::borrow::Borrow;
 #[cfg(feature = "std")]
-use std::io::{Write};
-use crate::error::*;
- 
+use std::io::Write;
+
 #[cfg(feature = "std")]
 use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
 use arrayvec::ArrayVec;
 use ed25519_dalek::PUBLIC_KEY_LENGTH;
-use varu64::{
-    decode as varu64_decode, encode as varu64_encode, encoding_length,
-};
+use varu64::{decode as varu64_decode, encode as varu64_encode, encoding_length};
 
 pub const ED25519_NUMERIC_ID: u64 = 0;
 pub const ED25519_SIZE: usize = PUBLIC_KEY_LENGTH;
+
+/// The maximum number of bytes this will use for any variant.
+///
+/// This is a bit yuck because it knows the number of bytes varu64 uses to encode the
+/// ED25519_NUMERIC_ID and the ED25519_SIZE (2).
+/// This is unlikely to cause a problem until there are hundreds of variants.
+pub const MAX_YAMF_SIGNATORY_SIZE: usize = ED25519_SIZE + 2;
 
 /// A Yamf Signatory holds a public key and a ref to an optional private key.
 ///
@@ -23,7 +28,10 @@ pub const ED25519_SIZE: usize = PUBLIC_KEY_LENGTH;
 pub enum YamfSignatory<'a, T: Borrow<[u8]>> {
     /// Tuple of public and optional secret key
     Ed25519(
-        #[cfg_attr(feature = "std", serde(serialize_with = "hex_from_bytes", deserialize_with = "vec_from_hex"))]
+        #[cfg_attr(
+            feature = "std",
+            serde(serialize_with = "hex_from_bytes", deserialize_with = "vec_from_hex")
+        )]
         #[cfg_attr(feature = "std", serde(bound(deserialize = "T: From<Vec<u8>>")))]
         T,
         #[serde(skip)] Option<&'a [u8]>,
@@ -64,8 +72,9 @@ impl<'a, T: Borrow<[u8]>> YamfSignatory<'a, T> {
             YamfSignatory::Ed25519(vec, _) => {
                 varu64_encode(ED25519_NUMERIC_ID, &mut out[0..1]);
                 varu64_encode(ED25519_SIZE as u64, &mut out[1..2]);
-                w.write_all(&out).map_err(|_|Error::EncodeWriteError)?;
-                w.write_all(vec.borrow()).map_err(|_|Error::EncodeWriteError)?;
+                w.write_all(&out).map_err(|_| Error::EncodeWriteError)?;
+                w.write_all(vec.borrow())
+                    .map_err(|_| Error::EncodeWriteError)?;
                 Ok(())
             }
         }

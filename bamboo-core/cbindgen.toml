@@ -1,0 +1,7 @@
+language = "C"
+
+[parse]
+clean = true
+
+[parse.expand]
+crates = ["bamboo-core"]

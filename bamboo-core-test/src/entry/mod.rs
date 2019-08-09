@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 
-    use bamboo_core::entry::decode;
+    use bamboo_core::entry::{decode, MAX_ENTRY_SIZE_};
     use bamboo_core::yamf_hash::BLAKE2B_HASH_SIZE;
     use bamboo_core::Error;
     use bamboo_core::{Entry, Signature, YamfHash, YamfSignatory};
@@ -88,7 +88,6 @@ mod tests {
     fn publish_first_entry() {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let key_pair: Keypair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public.clone();
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
@@ -96,7 +95,6 @@ mod tests {
         let size = Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut out,
             Some(&key_pair),
-            &public_key,
             payload.as_bytes(),
             false,
             0,
@@ -113,7 +111,6 @@ mod tests {
     fn publish_entry_with_backlinks() {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let key_pair: Keypair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public.clone();
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
@@ -121,7 +118,6 @@ mod tests {
         let size = Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut out,
             Some(&key_pair),
-            &public_key,
             payload.as_bytes(),
             false,
             0,
@@ -134,7 +130,6 @@ mod tests {
         let size2 = Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut out2,
             Some(&key_pair),
-            &public_key,
             payload.as_bytes(),
             false,
             1,
@@ -150,7 +145,6 @@ mod tests {
     fn publish_entry_with_missing_lipmaalink_errors() {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let key_pair: Keypair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public.clone();
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
@@ -158,7 +152,6 @@ mod tests {
         let size = Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut out,
             Some(&key_pair),
-            &public_key,
             payload.as_bytes(),
             false,
             0,
@@ -172,7 +165,6 @@ mod tests {
         match Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut out2,
             Some(&key_pair),
-            &public_key,
             payload.as_bytes(),
             false,
             1,
@@ -187,7 +179,6 @@ mod tests {
     fn publish_entry_with_missing_backlink_errors() {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let key_pair: Keypair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public.clone();
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
@@ -195,7 +186,6 @@ mod tests {
         let size = Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut out,
             Some(&key_pair),
-            &public_key,
             payload.as_bytes(),
             false,
             0,
@@ -209,7 +199,6 @@ mod tests {
         match Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut out2,
             Some(&key_pair),
-            &public_key,
             payload.as_bytes(),
             false,
             1,
@@ -225,7 +214,6 @@ mod tests {
     fn publish_after_an_end_of_feed_message_errors() {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let key_pair: Keypair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public.clone();
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
@@ -233,7 +221,6 @@ mod tests {
         let size = Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut out,
             Some(&key_pair),
-            &public_key,
             payload.as_bytes(),
             true,
             0,
@@ -246,7 +233,6 @@ mod tests {
         match Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut out2,
             Some(&key_pair),
-            &public_key,
             payload.as_bytes(),
             false,
             1,
@@ -261,7 +247,6 @@ mod tests {
     fn publish_with_out_buffer_too_small() {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let key_pair: Keypair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public.clone();
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 1];
@@ -269,7 +254,6 @@ mod tests {
         match Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut out,
             Some(&key_pair),
-            &public_key,
             payload.as_bytes(),
             false,
             0,
@@ -285,7 +269,6 @@ mod tests {
     fn publish_without_secret_key_errors() {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let key_pair: Keypair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public.clone();
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
@@ -293,14 +276,13 @@ mod tests {
         match Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut out,
             None,
-            &public_key,
             payload.as_bytes(),
             false,
             0,
             None,
             None,
         ) {
-            Err(Error::PublishWithoutSecretKey) => {}
+            Err(Error::PublishWithoutKeypair) => {}
             _ => panic!(),
         }
     }
@@ -309,7 +291,6 @@ mod tests {
     fn serde_entry() {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let key_pair: Keypair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public.clone();
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
@@ -317,7 +298,6 @@ mod tests {
         let size = Entry::<&[u8], &[u8], &[u8]>::publish(
             &mut out,
             Some(&key_pair),
-            &public_key,
             payload.as_bytes(),
             false,
             0,
@@ -329,9 +309,12 @@ mod tests {
         let entry = decode(&out[..size]).unwrap();
 
         let string = serde_json::to_string(&entry).unwrap();
-        println!("{:?}", string);
         let parsed: Entry<Vec<u8>, Vec<u8>, Vec<u8>> = serde_json::from_str(&string).unwrap();
 
         assert_eq!(parsed.payload_hash, entry.payload_hash);
+    }
+    fn log_max_entry_size(){
+        println!("max entry size is {:?}", MAX_ENTRY_SIZE_ )
+    
     }
 }

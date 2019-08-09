@@ -1,5 +1,5 @@
-
 #[derive(Debug, Clone)]
+#[repr(C)]
 pub enum Error {
     EncodeIsEndOfFeedError = 1isize,
     EncodePayloadHashError,
@@ -13,6 +13,7 @@ pub enum Error {
     EncodeBufferLength,
     PublishAfterEndOfFeed,
     PublishWithoutSecretKey,
+    PublishWithoutKeypair,
     PublishWithoutLipmaaEntry,
     PublishWithoutBacklinkEntry,
 

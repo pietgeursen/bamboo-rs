@@ -1,25 +1,33 @@
+use crate::error::*;
 #[cfg(feature = "std")]
 use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
 use arrayvec::ArrayVec;
 use blake2b_simd::{blake2b, OUTBYTES};
 use core::borrow::Borrow;
 use core::iter::FromIterator;
-use crate::error::*;
 
 #[cfg(feature = "std")]
-use std::io::{Write};
+use std::io::Write;
 
-use varu64::{
-    decode as varu64_decode, encode as varu64_encode, encoding_length,
-};
+use varu64::{decode as varu64_decode, encode as varu64_encode, encoding_length};
 
 pub const BLAKE2B_HASH_SIZE: usize = OUTBYTES;
 pub const BLAKE2B_NUMERIC_ID: u64 = 0;
 
+/// The maximum number of bytes this will use for any variant.
+///
+/// This is a bit yuck because it knows the number of bytes varu64 uses to encode the
+/// BLAKE2B_HASH_SIZE and the BLAKE2B_NUMERIC_ID (2).
+/// This is unlikely to cause a problem until there are hundreds of variants.
+pub const MAX_YAMF_HASH_SIZE: usize = BLAKE2B_HASH_SIZE + 2;
+
 /// Variants of `YamfHash`
 #[derive(Deserialize, Serialize, Debug, Eq)]
 pub enum YamfHash<T: Borrow<[u8]>> {
-    #[cfg_attr(feature = "std", serde(serialize_with = "hex_from_bytes", deserialize_with = "vec_from_hex"))]
+    #[cfg_attr(
+        feature = "std",
+        serde(serialize_with = "hex_from_bytes", deserialize_with = "vec_from_hex")
+    )]
     #[cfg_attr(feature = "std", serde(bound(deserialize = "T: From<Vec<u8>>")))]
     Blake2b(T),
 }
@@ -95,8 +103,9 @@ impl<T: Borrow<[u8]>> YamfHash<T> {
             YamfHash::Blake2b(vec) => {
                 varu64_encode(BLAKE2B_NUMERIC_ID, &mut out[0..1]);
                 varu64_encode(BLAKE2B_HASH_SIZE as u64, &mut out[1..2]);
-                w.write_all(&out).map_err(|_|Error::EncodeWriteError)?;
-                w.write_all(vec.borrow()).map_err(|_|Error::EncodeWriteError)?;
+                w.write_all(&out).map_err(|_| Error::EncodeWriteError)?;
+                w.write_all(vec.borrow())
+                    .map_err(|_| Error::EncodeWriteError)?;
                 Ok(())
             }
         }
