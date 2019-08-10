@@ -4,8 +4,7 @@ members = [
     "bamboo-core",
     "bamboo-core-test",
     #"generate-test-vectors",
-    "bamboo-wasm",
-    "bamboo-ffi"
+    "bamboo-wasm"
 ]
 
 [profile.release]
