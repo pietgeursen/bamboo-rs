@@ -1,5 +1,10 @@
 # bamboo-wasm
 
+** Note this readme does not reflect the state of the code. The code is nowhere near having all this working **
+
+** All that "works" at the moment is that you can publish a message **
+
+
 > [bamboo](https://github.com/AljoschaMeyer/bamboo) compiled to wasm from [rust](https://github.com/pietgeursen/bamboo-rs)
 
 The goal of this module is to allow you to `publish` new entries or `add` valid exisiting entries to a bamboo `Log`. 
