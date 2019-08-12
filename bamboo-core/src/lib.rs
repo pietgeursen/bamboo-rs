@@ -28,7 +28,7 @@ pub mod yamf_signatory;
 mod util;
 
 pub use ed25519_dalek::{Keypair, PublicKey, SecretKey};
-pub use entry::Entry;
+pub use entry::{Entry, verify, publish};
 pub use error::Error;
 pub use lipmaa_link::lipmaa;
 pub use signature::Signature;
@@ -36,7 +36,7 @@ pub use yamf_hash::YamfHash;
 pub use yamf_signatory::{YamfSignatory, ED25519_SIZE};
 
 use core::slice;
-use ed25519_dalek::{KEYPAIR_LENGTH, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH};
+use ed25519_dalek::{KEYPAIR_LENGTH, SECRET_KEY_LENGTH};
 
 #[repr(C)]
 pub struct PublishEd25519Blake2bEntryArgs<'a> {
@@ -91,7 +91,7 @@ pub extern "C" fn publish_ed25519_blake2b_entry(
         return -1;
     }
 
-    Entry::<&[u8], &[u8], &[u8]>::publish(
+    publish(
         out,
         Some(&key_pair.unwrap()),
         payload,

@@ -4,7 +4,7 @@ mod tests {
     use bamboo_core::entry::{decode, MAX_ENTRY_SIZE_};
     use bamboo_core::yamf_hash::BLAKE2B_HASH_SIZE;
     use bamboo_core::Error;
-    use bamboo_core::{Entry, Signature, YamfHash, YamfSignatory};
+    use bamboo_core::{Entry, Signature, YamfHash, YamfSignatory, verify, publish};
     use ed25519_dalek::Keypair;
     use rand::rngs::OsRng;
     use varu64::encode_write as varu64_encode_write;
@@ -92,7 +92,7 @@ mod tests {
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+        let size = publish(
             &mut out,
             Some(&key_pair),
             payload.as_bytes(),
@@ -115,7 +115,7 @@ mod tests {
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+        let size = publish(
             &mut out,
             Some(&key_pair),
             payload.as_bytes(),
@@ -127,7 +127,7 @@ mod tests {
         .unwrap();
 
         let mut out2 = [0u8; 512];
-        let size2 = Entry::<&[u8], &[u8], &[u8]>::publish(
+        let size2 = publish(
             &mut out2,
             Some(&key_pair),
             payload.as_bytes(),
@@ -137,7 +137,7 @@ mod tests {
             Some(&out[..size]),
         )
         .unwrap();
-        let mut entry2 = decode(&out[..size2]).unwrap();
+        let mut entry2 = decode(&out2[..size2]).unwrap();
 
         assert!(entry2.verify_signature().unwrap());
     }
@@ -149,7 +149,7 @@ mod tests {
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+        let size = publish(
             &mut out,
             Some(&key_pair),
             payload.as_bytes(),
@@ -162,7 +162,7 @@ mod tests {
 
         let mut out2 = [0u8; 512];
 
-        match Entry::<&[u8], &[u8], &[u8]>::publish(
+        match publish(
             &mut out2,
             Some(&key_pair),
             payload.as_bytes(),
@@ -183,7 +183,7 @@ mod tests {
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+        let size = publish(
             &mut out,
             Some(&key_pair),
             payload.as_bytes(),
@@ -196,7 +196,7 @@ mod tests {
 
         let mut out2 = [0u8; 512];
 
-        match Entry::<&[u8], &[u8], &[u8]>::publish(
+        match publish(
             &mut out2,
             Some(&key_pair),
             payload.as_bytes(),
@@ -218,7 +218,7 @@ mod tests {
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+        let size = publish(
             &mut out,
             Some(&key_pair),
             payload.as_bytes(),
@@ -230,7 +230,7 @@ mod tests {
         .unwrap();
 
         let mut out2 = [0u8; 512];
-        match Entry::<&[u8], &[u8], &[u8]>::publish(
+        match publish(
             &mut out2,
             Some(&key_pair),
             payload.as_bytes(),
@@ -251,7 +251,7 @@ mod tests {
         let payload = "hello bamboo!";
         let mut out = [0u8; 1];
 
-        match Entry::<&[u8], &[u8], &[u8]>::publish(
+        match publish(
             &mut out,
             Some(&key_pair),
             payload.as_bytes(),
@@ -267,13 +267,11 @@ mod tests {
 
     #[test]
     fn publish_without_secret_key_errors() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
-        let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        match Entry::<&[u8], &[u8], &[u8]>::publish(
+        match publish(
             &mut out,
             None,
             payload.as_bytes(),
@@ -295,7 +293,7 @@ mod tests {
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+        let size = publish(
             &mut out,
             Some(&key_pair),
             payload.as_bytes(),
@@ -317,4 +315,51 @@ mod tests {
         println!("max entry size is {:?}", MAX_ENTRY_SIZE_ )
     
     }
+
+    #[test]
+    fn verify_entries() {
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let key_pair: Keypair = Keypair::generate(&mut csprng);
+
+        let payload = "hello bamboo!";
+        let mut out = [0u8; 512];
+
+        let size = publish(
+            &mut out,
+            Some(&key_pair),
+            payload.as_bytes(),
+            false,
+            0,
+            None,
+            None,
+        )
+        .unwrap();
+
+        let mut out2 = [0u8; 512];
+        let size2 = publish(
+            &mut out2,
+            Some(&key_pair),
+            payload.as_bytes(),
+            false,
+            1,
+            Some(&out[..size]),
+            Some(&out[..size]),
+        )
+        .unwrap();
+
+        let entry1_bytes = &out[..size];
+
+        match verify(entry1_bytes, Some(payload.as_bytes()), None, None) {
+            Ok(true) => {},
+            err => panic!("{:?}", err)
+        }
+
+        let entry2_bytes = &out2[..size2];
+
+        match verify(entry2_bytes, Some(payload.as_bytes()), Some(entry1_bytes), Some(entry1_bytes)) {
+            Ok(true) => {},
+            err => panic!("{:?}", err)
+        }
+    }
+
 }

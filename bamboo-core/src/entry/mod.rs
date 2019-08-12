@@ -16,7 +16,7 @@ use super::signature::{Signature, MAX_SIGNATURE_SIZE};
 use super::yamf_hash::{YamfHash, MAX_YAMF_HASH_SIZE};
 use super::yamf_signatory::{YamfSignatory, MAX_YAMF_SIGNATORY_SIZE};
 use crate::yamf_hash::new_blake2b;
-use ed25519_dalek::{Keypair, PublicKey};
+use ed25519_dalek::Keypair;
 
 pub use crate::error::*;
 
@@ -91,77 +91,153 @@ where
     }
 }
 
-impl<'a, H, A, S> Entry<'a, H, A, S>
-where
-    H: Borrow<[u8]>,
-    A: Borrow<[u8]>,
-    S: Borrow<[u8]>,
-{
-    pub fn publish(
-        out: &mut [u8],
-        key_pair: Option<&Keypair>,
-        payload: &[u8],
-        is_end_of_feed: bool,
-        last_seq_num: u64,
-        lipmaa_entry_bytes: Option<&[u8]>,
-        backlink_bytes: Option<&[u8]>,
-    ) -> Result<usize, Error> {
-        let public_key = key_pair
-            .as_ref()
-            .map(|keys| keys.public.clone())
-            .ok_or(Error::PublishWithoutKeypair)?;
+pub fn verify(entry_bytes: &[u8], payload: Option<&[u8]>, lipmaa_link: Option<&[u8]>, backlink: Option<&[u8]>) -> Result<bool, Error> {
+    // Decode the entry that we want to add.
+    let entry = decode(entry_bytes).map_err(|_| Error::AddEntryDecodeFailed)?;
 
-        let author = YamfSignatory::<&[u8]>::Ed25519(&public_key.as_bytes()[..], None);
-
-        // calc the payload hash
+    // If we have the payload, check that its hash and length match what is encoded in the
+    // entry.
+    if let Some(payload) = payload {
         let payload_hash = new_blake2b(payload);
-        let payload_size = payload.len() as u64;
+        if payload_hash != entry.payload_hash {
+            return Err(Error::AddEntryPayloadHashDidNotMatch)
+        }
+        if payload.len() as u64 != entry.payload_size {
+            return Err(Error::AddEntryPayloadLengthDidNotMatch)
+        }
+    }
 
-        let seq_num = last_seq_num + 1;
-
-        let mut entry: Entry<_, _, &[u8]> = Entry {
-            is_end_of_feed,
-            payload_hash,
-            payload_size,
-            author,
-            seq_num,
-            backlink: None,
-            lipmaa_link: None,
-            sig: None,
-        };
-
-        // if the seq is larger than 1, we need to append the lipmaa and backlink hashes.
-        if seq_num > 1 {
-            let lipmaa_link =
-                new_blake2b(lipmaa_entry_bytes.ok_or(Error::PublishWithoutLipmaaEntry)?);
-
-            //Make sure we're not trying to publish after the end of a feed.
-            let backlink_entry =
-                decode(&backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?[..])?;
-            if backlink_entry.is_end_of_feed {
-                return Err(Error::PublishAfterEndOfFeed);
+    match (lipmaa_link, entry.lipmaa_link, entry.seq_num) {
+        // Happy path 1: this is the first entry, so we won't find a lipmaa link in the store
+        (None, None, seq_num) if seq_num == 1 => Ok(()),
+        // Happy path 2: seq is larger than one and we can find the lipmaa link in the store
+        (Some(lipmaa), Some(ref entry_lipmaa), seq_num) if seq_num > 1 => {
+            // Hash the lipmaa entry
+            let lipmaa_hash = new_blake2b(lipmaa);
+            // Make sure the lipmaa entry hash matches what's in the entry.
+            if lipmaa_hash != *entry_lipmaa {
+                return Err(Error::AddEntryLipmaaHashDidNotMatch);
             }
 
-            let backlink = new_blake2b(backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?);
+        // Verify the author of the entry is the same as the author in the lipmaa link entry
+            let lipmaa_entry = decode(lipmaa).map_err(|_| Error::AddEntryDecodeLipmaalinkFromStore)?;
 
-            entry.backlink = Some(backlink);
-            entry.lipmaa_link = Some(lipmaa_link);
+        if entry.author != lipmaa_entry.author {
+            return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry);
+        }
+        Ok(())
+        }
+        (_, _, _) => Err(Error::AddEntryNoLipmaalinkInStore),
+    }?;
+
+    match (backlink, entry.backlink, entry.seq_num) {
+        // Happy path 1: This is the first entry and doesn't have a backlink.
+        (_, None, seq_num) if seq_num == 1 => Ok(()),
+
+        //Happy path 2: This does have a backlink and we found it.
+        (Some(backlink), Some(ref entry_backlink), seq_num) if seq_num > 1 => {
+            let backlink_hash = new_blake2b(backlink);
+
+        let backlink_entry = decode(backlink).map_err(|_| Error::AddEntryDecodeLastEntry)?;
+
+        if backlink_entry.is_end_of_feed {
+            return Err(Error::AddEntryToFeedThatHasEnded)
         }
 
-        let mut buff = [0u8; 512];
-        let buff_size = entry.encode(&mut buff)?;
+        if backlink_hash != *entry_backlink {
+            return Err(Error::AddEntryBacklinkHashDidNotMatch);
+        }
+        Ok(())
+        }
+        //Happy path 3: We don't have the backlink for this entry, happens when doing partial
+        //replication.
+        (None, Some(_), seq_num) if seq_num > 1 => Ok(()),
+        (_, _, _) => Err(Error::AddEntryBacklinkHashDidNotMatch),
+    }?;
 
-        let signature = key_pair
-            .as_ref()
-            .ok_or(Error::PublishWithoutSecretKey)?
-            .sign(&buff[..buff_size]);
-        let sig_bytes = &signature.to_bytes()[..];
-        let signature = Signature(sig_bytes.into());
+    // Verify the signature.
+    let mut entry_to_verify =
+        decode(&entry_bytes).map_err(|_| Error::AddEntryDecodeEntryBytesForSigning)?;
+    let is_valid = entry_to_verify
+        .verify_signature()
+        .map_err(|_| Error::AddEntrySigNotValidError)?;
 
-        entry.sig = Some(signature);
+    Ok(is_valid)
+}
 
-        entry.encode(out)
+pub fn publish(
+    out: &mut [u8],
+    key_pair: Option<&Keypair>,
+    payload: &[u8],
+    is_end_of_feed: bool,
+    last_seq_num: u64,
+    lipmaa_entry_bytes: Option<&[u8]>,
+    backlink_bytes: Option<&[u8]>,
+    ) -> Result<usize, Error> {
+    let public_key = key_pair
+        .as_ref()
+        .map(|keys| keys.public.clone())
+        .ok_or(Error::PublishWithoutKeypair)?;
+
+    let author = YamfSignatory::<&[u8]>::Ed25519(&public_key.as_bytes()[..], None);
+
+    // calc the payload hash
+    let payload_hash = new_blake2b(payload);
+    let payload_size = payload.len() as u64;
+
+    let seq_num = last_seq_num + 1;
+
+    let mut entry: Entry<_, _, &[u8]> = Entry {
+        is_end_of_feed,
+        payload_hash,
+        payload_size,
+        author,
+        seq_num,
+        backlink: None,
+        lipmaa_link: None,
+        sig: None,
+    };
+
+    // if the seq is larger than 1, we need to append the lipmaa and backlink hashes.
+    if seq_num > 1 {
+        let lipmaa_link =
+            new_blake2b(lipmaa_entry_bytes.ok_or(Error::PublishWithoutLipmaaEntry)?);
+
+        //Make sure we're not trying to publish after the end of a feed.
+        let backlink_entry =
+            decode(&backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?[..])?;
+        if backlink_entry.is_end_of_feed {
+            return Err(Error::PublishAfterEndOfFeed);
+        }
+
+        let backlink = new_blake2b(backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?);
+
+        entry.backlink = Some(backlink);
+        entry.lipmaa_link = Some(lipmaa_link);
     }
+
+    let mut buff = [0u8; 512];
+    let buff_size = entry.encode(&mut buff)?;
+
+    let signature = key_pair
+        .as_ref()
+        .ok_or(Error::PublishWithoutSecretKey)?
+        .sign(&buff[..buff_size]);
+    let sig_bytes = &signature.to_bytes()[..];
+    let signature = Signature(sig_bytes.into());
+
+    entry.sig = Some(signature);
+
+    entry.encode(out)
+}
+
+impl<'a, H, A, S> Entry<'a, H, A, S>
+where
+H: Borrow<[u8]>,
+A: Borrow<[u8]>,
+S: Borrow<[u8]>,
+{
+
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
         if out.len() < self.encoding_length() {
             return Err(Error::EncodeBufferLength);
