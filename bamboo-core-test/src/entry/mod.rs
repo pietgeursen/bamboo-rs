@@ -4,7 +4,7 @@ mod tests {
     use bamboo_core::entry::{decode, MAX_ENTRY_SIZE_};
     use bamboo_core::yamf_hash::BLAKE2B_HASH_SIZE;
     use bamboo_core::Error;
-    use bamboo_core::{Entry, Signature, YamfHash, YamfSignatory, verify, publish};
+    use bamboo_core::{publish, verify, Entry, Signature, YamfHash, YamfSignatory};
     use ed25519_dalek::Keypair;
     use rand::rngs::OsRng;
     use varu64::encode_write as varu64_encode_write;
@@ -267,19 +267,10 @@ mod tests {
 
     #[test]
     fn publish_without_secret_key_errors() {
-
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        match publish(
-            &mut out,
-            None,
-            payload.as_bytes(),
-            false,
-            0,
-            None,
-            None,
-        ) {
+        match publish(&mut out, None, payload.as_bytes(), false, 0, None, None) {
             Err(Error::PublishWithoutKeypair) => {}
             _ => panic!(),
         }
@@ -311,9 +302,8 @@ mod tests {
 
         assert_eq!(parsed.payload_hash, entry.payload_hash);
     }
-    fn log_max_entry_size(){
-        println!("max entry size is {:?}", MAX_ENTRY_SIZE_ )
-    
+    fn log_max_entry_size() {
+        println!("max entry size is {:?}", MAX_ENTRY_SIZE_)
     }
 
     #[test]
@@ -350,16 +340,20 @@ mod tests {
         let entry1_bytes = &out[..size];
 
         match verify(entry1_bytes, Some(payload.as_bytes()), None, None) {
-            Ok(true) => {},
-            err => panic!("{:?}", err)
+            Ok(true) => {}
+            err => panic!("{:?}", err),
         }
 
         let entry2_bytes = &out2[..size2];
 
-        match verify(entry2_bytes, Some(payload.as_bytes()), Some(entry1_bytes), Some(entry1_bytes)) {
-            Ok(true) => {},
-            err => panic!("{:?}", err)
+        match verify(
+            entry2_bytes,
+            Some(payload.as_bytes()),
+            Some(entry1_bytes),
+            Some(entry1_bytes),
+        ) {
+            Ok(true) => {}
+            err => panic!("{:?}", err),
         }
     }
-
 }
