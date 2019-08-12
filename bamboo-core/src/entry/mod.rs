@@ -91,7 +91,12 @@ where
     }
 }
 
-pub fn verify(entry_bytes: &[u8], payload: Option<&[u8]>, lipmaa_link: Option<&[u8]>, backlink: Option<&[u8]>) -> Result<bool, Error> {
+pub fn verify(
+    entry_bytes: &[u8],
+    payload: Option<&[u8]>,
+    lipmaa_link: Option<&[u8]>,
+    backlink: Option<&[u8]>,
+) -> Result<bool, Error> {
     // Decode the entry that we want to add.
     let entry = decode(entry_bytes).map_err(|_| Error::AddEntryDecodeFailed)?;
 
@@ -100,10 +105,10 @@ pub fn verify(entry_bytes: &[u8], payload: Option<&[u8]>, lipmaa_link: Option<&[
     if let Some(payload) = payload {
         let payload_hash = new_blake2b(payload);
         if payload_hash != entry.payload_hash {
-            return Err(Error::AddEntryPayloadHashDidNotMatch)
+            return Err(Error::AddEntryPayloadHashDidNotMatch);
         }
         if payload.len() as u64 != entry.payload_size {
-            return Err(Error::AddEntryPayloadLengthDidNotMatch)
+            return Err(Error::AddEntryPayloadLengthDidNotMatch);
         }
     }
 
@@ -119,13 +124,14 @@ pub fn verify(entry_bytes: &[u8], payload: Option<&[u8]>, lipmaa_link: Option<&[
                 return Err(Error::AddEntryLipmaaHashDidNotMatch);
             }
 
-        // Verify the author of the entry is the same as the author in the lipmaa link entry
-            let lipmaa_entry = decode(lipmaa).map_err(|_| Error::AddEntryDecodeLipmaalinkFromStore)?;
+            // Verify the author of the entry is the same as the author in the lipmaa link entry
+            let lipmaa_entry =
+                decode(lipmaa).map_err(|_| Error::AddEntryDecodeLipmaalinkFromStore)?;
 
-        if entry.author != lipmaa_entry.author {
-            return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry);
-        }
-        Ok(())
+            if entry.author != lipmaa_entry.author {
+                return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry);
+            }
+            Ok(())
         }
         (_, _, _) => Err(Error::AddEntryNoLipmaalinkInStore),
     }?;
@@ -138,16 +144,16 @@ pub fn verify(entry_bytes: &[u8], payload: Option<&[u8]>, lipmaa_link: Option<&[
         (Some(backlink), Some(ref entry_backlink), seq_num) if seq_num > 1 => {
             let backlink_hash = new_blake2b(backlink);
 
-        let backlink_entry = decode(backlink).map_err(|_| Error::AddEntryDecodeLastEntry)?;
+            let backlink_entry = decode(backlink).map_err(|_| Error::AddEntryDecodeLastEntry)?;
 
-        if backlink_entry.is_end_of_feed {
-            return Err(Error::AddEntryToFeedThatHasEnded)
-        }
+            if backlink_entry.is_end_of_feed {
+                return Err(Error::AddEntryToFeedThatHasEnded);
+            }
 
-        if backlink_hash != *entry_backlink {
-            return Err(Error::AddEntryBacklinkHashDidNotMatch);
-        }
-        Ok(())
+            if backlink_hash != *entry_backlink {
+                return Err(Error::AddEntryBacklinkHashDidNotMatch);
+            }
+            Ok(())
         }
         //Happy path 3: We don't have the backlink for this entry, happens when doing partial
         //replication.
@@ -173,7 +179,7 @@ pub fn publish(
     last_seq_num: u64,
     lipmaa_entry_bytes: Option<&[u8]>,
     backlink_bytes: Option<&[u8]>,
-    ) -> Result<usize, Error> {
+) -> Result<usize, Error> {
     let public_key = key_pair
         .as_ref()
         .map(|keys| keys.public.clone())
@@ -200,8 +206,7 @@ pub fn publish(
 
     // if the seq is larger than 1, we need to append the lipmaa and backlink hashes.
     if seq_num > 1 {
-        let lipmaa_link =
-            new_blake2b(lipmaa_entry_bytes.ok_or(Error::PublishWithoutLipmaaEntry)?);
+        let lipmaa_link = new_blake2b(lipmaa_entry_bytes.ok_or(Error::PublishWithoutLipmaaEntry)?);
 
         //Make sure we're not trying to publish after the end of a feed.
         let backlink_entry =
@@ -233,11 +238,10 @@ pub fn publish(
 
 impl<'a, H, A, S> Entry<'a, H, A, S>
 where
-H: Borrow<[u8]>,
-A: Borrow<[u8]>,
-S: Borrow<[u8]>,
+    H: Borrow<[u8]>,
+    A: Borrow<[u8]>,
+    S: Borrow<[u8]>,
 {
-
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
         if out.len() < self.encoding_length() {
             return Err(Error::EncodeBufferLength);
