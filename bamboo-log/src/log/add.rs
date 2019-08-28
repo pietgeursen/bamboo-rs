@@ -1,10 +1,10 @@
 use super::Log;
-use crate::entry::decode;
 use crate::entry_store::EntryStore;
-use crate::yamf_hash::new_blake2b;
+use bamboo_core::entry::decode;
+use bamboo_core::entry::verify;
 use lipmaa_link::lipmaa;
 
-use crate::error::*;
+use bamboo_core::error::*;
 
 impl<Store: EntryStore> Log<Store> {
     /// Add a valid message to the Log.
@@ -21,94 +21,20 @@ impl<Store: EntryStore> Log<Store> {
         // Decode the entry that we want to add.
         let entry = decode(entry_bytes).map_err(|_| Error::AddEntryDecodeFailed)?;
 
-        // If we have the payload, check that its hash and length match what is encoded in the
-        // entry.
-        if let Some(payload) = payload {
-            let payload_hash = new_blake2b(payload);
-            if payload_hash != entry.payload_hash {
-                return Err(Error::AddEntryPayloadHashDidNotMatch)
-            }
-            if payload.len() as u64 != entry.payload_size {
-                return Err(Error::AddEntryPayloadLengthDidNotMatch)
-            }
-        }
-
         let lipmaa_seq = match lipmaa(entry.seq_num) {
             0 => 1,
             n => n,
         };
 
         // Get the lipmaa entry.
-        let lipmaa = self.store.get_entry_ref(lipmaa_seq);
-
-        match (lipmaa, entry.lipmaa_link, entry.seq_num) {
-            // Happy path 1: this is the first entry, so we won't find a lipmaa link in the store
-            (Ok(None), None, seq_num) if seq_num == 1 => Ok(()),
-            // Happy path 2: seq is larger than one and we can find the lipmaa link in the store
-            (Ok(Some(lipmaa)), Some(ref entry_lipmaa), seq_num) if seq_num > 1 => {
-                // Hash the lipmaa entry
-                let lipmaa_hash = new_blake2b(lipmaa);
-                // Make sure the lipmaa entry hash matches what's in the entry.
-                if lipmaa_hash != *entry_lipmaa {
-                    return Err(Error::AddEntryLipmaaHashDidNotMatch);
-                }
-
-                // Verify the author of the entry is the same as the author in the lipmaa link entry
-                let lipmaa_entry = decode(lipmaa).map_err(|_| Error::AddEntryDecodeLipmaalinkFromStore)?;
-
-                if entry.author != lipmaa_entry.author {
-                    return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry);
-                }
-                Ok(())
-            }
-            (_, _, _) => Err(Error::AddEntryNoLipmaalinkInStore),
-        }?;
-
+        let lipmaa = self.store.get_entry_ref(lipmaa_seq)?;
         // Try and get the backlink entry. If we have it, hash it and check it is correct.
-        let backlink = self.store.get_entry_ref(entry.seq_num - 1);
+        let backlink = self.store.get_entry_ref(entry.seq_num - 1)?;
 
-        match (backlink, entry.backlink, entry.seq_num) {
-            // Happy path 1: This is the first entry and doesn't have a backlink.
-            (_, None, seq_num) if seq_num == 1 => Ok(()),
+        let is_valid = verify(entry_bytes, payload, lipmaa, backlink)?;
 
-            //Happy path 2: This does have a backlink and we found it.
-            (Ok(Some(backlink)), Some(ref entry_backlink), seq_num) if seq_num > 1 => {
-                let backlink_hash = new_blake2b(backlink);
-
-                if backlink_hash != *entry_backlink {
-                    return Err(Error::AddEntryBacklinkHashDidNotMatch);
-                }
-                Ok(())
-            }
-            //Happy path 3: We don't have the backlink for this entry, happens when doing partial
-            //replication.
-            (Ok(None), Some(_), seq_num) if seq_num > 1 => Ok(()),
-            (_, _, _) => Err(Error::AddEntryBacklinkHashDidNotMatch),
-        }?;
-
-        // Get the last entry in the log and make sure it's not an end of feed message.
-        // Only do this check if the store isn't empty.
-        if self.store.get_last_seq() > 0 {
-            let last_entry_bytes = self
-                .store
-                .get_last_entry_ref()
-                .map_err(|_| Error::AddEntryGetLastEntryError)?
-                .ok_or(Error::AddEntryGetLastEntryNotFound)?;
-
-            let last_entry = decode(last_entry_bytes).map_err(|_| Error::AddEntryDecodeLastEntry)?;
-            if last_entry.is_end_of_feed {
-                return Err(Error::AddEntryToFeedThatHasEnded)
-            }
-        }
-
-        // Verify the signature.
-        let mut entry_to_verify =
-            decode(&entry_bytes).map_err(|_| Error::AddEntryDecodeEntryBytesForSigning)?;
-        let is_valid = entry_to_verify
-            .verify_signature()
-            .map_err(|_| Error::AddEntrySigNotValidError)?;
         if !is_valid {
-            return Err(Error::AddEntryWithInvalidSignature)
+            return Err(Error::AddEntryWithInvalidSignature);
         }
 
         //Ok, store it!
@@ -121,13 +47,13 @@ impl<Store: EntryStore> Log<Store> {
 #[cfg(test)]
 mod tests {
     use crate::entry_store::MemoryEntryStore;
-    use crate::log::{Error, Log};
-    use crate::signature::{Signature, ED25519_SIGNATURE_SIZE};
-    use crate::yamf_hash::{new_blake2b, YamfHash};
-    use crate::yamf_signatory::YamfSignatory;
-    use crate::{Entry, EntryStore};
+    use crate::{EntryStore, Log};
     use arrayvec::ArrayVec;
-    use ed25519_dalek::Keypair;
+    use bamboo_core::signature::{Signature, ED25519_SIGNATURE_SIZE};
+    use bamboo_core::yamf_hash::{new_blake2b, YamfHash};
+    use bamboo_core::yamf_signatory::YamfSignatory;
+    use bamboo_core::Error;
+    use bamboo_core::{Entry, Keypair};
     use rand::rngs::OsRng;
     use std::convert::TryInto;
 
@@ -169,7 +95,7 @@ mod tests {
         let entry_bytes: ArrayVec<_> = first_entry.try_into().unwrap();
 
         match log.add(&entry_bytes, Some(b"message number 1")) {
-            Err(Error::AddEntryPayloadLengthDidNotMatch { backtrace: _ }) => {}
+            Err(Error::AddEntryPayloadLengthDidNotMatch) => {}
             _ => panic!("Expected err"),
         }
     }
@@ -184,7 +110,7 @@ mod tests {
         let first_entry = remote_log.store.get_entry(1).unwrap().unwrap();
 
         match log.add(&first_entry, Some(&[0, 1])) {
-            Err(Error::AddEntryPayloadHashDidNotMatch { backtrace: _ }) => {}
+            Err(Error::AddEntryPayloadHashDidNotMatch) => {}
             _ => panic!("Expected err"),
         }
     }
@@ -237,7 +163,7 @@ mod tests {
         log.add(&first_entry, None).unwrap();
 
         match log.add(&second_entry_bytes, None) {
-            Err(Error::AddEntryToFeedThatHasEnded { backtrace: _ }) => {}
+            Err(Error::AddEntryToFeedThatHasEnded) => {}
             _ => panic!("Expected err"),
         }
     }
@@ -281,7 +207,7 @@ mod tests {
         let entry_bytes: ArrayVec<_> = first_entry.try_into().unwrap();
 
         match log.add(&entry_bytes, None) {
-            Err(Error::AddEntryWithInvalidSignature { backtrace: _ }) => {}
+            Err(Error::AddEntryWithInvalidSignature) => {}
             _ => panic!("Expected err"),
         }
     }
@@ -400,7 +326,7 @@ mod tests {
         log.add(&first_entry, None).unwrap();
 
         match log.add(&second_entry_bytes, None) {
-            Err(Error::AddEntryDecodeFailed { source: _ }) => {}
+            Err(Error::AddEntryDecodeFailed) => {}
             e => panic!("Expected err, {:?}", e),
         }
     }
@@ -451,7 +377,7 @@ mod tests {
         log.add(&first_entry, None).unwrap();
 
         match log.add(&second_entry_bytes, None) {
-            Err(Error::AddEntryDecodeFailed { source: _ }) => {}
+            Err(Error::AddEntryDecodeFailed) => {}
             e => panic!("Expected err, {:?}", e),
         }
     }

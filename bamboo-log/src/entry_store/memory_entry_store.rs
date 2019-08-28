@@ -1,6 +1,6 @@
 use super::*;
+pub use bamboo_core::error::*;
 use std::collections::HashMap;
-pub use crate::error::*;
 
 pub struct MemoryEntryStore {
     pub store: HashMap<u64, Vec<u8>>,

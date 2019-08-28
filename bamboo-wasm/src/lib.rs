@@ -2,7 +2,7 @@ mod utils;
 
 use wasm_bindgen::prelude::*;
 use bamboo_core::{lipmaa};
-use bamboo_core::entry::{Entry};
+use bamboo_core::entry::{Entry, publish as publish_entry, decode as decode_entry};
 use bamboo_core::{PublicKey, Keypair, SecretKey};
 use rand::rngs::OsRng;
 
@@ -17,24 +17,24 @@ extern "C" {
     fn alert(s: &str);
 }
 
+#[no_mangle]
 #[wasm_bindgen]
-pub fn lipmaa_link(seq: u64) -> u64 {
+pub extern "C" fn lipmaa_link(seq: u64) -> u64 {
     lipmaa(seq)
 }
 
-//    pub fn publish(
-//        out: &mut [u8],
-//        key_pair: &Option<Keypair>,
-//        public_key: &PublicKey,
-//        payload: &[u8],
-//        is_end_of_feed: bool,
-//        last_seq_num: u64,
-//        lipmaa_entry_bytes: Option<&[u8]>,
-//        backlink_bytes: Option<&[u8]>,
-//    ) -> Result<usize, Error> {
 #[no_mangle]
 #[wasm_bindgen]
-pub extern "C" fn publish(out: &mut[u8], public_key: &[u8], secret_key: &[u8], payload: &[u8], is_end_of_feed: bool, last_seq_num: u64, lipmaa_entry_vec: Option<Vec<u8>>, backlink_vec: Option<Vec<u8>>)  {
+pub extern "C" fn decode(buffer: &[u8]) -> Result<JsValue, JsValue>{
+    let entry = decode_entry(buffer)
+        .map_err(|err| JsValue::from_serde(&err).unwrap())?;
+
+    Ok(JsValue::from_serde(&entry).unwrap())
+}
+
+#[no_mangle]
+#[wasm_bindgen]
+pub extern "C" fn publish(out: &mut[u8], public_key: &[u8], secret_key: &[u8], payload: &[u8], is_end_of_feed: bool, last_seq_num: u64, lipmaa_entry_vec: Option<Vec<u8>>, backlink_vec: Option<Vec<u8>>) -> usize {
     //TODO: remove unwrap
     let public_key = PublicKey::from_bytes(public_key).unwrap();
     //TODO: remove unwrap
@@ -43,11 +43,8 @@ pub extern "C" fn publish(out: &mut[u8], public_key: &[u8], secret_key: &[u8], p
 
     //TODO: set the out length
     //TODO: remove unwrap
-    Entry::<&[u8], &[u8], &[u8]>::publish(out, Some(&key_pair), payload, is_end_of_feed, last_seq_num, lipmaa_entry_vec.as_ref().map(|vec| vec.as_slice()), backlink_vec.as_ref().map(|vec| vec.as_slice()) ).unwrap();
+    publish_entry(out, Some(&key_pair), payload, is_end_of_feed, last_seq_num, lipmaa_entry_vec.as_ref().map(|vec| vec.as_slice()), backlink_vec.as_ref().map(|vec| vec.as_slice()) ).unwrap()
 }
-
-//TODO: deserialize from bytes
-
 
 //TODO: keygen.
 //Warning, just for dev

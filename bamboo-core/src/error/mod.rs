@@ -1,4 +1,5 @@
 #[derive(Debug, Clone)]
+#[derive(Serialize)]
 #[repr(C)]
 pub enum Error {
     EncodeIsEndOfFeedError = 1isize,

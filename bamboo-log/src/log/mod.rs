@@ -1,5 +1,5 @@
-pub use crate::entry_store::{EntryStore};
-use ed25519_dalek::{Keypair, PublicKey};
+pub use crate::entry_store::EntryStore;
+use bamboo_core::{Keypair, PublicKey};
 
 pub mod add;
 pub mod publish;

@@ -3,7 +3,8 @@
 members = [
     "bamboo-core",
     "bamboo-core-test",
-    #"generate-test-vectors",
+    "bamboo-log",
+    "generate-test-vectors",
     "bamboo-wasm"
 ]
 

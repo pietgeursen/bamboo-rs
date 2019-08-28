@@ -1,8 +1,8 @@
 use lipmaa_link::lipmaa;
 
-use crate::entry::Entry;
 use crate::entry_store::EntryStore;
-use crate::error::*;
+use bamboo_core::entry::publish;
+use bamboo_core::error::*;
 
 use super::Log;
 
@@ -14,41 +14,40 @@ impl<Store: EntryStore> Log<Store> {
         let seq_num = last_seq_num + 1;
         let lipmaa_link_seq = lipmaa(seq_num);
 
-        let lipmaa_entry_bytes =
-            self.store
-                .get_entry_ref(lipmaa_link_seq)
-                .map_err(|_|Error::GetEntryFailed)?;
+        let lipmaa_entry_bytes = self
+            .store
+            .get_entry_ref(lipmaa_link_seq)
+            .map_err(|_| Error::GetEntryFailed)?;
         let backlink_bytes = self
             .store
             .get_entry_ref(last_seq_num)
-            .map_err(|_|Error::GetEntryFailed )?;
+            .map_err(|_| Error::GetEntryFailed)?;
 
-        let length = Entry::<&[u8], &[u8], &[u8]>::publish(
+        let length = publish(
             &mut buff,
-            &self.key_pair,
-            &self.public_key,
+            self.key_pair.as_ref(),
             payload,
             is_end_of_feed,
             last_seq_num,
             lipmaa_entry_bytes,
             backlink_bytes,
         )
-        .map_err(|_|Error::PublishNewEntryFailed)?;
+        .map_err(|_| Error::PublishNewEntryFailed)?;
 
         self.store
             .add_entry(&buff[..length], seq_num)
-            .map_err(|_|Error::AppendFailed)
+            .map_err(|_| Error::AppendFailed)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::entry::decode;
     use crate::entry_store::MemoryEntryStore;
-    use crate::log::{Error, Log};
+    use crate::log::Log;
     use crate::EntryStore;
+    use bamboo_core::entry::decode;
+    use bamboo_core::{Error, Keypair};
 
-    use ed25519_dalek::Keypair;
     use rand::rngs::OsRng;
 
     #[test]
@@ -86,9 +85,7 @@ mod tests {
         log.publish(&payload, true).unwrap();
 
         match log.publish(&payload, false) {
-            Err(Error::PublishNewEntryFailed {
-                source: crate::entry::Error::PublishAfterEndOfFeed { backtrace: _ },
-            }) => {}
+            Err(Error::PublishNewEntryFailed) => {}
             _ => panic!("expected publish to fail with an error"),
         }
     }
@@ -102,9 +99,7 @@ mod tests {
         let payload = [1, 2, 3];
 
         match log.publish(&payload, false) {
-            Err(Error::PublishNewEntryFailed {
-                source: crate::entry::Error::PublishWithoutSecretKey,
-            }) => {}
+            Err(Error::PublishNewEntryFailed) => {}
             e => panic!("expected publish to fail with an error, got: {:?}", e),
         }
     }
