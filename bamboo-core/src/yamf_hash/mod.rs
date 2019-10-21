@@ -148,7 +148,7 @@ mod tests {
 
         let mut encoded = [0; 2];
         match yamf_hash.encode_write(&mut encoded[..]) {
-            Err(Error::EncodeWriteError { source: _ }) => {}
+            Err(Error::EncodeWriteError ) => {}
             _ => panic!("Go ok, expected error"),
         }
     }
@@ -159,7 +159,7 @@ mod tests {
 
         let mut encoded = [0; 4];
         match yamf_hash.encode_write(&mut encoded[..]) {
-            Err(Error::EncodeWriteError { source: _ }) => {}
+            Err(Error::EncodeWriteError) => {}
             _ => panic!("Go ok, expected error"),
         }
     }
@@ -190,7 +190,7 @@ mod tests {
         let result = YamfHash::<&[u8]>::decode(&hash_bytes);
 
         match result {
-            Err(Error::DecodeVaru64Error { source: _ }) => {}
+            Err(Error::DecodeVaru64Error) => {}
             _ => panic!(),
         }
     }
