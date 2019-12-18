@@ -1,6 +1,8 @@
 use arrayvec::ArrayVec;
 use core::borrow::Borrow;
 use core::convert::TryFrom;
+use lipmaa_link::lipmaa;
+
 #[cfg(feature = "std")]
 use std::io::Write;
 use varu64::{
@@ -114,11 +116,18 @@ pub fn verify(
         }
     }
 
-    match (lipmaa_link, entry.lipmaa_link, entry.seq_num) {
+    let lipmaa_is_required = is_lipmaa_required(entry.seq_num);
+
+    match (
+        lipmaa_link,
+        entry.lipmaa_link,
+        entry.seq_num,
+        lipmaa_is_required,
+    ) {
         // Happy path 1: this is the first entry, so we won't find a lipmaa link in the store
-        (None, None, seq_num) if seq_num == 1 => Ok(()),
+        (None, None, seq_num, _) if seq_num == 1 => Ok(()),
         // Happy path 2: seq is larger than one and we can find the lipmaa link in the store
-        (Some(lipmaa), Some(ref entry_lipmaa), seq_num) if seq_num > 1 => {
+        (Some(lipmaa), Some(ref entry_lipmaa), seq_num, true) if seq_num > 1 => {
             // Hash the lipmaa entry
             let lipmaa_hash = new_blake2b(lipmaa);
             // Make sure the lipmaa entry hash matches what's in the entry.
@@ -139,7 +148,9 @@ pub fn verify(
             }
             Ok(())
         }
-        (_, _, _) => Err(Error::AddEntryNoLipmaalinkInStore),
+        // Happy path 3: lipmaa link is not required because it would duplicate the backlink.
+        (_, _, seq_num, false) if seq_num > 1 => Ok(()),
+        (_, _, _, _) => Err(Error::AddEntryNoLipmaalinkInStore),
     }?;
 
     match (backlink, entry.backlink, entry.seq_num) {
@@ -232,13 +243,20 @@ pub fn publish(
         if backlink_entry.is_end_of_feed {
             return Err(Error::PublishAfterEndOfFeed);
         }
+
+        // Avoid publishing to a feed using an incorrect log_id
         if log_id != backlink_entry.log_id {
             return Err(Error::PublishWithIncorrectLogId);
         }
-        let backlink = new_blake2b(backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?);
 
+        let backlink = new_blake2b(backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?);
         entry.backlink = Some(backlink);
-        entry.lipmaa_link = Some(lipmaa_link);
+
+        // If the lipmaalink and backlink would be different, we should append the lipmaalink,
+        // otherwise we're allowed to omit it to save some bytes.
+        if is_lipmaa_required(seq_num) {
+            entry.lipmaa_link = Some(lipmaa_link);
+        }
     }
 
     let mut buff = [0u8; 512];
@@ -300,6 +318,12 @@ where
                     .map_err(|_| Error::EncodeBacklinkError)?;
                 Ok(next_byte_num)
             }
+            (n, Some(ref backlink), None) if n > 1 => {
+                next_byte_num += backlink
+                    .encode(&mut out[next_byte_num..])
+                    .map_err(|_| Error::EncodeBacklinkError)?;
+                Ok(next_byte_num)
+            }
             (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
             _ => Ok(next_byte_num),
         }?;
@@ -355,6 +379,9 @@ where
                     .encode_write(&mut w)
                     .map_err(|_| Error::EncodeBacklinkError)
             }
+            (n, Some(ref backlink), None) if n > 1 => backlink
+                .encode_write(&mut w)
+                .map_err(|_| Error::EncodeBacklinkError),
             (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
             _ => Ok(()),
         }?;
@@ -454,15 +481,22 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [
         return Err(Error::DecodeSeqIsZero);
     }
 
+    let lipmaa_is_required = is_lipmaa_required(seq_num);
+
     // Decode the backlink and lipmaa links if its not the first sequence
-    let (backlink, lipmaa_link, remaining_bytes) = match seq_num {
-        1 => (None, None, remaining_bytes),
-        _ => {
+    let (backlink, lipmaa_link, remaining_bytes) = match (seq_num, lipmaa_is_required) {
+        (1, _) => (None, None, remaining_bytes),
+        (_, true) => {
             let (lipmaa_link, remaining_bytes) =
                 YamfHash::<&[u8]>::decode(remaining_bytes).map_err(|_| Error::DecodeLipmaaError)?;
             let (backlink, remaining_bytes) = YamfHash::<&[u8]>::decode(remaining_bytes)
                 .map_err(|_| Error::DecodeBacklinkError)?;
             (Some(backlink), Some(lipmaa_link), remaining_bytes)
+        }
+        (_, false) => {
+            let (backlink, remaining_bytes) = YamfHash::<&[u8]>::decode(remaining_bytes)
+                .map_err(|_| Error::DecodeBacklinkError)?;
+            (Some(backlink), None, remaining_bytes)
         }
     };
 
@@ -490,4 +524,8 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [
         lipmaa_link,
         sig: Some(sig),
     })
+}
+
+fn is_lipmaa_required(sequence_num: u64) -> bool {
+    lipmaa(sequence_num) != sequence_num - 1
 }

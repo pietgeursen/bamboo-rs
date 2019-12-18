@@ -15,8 +15,6 @@ mod tests {
         let backlink = YamfHash::<&[u8]>::Blake2b(backlink_bytes[..].into());
         let payload_hash_bytes = [0xAB; BLAKE2B_HASH_SIZE];
         let payload_hash = YamfHash::<&[u8]>::Blake2b(payload_hash_bytes[..].into());
-        let lipmaa_link_bytes = [0xAC; BLAKE2B_HASH_SIZE];
-        let lipmaa_link = YamfHash::<&[u8]>::Blake2b(lipmaa_link_bytes[..].into());
         let payload_size = 512;
         let seq_num = 2;
         let log_id = 333;
@@ -31,7 +29,7 @@ mod tests {
         author.encode_write(&mut entry_vec).unwrap();
         varu64_encode_write(log_id, &mut entry_vec).unwrap();
         varu64_encode_write(seq_num, &mut entry_vec).unwrap();
-        lipmaa_link.encode_write(&mut entry_vec).unwrap();
+        //lipmaa_link.encode_write(&mut entry_vec).unwrap();
         backlink.encode_write(&mut entry_vec).unwrap();
         varu64_encode_write(payload_size, &mut entry_vec).unwrap();
         payload_hash.encode_write(&mut entry_vec).unwrap();
@@ -48,12 +46,6 @@ mod tests {
         match entry.backlink {
             Some(YamfHash::Blake2b(ref hash)) => {
                 assert_eq!(hash.as_ref(), &backlink_bytes[..]);
-            }
-            _ => panic!(),
-        }
-        match entry.lipmaa_link {
-            Some(YamfHash::Blake2b(ref hash)) => {
-                assert_eq!(hash.as_ref(), &lipmaa_link_bytes[..]);
             }
             _ => panic!(),
         }
@@ -425,7 +417,7 @@ mod tests {
         let entry1_bytes = &out[..size];
 
         let mut out2 = [0u8; 512];
-        let size2 = publish(
+        publish(
             &mut out2,
             Some(&key_pair),
             0,
@@ -449,7 +441,7 @@ mod tests {
             Some(entry1_bytes),
             Some(entry1_bytes),
         ) {
-            Err(Error::AddEntryLogIdDidNotMatchLipmaaEntry) => {}
+            Err(Error::AddEntryLogIdDidNotMatchPreviousEntry) => {}
             err => panic!("{:?}", err),
         }
     }
