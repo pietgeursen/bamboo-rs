@@ -43,7 +43,7 @@ pub extern "C" fn publish(out: &mut[u8], public_key: &[u8], secret_key: &[u8], p
 
     //TODO: set the out length
     //TODO: remove unwrap
-    publish_entry(out, Some(&key_pair), payload, is_end_of_feed, last_seq_num, lipmaa_entry_vec.as_ref().map(|vec| vec.as_slice()), backlink_vec.as_ref().map(|vec| vec.as_slice()) ).unwrap()
+    publish_entry(out, Some(&key_pair), 0, payload, is_end_of_feed, last_seq_num, lipmaa_entry_vec.as_ref().map(|vec| vec.as_slice()), backlink_vec.as_ref().map(|vec| vec.as_slice()) ).unwrap()
 }
 
 //TODO: keygen.
