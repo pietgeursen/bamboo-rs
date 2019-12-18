@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 
-    use bamboo_core::entry::{decode, MAX_ENTRY_SIZE_};
+    use bamboo_core::entry::decode;
     use bamboo_core::yamf_hash::BLAKE2B_HASH_SIZE;
     use bamboo_core::Error;
     use bamboo_core::{publish, verify, Entry, Signature, YamfHash, YamfSignatory};
@@ -19,6 +19,7 @@ mod tests {
         let lipmaa_link = YamfHash::<&[u8]>::Blake2b(lipmaa_link_bytes[..].into());
         let payload_size = 512;
         let seq_num = 2;
+        let log_id = 333;
         let sig_bytes = [0xDD; 128];
         let sig = Signature(&sig_bytes[..]);
         let author_bytes = [0xEE; 32];
@@ -27,13 +28,13 @@ mod tests {
         let mut entry_vec = Vec::new();
 
         entry_vec.push(1u8); // end of feed is true
-
-        payload_hash.encode_write(&mut entry_vec).unwrap();
-        varu64_encode_write(payload_size, &mut entry_vec).unwrap();
         author.encode_write(&mut entry_vec).unwrap();
+        varu64_encode_write(log_id, &mut entry_vec).unwrap();
         varu64_encode_write(seq_num, &mut entry_vec).unwrap();
-        backlink.encode_write(&mut entry_vec).unwrap();
         lipmaa_link.encode_write(&mut entry_vec).unwrap();
+        backlink.encode_write(&mut entry_vec).unwrap();
+        varu64_encode_write(payload_size, &mut entry_vec).unwrap();
+        payload_hash.encode_write(&mut entry_vec).unwrap();
         sig.encode_write(&mut entry_vec).unwrap();
 
         let entry = decode(&entry_vec).unwrap();
@@ -70,6 +71,8 @@ mod tests {
             }
             _ => panic!(),
         }
+
+        assert_eq!(entry.log_id,log_id);
 
         let mut encoded = Vec::new();
 
@@ -301,9 +304,6 @@ mod tests {
         let parsed: Entry<Vec<u8>, Vec<u8>, Vec<u8>> = serde_json::from_str(&string).unwrap();
 
         assert_eq!(parsed.payload_hash, entry.payload_hash);
-    }
-    fn log_max_entry_size() {
-        println!("max entry size is {:?}", MAX_ENTRY_SIZE_)
     }
 
     #[test]

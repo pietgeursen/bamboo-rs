@@ -1,5 +1,4 @@
-#[derive(Debug, Clone)]
-#[derive(Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[repr(C)]
 pub enum Error {
     EncodeIsEndOfFeedError = 1isize,
@@ -7,6 +6,7 @@ pub enum Error {
     EncodePayloadSizeError,
     EncodeAuthorError,
     EncodeSeqError,
+    EncodeLogIdError,
     EncodeBacklinkError,
     EncodeLipmaaError,
     EncodeSigError,
@@ -21,6 +21,7 @@ pub enum Error {
     DecodeIsEndOfFeedError,
     DecodePayloadHashError,
     DecodePayloadSizeError,
+    DecodeLogIdError,
     DecodeAuthorError,
     DecodeSeqError,
     DecodeSeqIsZero,

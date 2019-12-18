@@ -148,7 +148,7 @@ mod tests {
 
         let mut encoded = [0; 2];
         match yamf_hash.encode_write(&mut encoded[..]) {
-            Err(Error::EncodeWriteError ) => {}
+            Err(Error::EncodeWriteError) => {}
             _ => panic!("Go ok, expected error"),
         }
     }

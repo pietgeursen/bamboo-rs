@@ -1,5 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![feature(const_fn)]
 
 #[cfg(not(feature = "std"))]
 #[panic_handler]
