@@ -70,7 +70,7 @@ pub struct VerifyEd25519Blake2bEntryArgs<'a> {
 }
 
 #[no_mangle]
-pub extern "C" fn verify_ed25519_blake2b_entry(args: &mut VerifyEd25519Blake2bEntryArgs) -> isize {
+pub extern "C" fn verify_ed25519_blake2b_entry(args: &mut VerifyEd25519Blake2bEntryArgs) -> Error {
     let lipmaalink_slice =
         unsafe { slice::from_raw_parts(args.lipmaalink_bytes, args.lipmaalink_length) };
     let lipmaalink = match args.lipmaalink_length {
@@ -95,15 +95,15 @@ pub extern "C" fn verify_ed25519_blake2b_entry(args: &mut VerifyEd25519Blake2bEn
     verify(entry, payload, lipmaalink, backlink)
         .map(|is_valid| {
             args.is_valid = is_valid;
-            0
+            Error::NoError
         })
-        .unwrap_or_else(|err| err as isize)
+        .unwrap()
 }
 
 #[no_mangle]
 pub extern "C" fn publish_ed25519_blake2b_entry(
     args: &mut PublishEd25519Blake2bEntryArgs,
-) -> isize {
+) -> Error {
     let out: &mut [u8] = unsafe { slice::from_raw_parts_mut(args.out, args.out_length) };
     let payload: &[u8] = unsafe { slice::from_raw_parts(args.payload_bytes, args.payload_length) };
     let public_key: &[u8] =
@@ -132,7 +132,7 @@ pub extern "C" fn publish_ed25519_blake2b_entry(
     let key_pair = Keypair::from_bytes(&key_pair_bytes[..]);
 
     if let Err(_) = key_pair {
-        return -1;
+        return Error::PublishWithoutKeypair;
     }
 
     publish(
@@ -147,7 +147,7 @@ pub extern "C" fn publish_ed25519_blake2b_entry(
     )
     .map(|encoded_size| {
         args.out_length = encoded_size;
-        0
+        Error::NoError    
     })
-    .unwrap_or_else(|err| err as isize)
+    .unwrap()
 }

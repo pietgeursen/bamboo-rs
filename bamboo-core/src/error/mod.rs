@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, Serialize)]
 #[repr(C)]
 pub enum Error {
+    NoError = 0isize,
     EncodeIsEndOfFeedError = 1isize,
     EncodePayloadHashError,
     EncodePayloadSizeError,
