@@ -98,6 +98,7 @@ mod tests {
         let size = publish(
             &mut out,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             false,
             0,
@@ -121,6 +122,7 @@ mod tests {
         let size = publish(
             &mut out,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             false,
             0,
@@ -133,6 +135,7 @@ mod tests {
         let size2 = publish(
             &mut out2,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             false,
             1,
@@ -155,6 +158,7 @@ mod tests {
         let size = publish(
             &mut out,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             false,
             0,
@@ -168,6 +172,7 @@ mod tests {
         match publish(
             &mut out2,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             false,
             1,
@@ -189,6 +194,7 @@ mod tests {
         let size = publish(
             &mut out,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             false,
             0,
@@ -202,6 +208,7 @@ mod tests {
         match publish(
             &mut out2,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             false,
             1,
@@ -224,6 +231,7 @@ mod tests {
         let size = publish(
             &mut out,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             true,
             0,
@@ -236,6 +244,7 @@ mod tests {
         match publish(
             &mut out2,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             false,
             1,
@@ -257,6 +266,7 @@ mod tests {
         match publish(
             &mut out,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             false,
             0,
@@ -273,7 +283,7 @@ mod tests {
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        match publish(&mut out, None, payload.as_bytes(), false, 0, None, None) {
+        match publish(&mut out, None, 0, payload.as_bytes(), false, 0, None, None) {
             Err(Error::PublishWithoutKeypair) => {}
             _ => panic!(),
         }
@@ -290,6 +300,7 @@ mod tests {
         let size = publish(
             &mut out,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             false,
             0,
@@ -317,6 +328,7 @@ mod tests {
         let size = publish(
             &mut out,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             false,
             0,
@@ -329,6 +341,7 @@ mod tests {
         let size2 = publish(
             &mut out2,
             Some(&key_pair),
+            0,
             payload.as_bytes(),
             false,
             1,

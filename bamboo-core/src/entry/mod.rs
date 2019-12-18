@@ -176,6 +176,7 @@ pub fn verify(
 pub fn publish(
     out: &mut [u8],
     key_pair: Option<&Keypair>,
+    log_id: u64,
     payload: &[u8],
     is_end_of_feed: bool,
     last_seq_num: u64,
@@ -196,7 +197,7 @@ pub fn publish(
     let seq_num = last_seq_num + 1;
 
     let mut entry: Entry<_, _, &[u8]> = Entry {
-        log_id: 0,
+        log_id,
         is_end_of_feed,
         payload_hash,
         payload_size,

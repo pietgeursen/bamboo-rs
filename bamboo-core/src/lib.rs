@@ -53,6 +53,7 @@ pub struct PublishEd25519Blake2bEntryArgs<'a> {
     pub lipmaalink_length: usize,
     pub is_end_of_feed: bool,
     pub last_seq_num: u64,
+    pub log_id: u64,
 }
 
 #[repr(C)]
@@ -137,6 +138,7 @@ pub extern "C" fn publish_ed25519_blake2b_entry(
     publish(
         out,
         Some(&key_pair.unwrap()),
+        args.log_id,
         payload,
         args.is_end_of_feed,
         args.last_seq_num,
