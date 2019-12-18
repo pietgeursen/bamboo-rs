@@ -1,6 +1,6 @@
 [package]
 name = "bamboo-core-test"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 
@@ -19,7 +19,7 @@ serde = { version = "1.0.94", default-features = false , features = ["derive"] }
 serde_derive = { version = "1.0.94", default-features = false }
 serde_json = "1.0.40" 
 hex = { git = "https://github.com/KokaKiwi/rust-hex", default-features = false }
-varu64 = { path = "../../varu64-rs", default-features = false } 
+varu64 = { git = "https://github.com/AljoschaMeyer/varu64-rs", default-features = false } 
 lipmaa-link = "0.1.1"
 blake2b_simd = { version = "0.5.5", default-features = false }
 ed25519-dalek = { git = "https://github.com/nickray/ed25519-dalek", branch = "towards-no-std", default-features = false, features = ["u64_backend"] }
