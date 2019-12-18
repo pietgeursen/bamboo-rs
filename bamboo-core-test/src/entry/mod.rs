@@ -288,6 +288,40 @@ mod tests {
             _ => panic!(),
         }
     }
+    #[test]
+    fn publish_with_different_log_id_to_previous_errors() {
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let key_pair: Keypair = Keypair::generate(&mut csprng);
+
+        let payload = "hello bamboo!";
+        let mut out = [0u8; 512];
+        let size = publish(
+            &mut out,
+            Some(&key_pair),
+            0,
+            payload.as_bytes(),
+            false,
+            0,
+            None,
+            None,
+        )
+        .unwrap();
+
+        let mut out2 = [0u8; 512];
+        match publish(
+            &mut out2,
+            Some(&key_pair),
+            1,
+            payload.as_bytes(),
+            false,
+            1,
+            Some(&out[..size]),
+            Some(&out[..size]),
+        ) {
+            Err(Error::PublishWithIncorrectLogId) => {}
+            _ => panic!(),
+        }
+    }
 
     #[test]
     fn serde_entry() {
@@ -366,6 +400,56 @@ mod tests {
             Some(entry1_bytes),
         ) {
             Ok(true) => {}
+            err => panic!("{:?}", err),
+        }
+    }
+    #[test]
+    fn verify_entry_detects_incorrect_log_id(){
+        let mut csprng: OsRng = OsRng::new().unwrap();
+        let key_pair: Keypair = Keypair::generate(&mut csprng);
+
+        let payload = "hello bamboo!";
+        let mut out = [0u8; 512];
+
+        let size = publish(
+            &mut out,
+            Some(&key_pair),
+            0,
+            payload.as_bytes(),
+            false,
+            0,
+            None,
+            None,
+        )
+        .unwrap();
+        let entry1_bytes = &out[..size];
+
+        let mut out2 = [0u8; 512];
+        let size2 = publish(
+            &mut out2,
+            Some(&key_pair),
+            0,
+            payload.as_bytes(),
+            false,
+            1,
+            Some(&out[..size]),
+            Some(&out[..size]),
+        )
+        .unwrap();
+
+        let mut entry2 = decode(&out2).unwrap();
+        entry2.log_id = 1;
+
+        let mut entry2_vec = Vec::new();
+        entry2.encode_write(&mut entry2_vec).unwrap();
+
+        match verify(
+            &entry2_vec,
+            Some(payload.as_bytes()),
+            Some(entry1_bytes),
+            Some(entry1_bytes),
+        ) {
+            Err(Error::AddEntryLogIdDidNotMatchLipmaaEntry) => {}
             err => panic!("{:?}", err),
         }
     }

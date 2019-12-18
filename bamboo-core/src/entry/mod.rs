@@ -126,10 +126,14 @@ pub fn verify(
                 return Err(Error::AddEntryLipmaaHashDidNotMatch);
             }
 
-            // Verify the author of the entry is the same as the author in the lipmaa link entry
             let lipmaa_entry =
                 decode(lipmaa).map_err(|_| Error::AddEntryDecodeLipmaalinkFromStore)?;
 
+            // Verify that the log_id of the entry is the same as the lipmaa entry
+            if entry.log_id != lipmaa_entry.log_id {
+                return Err(Error::AddEntryLogIdDidNotMatchLipmaaEntry);
+            }
+            // Verify the author of the entry is the same as the author in the lipmaa link entry
             if entry.author != lipmaa_entry.author {
                 return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry);
             }
@@ -148,6 +152,16 @@ pub fn verify(
 
             let backlink_entry = decode(backlink).map_err(|_| Error::AddEntryDecodeLastEntry)?;
 
+            // Verify that the log_id of the entry is the same as the lipmaa entry
+            if entry.log_id != backlink_entry.log_id {
+                return Err(Error::AddEntryLogIdDidNotMatchPreviousEntry);
+            }
+            // Verify the author of the entry is the same as the author in the lipmaa link entry
+            if entry.author != backlink_entry.author {
+                return Err(Error::AddEntryAuthorDidNotMatchPreviousEntry);
+            }
+
+            // Verify this wasn't published after an end of feed message.
             if backlink_entry.is_end_of_feed {
                 return Err(Error::AddEntryToFeedThatHasEnded);
             }
@@ -218,7 +232,9 @@ pub fn publish(
         if backlink_entry.is_end_of_feed {
             return Err(Error::PublishAfterEndOfFeed);
         }
-
+        if log_id != backlink_entry.log_id {
+            return Err(Error::PublishWithIncorrectLogId);
+        }
         let backlink = new_blake2b(backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?);
 
         entry.backlink = Some(backlink);
