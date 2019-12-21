@@ -81,7 +81,7 @@ mod tests {
 
     #[test]
     fn publish_first_entry() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng{};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn publish_entry_with_backlinks() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng{};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -141,7 +141,7 @@ mod tests {
     }
     #[test]
     fn publish_entry_with_missing_lipmaalink_errors() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng{};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -177,7 +177,7 @@ mod tests {
     }
     #[test]
     fn publish_entry_with_missing_backlink_errors() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng{};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn publish_after_an_end_of_feed_message_errors() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng{};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -249,7 +249,7 @@ mod tests {
     }
     #[test]
     fn publish_with_out_buffer_too_small() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng{};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -282,7 +282,7 @@ mod tests {
     }
     #[test]
     fn publish_with_different_log_id_to_previous_errors() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng{};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -317,7 +317,7 @@ mod tests {
 
     #[test]
     fn serde_entry() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng{};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -345,7 +345,7 @@ mod tests {
 
     #[test]
     fn verify_entries() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng{};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -397,7 +397,7 @@ mod tests {
     }
     #[test]
     fn verify_entry_detects_incorrect_log_id(){
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng{};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";

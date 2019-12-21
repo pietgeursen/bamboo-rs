@@ -15,12 +15,12 @@ default = ["std"]
 std = ["varu64/std", "hex/std"]
 
 [dependencies]
-arrayvec = { version = "0.4.11", default-features = false}
-serde = { version = "1.0.94", default-features = false , features = ["derive"] }
-serde_derive = { version = "1.0.94", default-features = false }
+arrayvec = { version = "0.4", default-features = false}
+serde = { version = "1.0", default-features = false , features = ["derive"] }
+serde_derive = { version = "1.0", default-features = false }
 hex = { git = "https://github.com/KokaKiwi/rust-hex", default-features = false }
 varu64 = { git = "https://github.com/AljoschaMeyer/varu64-rs", default-features = false } 
-lipmaa-link = "0.1.1"
-blake2b_simd = { version = "0.5.5", default-features = false }
-ed25519-dalek = { git = "https://github.com/nickray/ed25519-dalek", branch = "towards-no-std", default-features = false, features = ["u64_backend"] }
-static_assertions = "0.3.3"
+lipmaa-link = "0.1"
+blake2b_simd = { version = "0.5", default-features = false }
+ed25519-dalek = { git = "https://github.com/dalek-cryptography/ed25519-dalek", rev = "3a91019", default-features = false, features = ["u64_backend", "alloc"] }
+static_assertions = "0.3"

@@ -13,8 +13,8 @@ default = ["wee_alloc"]
 [dependencies]
 wasm-bindgen = { version = "0.2" , features = ["serde-serialize"] }
 bamboo-core = {path = "../bamboo-core"}
-ed25519-dalek = { git = "https://github.com/nickray/ed25519-dalek", branch = "towards-no-std", default-features = false, features = ["u64_backend"] }
-rand = { version = "0.6.5", features = ["wasm-bindgen"] }
+ed25519-dalek = { git = "https://github.com/dalek-cryptography/ed25519-dalek", rev = "3a91019", default-features = false, features = ["u64_backend", "alloc"] }
+rand = { version = "0.7.0", features = ["wasm-bindgen"] }
 
 
 # The `console_error_panic_hook` crate provides better debugging of panics by

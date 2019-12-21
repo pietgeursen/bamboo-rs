@@ -46,7 +46,7 @@ pub fn main() {
 
 #[cfg_attr(tarpaulin, skip)]
 fn valid_first_entry() -> Value {
-    let mut csprng: OsRng = OsRng::new().unwrap();
+    let mut csprng: OsRng = OsRng{};
     let keypair: Keypair = Keypair::generate(&mut csprng);
 
     let mut log = Log::new(
@@ -76,7 +76,7 @@ fn valid_first_entry() -> Value {
 
 #[cfg_attr(tarpaulin, skip)]
 fn n_valid_entries(n: u64) -> Value {
-    let mut csprng: OsRng = OsRng::new().unwrap();
+    let mut csprng: OsRng = OsRng{};
     let keypair: Keypair = Keypair::generate(&mut csprng);
     let mut log = Log::new(
         MemoryEntryStore::new(),
@@ -111,7 +111,7 @@ fn n_valid_entries(n: u64) -> Value {
 
 #[cfg_attr(tarpaulin, skip)]
 fn valid_partially_replicated_feed(n: u64) -> Value {
-    let mut csprng: OsRng = OsRng::new().unwrap();
+    let mut csprng: OsRng = OsRng{};
     let keypair: Keypair = Keypair::generate(&mut csprng);
     let public = keypair.public.clone();
     let mut log = Log::new(MemoryEntryStore::new(), public.clone(), Some(keypair), 0);
