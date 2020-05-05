@@ -68,7 +68,7 @@ fn valid_first_entry() -> Value {
 
     json!({
         "description": "A valid first entry. Note that the previous and limpaa links are None / null. And that the seq_num starts at 1.",
-        "payload": payload,
+        "payload": hex::encode(payload),
         "decoded": entry,
         "encoded": Bytes(&buffer[..buff_size])
     })
@@ -96,7 +96,7 @@ fn n_valid_entries(n: u64) -> Value {
             let buff_size = entry.encode(&mut buffer).unwrap();
 
             json!({
-                "payload": payload,
+                "payload": hex::encode(payload),
                 "decoded": entry,
                 "encoded": Bytes(&buffer[..buff_size])
             })

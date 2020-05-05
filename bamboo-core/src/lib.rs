@@ -33,7 +33,7 @@ pub mod yamf_signatory;
 mod util;
 
 pub use ed25519_dalek::{Keypair, PublicKey, SecretKey};
-pub use entry::{publish, verify, Entry};
+pub use entry::{publish, verify, decode, Entry};
 pub use error::Error;
 pub use lipmaa_link::lipmaa;
 pub use signature::Signature;
