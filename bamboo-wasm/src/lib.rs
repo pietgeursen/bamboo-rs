@@ -2,9 +2,11 @@ mod utils;
 
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
-use bamboo_core::{lipmaa};
+use bamboo_core::{lipmaa, YamfHash,Entry};
 use bamboo_core::entry::{publish as publish_entry, decode as decode_entry, verify as verify_entry};
 use bamboo_core::{PublicKey, Keypair, SecretKey};
+use bamboo_core::yamf_hash::{new_blake2b};
+use arrayvec::*;
 use rand::rngs::OsRng;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -15,17 +17,30 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[no_mangle]
 #[wasm_bindgen]
-pub extern "C" fn lipmaa_link(seq: u64) -> u64 {
+pub extern "C" fn lipmaaLink(seq: u64) -> u64 {
     lipmaa(seq)
+}
+
+#[derive(Serialize)]
+pub struct KeyedEntry<'a>{
+    pub key: YamfHash<ArrayVec<[u8; 64]>>,
+    pub value: &'a Entry<'a, &'a [u8], &'a [u8], &'a [u8]>
 }
 
 #[no_mangle]
 #[wasm_bindgen]
 pub extern "C" fn decode(buffer: &[u8]) -> Result<JsValue, JsValue>{
+    let hash = new_blake2b(buffer); 
     let entry = decode_entry(buffer)
         .map_err(|err| JsValue::from_serde(&err).unwrap())?;
 
-    Ok(JsValue::from_serde(&entry).unwrap())
+
+    let kv = KeyedEntry{ 
+        key: hash,
+        value: &entry
+    };
+
+    Ok(JsValue::from_serde(&kv).unwrap())
 }
 
 

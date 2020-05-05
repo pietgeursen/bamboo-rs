@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 default = ["wee_alloc"]
 
 [dependencies]
+arrayvec = { version = "0.4", default-features = false}
 wasm-bindgen = { version = "0.2" , features = ["serde-serialize"] }
 bamboo-core = {path = "../bamboo-core"}
 ed25519-dalek = { git = "https://github.com/dalek-cryptography/ed25519-dalek", rev = "3a91019", default-features = false, features = ["u64_backend", "alloc", "serde"] }
