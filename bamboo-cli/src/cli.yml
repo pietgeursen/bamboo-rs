@@ -1,7 +1,13 @@
 name: bamboo-cli
 version: "0.1.0"
 author: Piet Geursen <pietgeursen@gmail.com>
-about: CLI for publishing and verifying bamboo entries. 
+about: |
+  CLI for publishing and verifying bamboo entries. 
+
+  Includes helpers for 
+    - generating a new cryptographic key pair
+    - decoding an entry and printing it to std out as json
+
 subcommands:
     - publish:
         about: Publish a new entry. 
@@ -41,7 +47,7 @@ subcommands:
                 help: If this is the very first entry in a feed.
             - is-end-of-feed: 
                 long: is-end-of-feed
-                help: A feed can publish a entry that signals the feed is finished. No more entries can be published to the feed. Requires --force.
+                help: A feed can publish an entry that signals the feed is finished. No more entries can be published to the feed. Requires --force.
                 requires: force
             - force:
                 long: force
@@ -76,7 +82,7 @@ subcommands:
             - sequence:
                 help: The sequence number.
     - decode:
-        about: Decode a bamboo entry in a file to json.
+        about: Decode a binary bamboo entry and print it out as json.
         args:
             - entry-file:
                 help: The file with an entry to decode.
