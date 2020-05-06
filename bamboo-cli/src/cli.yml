@@ -1,76 +1,97 @@
 name: bamboo-cli
 version: "0.1.0"
 author: Piet Geursen <pietgeursen@gmail.com>
-about: CLI for publishing and verifying bamboo messages. 
+about: CLI for publishing and verifying bamboo entries. 
 subcommands:
     - publish:
-        about: Publish a new message. 
+        about: Publish a new entry. 
         args:
+            - out-file:
+                long: out-file
+                takes_value: true
+                help: If set then write the new entry to the provided file rather than stdout.
             - previous-entry-file:
                 long: previous-entry-file
-                help: The file containing the entry previous to this message. Said another way, it's the most recently published message.
+                takes_value: true
+                help: The file containing the entry previous to this entry. Said another way, it's the most recently published entry.
                 required_unless: is-start-of-feed
             - lipmaa-entry-file:
                 long: lipmaa-entry-file
-                help: The file containing the lipmaa entry for this message. You can calculate the lipmaa number by using the lipmaa command. 
+                takes_value: true
+                help: The file containing the lipmaa entry for this entry. You can calculate the lipmaa number by using the lipmaa command. 
                 required_unless: is-start-of-feed
             - payload-file:
                 long: payload-file
-                help: The file containing the payload for this message
+                takes_value: true
+                help: The file containing the payload for this entry.
                 required: true
             - public-key-file:
                 long: public-key-file
-                help: The file containing the public key of the author of this message 
+                takes_value: true
+                help: The file containing the public key of the author of this entry.
                 required: true
             - secret-key-file:
                 long: secret-key-file
-                help: The file containing the secret key of the author of this message 
+                takes_value: true
+                help: The file containing the secret key of the author of this entry.
                 required: true
             - is-start-of-feed:
                 long: is-start-of-feed
-                help: If this is the very first message in a feed 
+                takes_value: false
+                help: If this is the very first entry in a feed.
             - is-end-of-feed: 
                 long: is-end-of-feed
-                help: A feed can publish a message that signals the feed is finished. No more messages can be published to the feed. Requires --force
+                help: A feed can publish a entry that signals the feed is finished. No more entries can be published to the feed. Requires --force.
                 requires: force
             - force:
                 long: force
             - log-id:
                 long: log-id
-                help: Each author can publish many different independant feeds that are identified by their log-id, a number from 0 to 2^64-1
-                min_values: 0
+                takes_value: true
+                help: Each author can publish many different independant feeds that are identified by their log-id, a number from 0 to 2^64-1.
                 default_value: "0"
     - verify:
-        about: Verify an entry is a valid bamboo message with a correct cryptographic signature 
+        about: Verify an entry is a valid bamboo entry with a correct cryptographic signature.
         args:
             - entry-file:
                 long: entry-file
-                help: The file containing the bamboo entry to verify 
+                takes_value: true
+                help: The file containing the bamboo entry to verify.
                 required: true
             - payload-file:
                 long: payload-file
-                help: The file containing the payload of the message. May be omitted if you don't have the payload for the message. 
+                takes_value: true
+                help: The file containing the payload of the entry. May be omitted if you don't have the payload for the entry. 
             - previous-entry-file:
                 long: previous-entry-file
-                help: The file containing the entry previous to this message. Omit this if we're the verifying the first message in a feed.
+                takes_value: true
+                help: The file containing the entry previous to this entry. Omit this if we're the verifying the first entry in a feed.
             - lipmaa-entry-file:
                 long: lipmaa-entry-file
-                help: The file containing the lipmaa entry for this message. Omit this if we're the verifying the first message in a feed.
+                takes_value: true
+                help: The file containing the lipmaa entry for this entry. Omit this if we're the verifying the first entry in a feed.
     - lipmaa:
-        about: Calculate the lipmaa number for the provided sequence number 
+        about: Calculate the lipmaa number for the provided sequence number.
         args:
             - sequence:
-                help: The sequence number  
-                min_values: 1
+                help: The sequence number.
     - decode:
-        about: Decode a bamboo entry in a file to json
+        about: Decode a bamboo entry in a file to json.
         args:
             - entry-file:
-                help: The file with an entry to decode 
+                help: The file with an entry to decode.
     - generate-keys:
-        about: Generate a new cryptographic key-pair used for publishing messages. Stores them in two new files.
+        about: Generate a new cryptographic key-pair used for publishing entries. Stores them in two new files.
         args:
             - public-key-file:
-                help: The path to the file which will store the new public key
+                long: public-key-file
+                short: p
+                required: true
+                takes_value: true
+                help: The path to the file which will store the new public key.
             - secret-key-file:
-                help: The path to the file which will store the new secret key
+                long: secret-key-file
+                short: s
+                required: true
+                takes_value: true
+                help: The path to the file which will store the new secret key.

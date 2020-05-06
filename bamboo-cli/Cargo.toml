@@ -7,5 +7,6 @@ edition = "2018"
 [dependencies]
 bamboo-core = {path = "../bamboo-core"}
 clap = {version = "2.33.0", features = ["yaml"]}
+rand = "0.7.0"
 serde_json = "1.0.40" 
 snafu = "0.6.7"
