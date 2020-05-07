@@ -10,12 +10,8 @@ about: |
 
 subcommands:
     - publish:
-        about: Publish a new entry. 
+        about: Publish a new entry and write the bytes to stdout. 
         args:
-            - out-file:
-                long: out-file
-                takes_value: true
-                help: If set then write the new entry to the provided file rather than stdout.
             - previous-entry-file:
                 long: previous-entry-file
                 takes_value: true
@@ -44,7 +40,7 @@ subcommands:
             - is-start-of-feed:
                 long: is-start-of-feed
                 takes_value: false
-                help: If this is the very first entry in a feed.
+                help: When publishing the very first entry in a feed. If set, then omit the previous-entry-file and lipmaa-entry-file arguments.
             - is-end-of-feed: 
                 long: is-end-of-feed
                 help: A feed can publish an entry that signals the feed is finished. No more entries can be published to the feed. Requires --force.
