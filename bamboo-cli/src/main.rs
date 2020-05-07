@@ -71,50 +71,38 @@ fn main() -> Result<()> {
     match matches.subcommand_matches("verify") {
         Some(matches) => {
             let entry_path = matches.value_of("entry-file").unwrap();
-            let mut file = File::open(entry_path).context(EntryFile {
-                filename: entry_path,
-            })?;
-            let mut entry_bytes = Vec::new();
-            file.read_to_end(&mut entry_bytes)
-                .expect("Unable to read to end of file");
+            let entry_bytes = read_file(entry_path)
+                .context(EntryFile {
+                    filename: entry_path,
+                })?;
 
             let payload = matches
                 .value_of("payload-file")
                 .map(|payload_path| {
-                    let mut file = File::open(payload_path).context(PayloadFile {
-                        filename: payload_path,
-                    })?;
-                    let mut payload_bytes = Vec::new();
-                    file.read_to_end(&mut payload_bytes)
-                        .expect("Unable to read to end of file");
-
-                    Ok(payload_bytes)
+                    read_file(payload_path)
+                        .context(PayloadFile {
+                            filename: payload_path,
+                        })
                 })
                 .transpose()?;
 
             let previous = matches
                 .value_of("previous-entry-file")
                 .map(|previous_path| {
-                    let mut file = File::open(previous_path).context(PreviousEntryFile {
-                        filename: previous_path,
-                    })?;
-                    let mut previous_bytes = Vec::new();
-                    file.read_to_end(&mut previous_bytes)
-                        .expect("Unable to read to end of file");
-                    Ok(previous_bytes)
+                    read_file(previous_path)
+                        .context(PreviousEntryFile {
+                            filename: previous_path,
+                        })
                 })
                 .transpose()?;
 
             let lipmaa = matches
                 .value_of("lipmaa-entry-file")
                 .map(|lipmaa_path| {
-                    let mut file = File::open(lipmaa_path).context(PubKeyFile {
-                        filename: lipmaa_path,
-                    })?;
-                    let mut lipmaa_bytes = Vec::new();
-                    file.read_to_end(&mut lipmaa_bytes)
-                        .expect("Unable to read to end of file");
-                    Ok(lipmaa_bytes)
+                    read_file(lipmaa_path)
+                        .context(PreviousEntryFile {
+                            filename: lipmaa_path,
+                        })
                 })
                 .transpose()?;
 
@@ -140,24 +128,16 @@ fn main() -> Result<()> {
     match matches.subcommand_matches("publish") {
         Some(matches) => {
             let sk_path = matches.value_of("secret-key-file").unwrap();
-            let mut file = File::open(sk_path).context(SecretKeyFile { filename: sk_path })?;
-            let mut sk_bytes = Vec::new();
-            file.read_to_end(&mut sk_bytes)
-                .expect("Unable to read to end of file");
+            let sk_bytes = read_file(sk_path)
+                .context(SecretKeyFile { filename: sk_path })?;
 
             let pk_path = matches.value_of("public-key-file").unwrap();
-            let mut file = File::open(pk_path).context(PubKeyFile { filename: pk_path })?;
-            let mut pk_bytes = Vec::new();
-            file.read_to_end(&mut pk_bytes)
-                .expect("Unable to read to end of file");
+            let pk_bytes = read_file(pk_path)
+                .context(PubKeyFile { filename: pk_path })?;
 
             let payload_path = matches.value_of("payload-file").unwrap();
-            let mut file = File::open(payload_path).context(PayloadFile {
-                filename: payload_path,
-            })?;
-            let mut payload_bytes = Vec::new();
-            file.read_to_end(&mut payload_bytes)
-                .expect("Unable to read to end of file");
+            let payload_bytes = read_file(payload_path)
+                .context(PayloadFile { filename: payload_path })?;
 
             let is_start_of_feed = matches.is_present("is-start-of-feed");
             let is_end_of_feed = matches.is_present("is-end-of-feed");
@@ -169,20 +149,12 @@ fn main() -> Result<()> {
                 (None, None, 0)
             } else {
                 let previous_path = matches.value_of("previous-entry-file").unwrap();
-                let mut file = File::open(previous_path).context(SecretKeyFile {
-                    filename: previous_path,
-                })?;
-                let mut previous_bytes = Vec::new();
-                file.read_to_end(&mut previous_bytes)
-                    .expect("Unable to read to end of file");
+                let previous_bytes = read_file(previous_path)
+                    .context(PayloadFile { filename: previous_path })?;
 
                 let lipmaa_path = matches.value_of("lipmaa-entry-file").unwrap();
-                let mut file = File::open(lipmaa_path).context(PubKeyFile {
-                    filename: lipmaa_path,
-                })?;
-                let mut lipmaa_bytes = Vec::new();
-                file.read_to_end(&mut lipmaa_bytes)
-                    .expect("Unable to read to end of file");
+                let lipmaa_bytes = read_file(lipmaa_path)
+                    .context(LipmaaEntryFile { filename: lipmaa_path })?;
 
                 let previous_entry = decode(&previous_bytes)
                     .map_err(|err| Error::DecodePreviousEntry { error: err })?;
@@ -251,11 +223,8 @@ fn main() -> Result<()> {
     match matches.subcommand_matches("decode") {
         Some(matches) => match matches.value_of("entry-file") {
             Some(entry) => {
-                let mut file = File::open(entry).context(DecodeEntryFile { filename: entry })?;
-                let mut entry = Vec::new();
-                file.read_to_end(&mut entry)
-                    .expect("Unable to read to end of file");
-
+                let entry = read_file(entry)
+                    .context(DecodeEntryFile { filename: entry })?;
                 let decoded = decode(&entry).map_err(|err| Error::DecodeEntry { error: err })?;
 
                 println!(
@@ -270,4 +239,13 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn read_file(path: &str)-> Result<Vec<u8>, std::io::Error>
+{
+    let mut file = File::open(path)?;
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes)
+        .expect("Unable to read to end of file");
+    Ok(bytes)
 }
