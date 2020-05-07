@@ -76,6 +76,6 @@ Paste it into swagger as the `encodedEntry`
 
 Now do the same for the payload.
 
-If that went ok, you should get a 200.
+Hit `Execute`. If that went ok, you should get a 200.
 
 Now if you hit `GET /` in swagger you should see you public key as one of the authors in the array.
