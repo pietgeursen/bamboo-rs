@@ -1,10 +1,10 @@
 use bamboo_core::entry::MAX_ENTRY_SIZE;
 use bamboo_core::{decode, lipmaa, publish, verify, Keypair};
 use rand::rngs::OsRng;
-use snafu::{ResultExt};
+use snafu::ResultExt;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::{Path};
+use std::path::Path;
 use structopt::StructOpt;
 
 mod error;
@@ -14,7 +14,6 @@ use error::*;
 use opts::*;
 
 fn main() -> Result<()> {
-
     let opts = Opts::from_args();
 
     match opts {
@@ -29,8 +28,12 @@ fn main() -> Result<()> {
             secret_key_file,
             force: _,
         } => {
-            let sk_bytes = read_file(&secret_key_file).context(SecretKeyFile { filename: secret_key_file })?;
-            let pk_bytes = read_file(&public_key_file).context(PubKeyFile { filename: public_key_file })?;
+            let sk_bytes = read_file(&secret_key_file).context(SecretKeyFile {
+                filename: secret_key_file,
+            })?;
+            let pk_bytes = read_file(&public_key_file).context(PubKeyFile {
+                filename: public_key_file,
+            })?;
 
             let payload_bytes = read_file(&payload_file).context(PayloadFile {
                 filename: payload_file,
@@ -79,7 +82,6 @@ fn main() -> Result<()> {
             std::io::stdout()
                 .write_all(&entry_buff[..entry_size])
                 .unwrap();
-
         }
         Opts::Verify {
             entry_file,
@@ -131,14 +133,15 @@ fn main() -> Result<()> {
             }
         }
         Opts::Decode { entry_file } => {
-                let entry = read_file(&entry_file).context(DecodeEntryFile { filename: entry_file })?;
-                let decoded = decode(&entry).map_err(|err| Error::DecodeEntry { error: err })?;
+            let entry = read_file(&entry_file).context(DecodeEntryFile {
+                filename: entry_file,
+            })?;
+            let decoded = decode(&entry).map_err(|err| Error::DecodeEntry { error: err })?;
 
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&decoded)
-                        .expect("Unable to serialize decoded entry")
-                );
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&decoded).expect("Unable to serialize decoded entry")
+            );
         }
         Opts::GenerateKeys {
             public_key_file,
@@ -147,8 +150,12 @@ fn main() -> Result<()> {
             let mut csprng = OsRng {};
             let key_pair = Keypair::generate(&mut csprng);
 
-            let mut sk_file = File::create(&secret_key_file).context(SecretKeyFile { filename: secret_key_file })?;
-            let mut pk_file = File::create(&public_key_file).context(PubKeyFile { filename: public_key_file })?;
+            let mut sk_file = File::create(&secret_key_file).context(SecretKeyFile {
+                filename: secret_key_file,
+            })?;
+            let mut pk_file = File::create(&public_key_file).context(PubKeyFile {
+                filename: public_key_file,
+            })?;
 
             sk_file.write_all(&key_pair.secret.to_bytes()).unwrap();
             pk_file.write_all(&key_pair.public.to_bytes()).unwrap();

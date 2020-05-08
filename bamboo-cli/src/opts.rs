@@ -101,5 +101,3 @@ pub enum Opts {
         secret_key_file: PathBuf,
     },
 }
-
-
