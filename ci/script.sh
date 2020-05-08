@@ -14,7 +14,8 @@ main() {
     cross test --target $TARGET
 #    cross test --target $TARGET --release
 
-    cross run --target $TARGET
+    cross run --target $TARGET --bin bamboo-cli
+    ./bamboo-cli/test_script/test.sh
 #    cross run --target $TARGET --release
 }
 
