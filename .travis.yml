@@ -98,14 +98,17 @@ matrix:
     #    - env: TARGET=x86_64-pc-windows-gnu
     #      rust: nightly
     #
-    #    # Bare metal
-    #    # These targets don't support std and as such are likely not suitable for
-    #    # most crates.
-    #    # - env: TARGET=thumbv6m-none-eabi
-    - env: TARGET=thumbv7em-none-eabi
+    # Bare metal
+    # These targets don't support std and as such are likely not suitable for
+    # most crates.
+    - env: TARGET=thumbv6m-none-eabi IS_NO_STD=1
       rust: nightly
-    #    # - env: TARGET=thumbv7em-none-eabihf
-    #    # - env: TARGET=thumbv7m-none-eabi
+    - env: TARGET=thumbv7em-none-eabi IS_NO_STD=1
+      rust: nightly
+    - env: TARGET=thumbv7em-none-eabihf IS_NO_STD=1
+      rust: nightly
+    - env: TARGET=thumbv7m-none-eabi IS_NO_STD=1
+      rust: nightly
     #
     #    # Testing other channels
     #    - env: TARGET=x86_64-unknown-linux-gnu
@@ -153,11 +156,11 @@ before_cache:
   # Travis can't cache files that are not readable by "others"
   - chmod -R a+r $HOME/.cargo
 
-#branches:
-  #only:
+branches:
+  only:
     # release tags
     #- /^v\d+\.\d+\.\d+.*$/
-    #- master
+    - master
 
 notifications:
   email:

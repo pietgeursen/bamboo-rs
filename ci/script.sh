@@ -3,6 +3,13 @@
 set -ex
 
 main() {
+    if [ ! -z $IS_NO_STD ] 
+    then
+      cd bamboo-core
+      cross build -p bamboo-core --target $TARGET --release --no-default-features
+      return
+    fi
+
     cross build --target $TARGET
 
     if [ ! -z $DISABLE_TESTS ]; then
@@ -13,8 +20,6 @@ main() {
 
     # Try and the binary
     cross run --bin bamboo-cli --target $TARGET -- --help
-    cd bamboo-cli/test_script/
-    ./test.sh
 }
 
 # we don't run the "test phase" when doing deploys

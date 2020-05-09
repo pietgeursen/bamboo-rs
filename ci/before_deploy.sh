@@ -17,12 +17,22 @@ main() {
 
     test -f Cargo.lock || cargo generate-lockfile
 
-    # TODO Update this to build the artifacts that matter to you
-    #cross rustc --bin bamboo-cli --target $TARGET --release -- -C lto
-    cross build --target $TARGET --release -- --help
+    if [ -z $IS_NO_STD ]
+    then
+      cd bamboo-cli
+      cross build -p bamboo-cli --target $TARGET --release
+      cd -
+      cd bamboo-core
+      cross build -p bamboo-core --target $TARGET --release
+      cd -
+    else
+      cd bamboo-core
+      cross build -p bamboo-core --target $TARGET --release --no-default-features
+      cd -
+    fi
 
-    # TODO Update this to package the right artifacts
-    cp target/$TARGET/release/bamboo-cli $stage/
+    #strip target/$TARGET/release
+    cp target/$TARGET/release/bamboo-cli $stage/ || true
     cp target/$TARGET/release/libbamboo_core.a $stage/
     cp target/$TARGET/release/libbamboo_core.so $stage/ || true
 
