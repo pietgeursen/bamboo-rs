@@ -14,7 +14,7 @@ default = ["wee_alloc"]
 arrayvec = { version = "0.4", default-features = false}
 wasm-bindgen = { version = "0.2" , features = ["serde-serialize"] }
 bamboo-core = {path = "../bamboo-core"}
-ed25519-dalek = { git = "https://github.com/dalek-cryptography/ed25519-dalek", rev = "3a91019", default-features = false, features = ["u64_backend", "alloc", "serde"] }
+ed25519-dalek = { git = "https://github.com/dalek-cryptography/ed25519-dalek", rev = "29a06e494ddd", default-features = false, features = ["u64_backend", "nightly", "alloc", "serde"] }
 rand = { version = "0.7.0", features = ["wasm-bindgen"] }
 serde = { version = "1.0.90", features = ["derive"] }
 
