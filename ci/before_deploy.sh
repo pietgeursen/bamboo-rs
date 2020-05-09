@@ -18,10 +18,13 @@ main() {
     test -f Cargo.lock || cargo generate-lockfile
 
     # TODO Update this to build the artifacts that matter to you
-    cross rustc --bin bamboo-cli --target $TARGET --release -- -C lto
+    #cross rustc --bin bamboo-cli --target $TARGET --release -- -C lto
+    cross build --target $TARGET --release -- --help
 
     # TODO Update this to package the right artifacts
     cp target/$TARGET/release/bamboo-cli $stage/
+    cp target/$TARGET/release/libbamboo_core.a $stage/
+    cp target/$TARGET/release/libbamboo_core.so $stage/ || true
 
     cd $stage
     tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *
