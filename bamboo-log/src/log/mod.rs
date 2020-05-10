@@ -11,14 +11,16 @@ pub struct Log<Store: EntryStore> {
     pub store: Store,
     pub public_key: PublicKey,
     key_pair: Option<Keypair>,
+    log_id: u64,
 }
 
 impl<Store: EntryStore> Log<Store> {
-    pub fn new(store: Store, public_key: PublicKey, key_pair: Option<Keypair>) -> Log<Store> {
+    pub fn new(store: Store, public_key: PublicKey, key_pair: Option<Keypair>, log_id: u64) -> Log<Store> {
         Log {
             store,
             public_key,
             key_pair,
+            log_id
         }
     }
 }

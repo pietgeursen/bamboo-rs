@@ -1,18 +1,20 @@
-#[derive(Debug, Clone)]
-#[derive(Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[repr(C)]
 pub enum Error {
+    NoError = 0isize,
     EncodeIsEndOfFeedError = 1isize,
     EncodePayloadHashError,
     EncodePayloadSizeError,
     EncodeAuthorError,
     EncodeSeqError,
+    EncodeLogIdError,
     EncodeBacklinkError,
     EncodeLipmaaError,
     EncodeSigError,
     EncodeEntryHasBacklinksWhenSeqZero,
     EncodeBufferLength,
     PublishAfterEndOfFeed,
+    PublishWithIncorrectLogId,
     PublishWithoutSecretKey,
     PublishWithoutKeypair,
     PublishWithoutLipmaaEntry,
@@ -21,6 +23,7 @@ pub enum Error {
     DecodeIsEndOfFeedError,
     DecodePayloadHashError,
     DecodePayloadSizeError,
+    DecodeLogIdError,
     DecodeAuthorError,
     DecodeSeqError,
     DecodeSeqIsZero,
@@ -52,6 +55,9 @@ pub enum Error {
     AddEntryNoLipmaalinkInStore,
     AddEntryDecodeLipmaalinkFromStore,
     AddEntryAuthorDidNotMatchLipmaaEntry,
+    AddEntryLogIdDidNotMatchLipmaaEntry,
+    AddEntryAuthorDidNotMatchPreviousEntry,
+    AddEntryLogIdDidNotMatchPreviousEntry,
     AddEntryGetLastEntryError,
     AddEntryGetLastEntryNotFound,
     AddEntryDecodeLastEntry,

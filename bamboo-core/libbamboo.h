@@ -7,7 +7,74 @@
 
 #define ED25519_NUMERIC_ID 0
 
-#define MAX_ENTRY_SIZE 316
+#define MAX_ENTRY_SIZE 325
+
+typedef enum {
+  NoError = 0,
+  EncodeIsEndOfFeedError = 1,
+  EncodePayloadHashError,
+  EncodePayloadSizeError,
+  EncodeAuthorError,
+  EncodeSeqError,
+  EncodeLogIdError,
+  EncodeBacklinkError,
+  EncodeLipmaaError,
+  EncodeSigError,
+  EncodeEntryHasBacklinksWhenSeqZero,
+  EncodeBufferLength,
+  PublishAfterEndOfFeed,
+  PublishWithIncorrectLogId,
+  PublishWithoutSecretKey,
+  PublishWithoutKeypair,
+  PublishWithoutLipmaaEntry,
+  PublishWithoutBacklinkEntry,
+  DecodeIsEndOfFeedError,
+  DecodePayloadHashError,
+  DecodePayloadSizeError,
+  DecodeLogIdError,
+  DecodeAuthorError,
+  DecodeSeqError,
+  DecodeSeqIsZero,
+  DecodeBacklinkError,
+  DecodeLipmaaError,
+  DecodeSigError,
+  DecodeSsbSigError,
+  DecodeSsbPubKeyError,
+  VerifySsbSigError,
+  DecodeInputIsLengthZero,
+  GetEntrySequenceInvalid,
+  GetEntryFailed,
+  EntryNotFound,
+  EncodingForSigningFailed,
+  EncodingForStoringFailed,
+  AppendFailed,
+  PreviousDecodeFailed,
+  PublishNewEntryFailed,
+  AddEntryDecodeFailed,
+  AddEntryPayloadLengthDidNotMatch,
+  AddEntryLipmaaHashDidNotMatch,
+  AddEntryPayloadHashDidNotMatch,
+  AddEntryBacklinkHashDidNotMatch,
+  AddEntryGetBacklinkError,
+  AddEntryGetLipmaalinkError,
+  AddEntryNoLipmaalinkInStore,
+  AddEntryDecodeLipmaalinkFromStore,
+  AddEntryAuthorDidNotMatchLipmaaEntry,
+  AddEntryLogIdDidNotMatchLipmaaEntry,
+  AddEntryAuthorDidNotMatchPreviousEntry,
+  AddEntryLogIdDidNotMatchPreviousEntry,
+  AddEntryGetLastEntryError,
+  AddEntryGetLastEntryNotFound,
+  AddEntryDecodeLastEntry,
+  AddEntryToFeedThatHasEnded,
+  AddEntryWithInvalidSignature,
+  AddEntryDecodeEntryBytesForSigning,
+  AddEntrySigNotValidError,
+  DecodeVaru64Error,
+  DecodeError,
+  EncodeWriteError,
+  EncodeError,
+} Error;
 
 typedef struct {
   uint8_t *out;
@@ -24,6 +91,7 @@ typedef struct {
   uintptr_t lipmaalink_length;
   bool is_end_of_feed;
   uint64_t last_seq_num;
+  uint64_t log_id;
 } PublishEd25519Blake2bEntryArgs;
 
 typedef struct {
@@ -38,6 +106,6 @@ typedef struct {
   uintptr_t lipmaalink_length;
 } VerifyEd25519Blake2bEntryArgs;
 
-intptr_t publish_ed25519_blake2b_entry(PublishEd25519Blake2bEntryArgs *args);
+Error publish_ed25519_blake2b_entry(PublishEd25519Blake2bEntryArgs *args);
 
-intptr_t verify_ed25519_blake2b_entry(VerifyEd25519Blake2bEntryArgs *args);
+Error verify_ed25519_blake2b_entry(VerifyEd25519Blake2bEntryArgs *args);

@@ -37,7 +37,7 @@ pub fn main() {
     let jsn = json!({
         "validFirstEntry": valid_first_entry(),
         "fiveValidEntries": n_valid_entries(5),
-        "valid_partial_replicated_seq_100000": valid_partially_replicated_feed(100001),
+        "valid_partial_replicated_seq_100": valid_partially_replicated_feed(101),
     });
 
     let json_string = serde_json::to_string_pretty(&jsn).unwrap();
@@ -46,13 +46,14 @@ pub fn main() {
 
 #[cfg_attr(tarpaulin, skip)]
 fn valid_first_entry() -> Value {
-    let mut csprng: OsRng = OsRng::new().unwrap();
+    let mut csprng: OsRng = OsRng{};
     let keypair: Keypair = Keypair::generate(&mut csprng);
 
     let mut log = Log::new(
         MemoryEntryStore::new(),
         keypair.public.clone(),
         Some(keypair),
+        0
     );
     let payload = "hello bamboo!";
     log.publish(payload.as_bytes(), false).unwrap();
@@ -67,7 +68,7 @@ fn valid_first_entry() -> Value {
 
     json!({
         "description": "A valid first entry. Note that the previous and limpaa links are None / null. And that the seq_num starts at 1.",
-        "payload": payload,
+        "payload": hex::encode(payload),
         "decoded": entry,
         "encoded": Bytes(&buffer[..buff_size])
     })
@@ -75,12 +76,13 @@ fn valid_first_entry() -> Value {
 
 #[cfg_attr(tarpaulin, skip)]
 fn n_valid_entries(n: u64) -> Value {
-    let mut csprng: OsRng = OsRng::new().unwrap();
+    let mut csprng: OsRng = OsRng{};
     let keypair: Keypair = Keypair::generate(&mut csprng);
     let mut log = Log::new(
         MemoryEntryStore::new(),
         keypair.public.clone(),
         Some(keypair),
+        0
     );
 
     let vals: Vec<Value> = (1..n)
@@ -94,7 +96,7 @@ fn n_valid_entries(n: u64) -> Value {
             let buff_size = entry.encode(&mut buffer).unwrap();
 
             json!({
-                "payload": payload,
+                "payload": hex::encode(payload),
                 "decoded": entry,
                 "encoded": Bytes(&buffer[..buff_size])
             })
@@ -109,10 +111,10 @@ fn n_valid_entries(n: u64) -> Value {
 
 #[cfg_attr(tarpaulin, skip)]
 fn valid_partially_replicated_feed(n: u64) -> Value {
-    let mut csprng: OsRng = OsRng::new().unwrap();
+    let mut csprng: OsRng = OsRng{};
     let keypair: Keypair = Keypair::generate(&mut csprng);
     let public = keypair.public.clone();
-    let mut log = Log::new(MemoryEntryStore::new(), public.clone(), Some(keypair));
+    let mut log = Log::new(MemoryEntryStore::new(), public.clone(), Some(keypair), 0);
 
     (1..n).into_iter().for_each(|i| {
         let payload = format!("message number {}", i);
@@ -121,7 +123,7 @@ fn valid_partially_replicated_feed(n: u64) -> Value {
 
     let lipmaa_seqs = build_lipmaa_set(n - 1, None);
 
-    let mut partial_log = Log::new(MemoryEntryStore::new(), public.clone(), None);
+    let mut partial_log = Log::new(MemoryEntryStore::new(), public.clone(), None, 0);
 
     lipmaa_seqs
         .iter()

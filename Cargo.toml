@@ -3,9 +3,15 @@
 members = [
     "bamboo-core",
     "bamboo-core-test",
-    "bamboo-log",
+    "bamboo-cli",
+    #"bamboo-log",
     "generate-test-vectors",
     "bamboo-wasm"
+]
+
+exclude = [
+    "bamboo-log"
+
 ]
 
 [profile.release]

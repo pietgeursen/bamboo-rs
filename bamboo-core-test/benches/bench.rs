@@ -3,7 +3,7 @@ extern crate criterion;
 extern crate varu64;
 
 use bamboo_core::entry::decode;
-use bamboo_core::entry::Entry;
+use bamboo_core::entry::{publish, Entry};
 
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
@@ -14,15 +14,14 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("publish", |b| {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let key_pair: Keypair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public.clone();
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+        let size = publish(
             &mut out,
             Some(&key_pair),
-            &public_key,
+            0,
             payload.as_bytes(),
             false,
             0,
@@ -33,10 +32,10 @@ fn criterion_benchmark(c: &mut Criterion) {
 
         b.iter(|| {
             let mut out2 = [0u8; 512];
-            let _ = Entry::<&[u8], &[u8], &[u8]>::publish(
+            let _ = publish(
                 &mut out2,
                 Some(&key_pair),
-                &public_key,
+                0,
                 payload.as_bytes(),
                 false,
                 1,
@@ -49,15 +48,14 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("verify", |b| {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let key_pair: Keypair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public.clone();
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+        let size = publish(
             &mut out,
             Some(&key_pair),
-            &public_key,
+            0,
             payload.as_bytes(),
             false,
             0,
@@ -72,15 +70,14 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("encode entry", |b| {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let key_pair: Keypair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public.clone();
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+        let size = publish(
             &mut out,
             Some(&key_pair),
-            &public_key,
+            0,
             payload.as_bytes(),
             false,
             0,
@@ -98,15 +95,14 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("decode entry", |b| {
         let mut csprng: OsRng = OsRng::new().unwrap();
         let key_pair: Keypair = Keypair::generate(&mut csprng);
-        let public_key = key_pair.public.clone();
 
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        let size = Entry::<&[u8], &[u8], &[u8]>::publish(
+        let size = publish(
             &mut out,
             Some(&key_pair),
-            &public_key,
+            0,
             payload.as_bytes(),
             false,
             0,

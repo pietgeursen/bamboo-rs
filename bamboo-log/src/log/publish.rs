@@ -26,6 +26,7 @@ impl<Store: EntryStore> Log<Store> {
         let length = publish(
             &mut buff,
             self.key_pair.as_ref(),
+            self.log_id,
             payload,
             is_end_of_feed,
             last_seq_num,

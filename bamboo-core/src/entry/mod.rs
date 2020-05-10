@@ -1,6 +1,8 @@
 use arrayvec::ArrayVec;
 use core::borrow::Borrow;
 use core::convert::TryFrom;
+use lipmaa_link::lipmaa;
+
 #[cfg(feature = "std")]
 use std::io::Write;
 use varu64::{
@@ -26,10 +28,10 @@ pub const MAX_ENTRY_SIZE_: usize = TAG_BYTE_LENGTH
     + MAX_SIGNATURE_SIZE
     + MAX_YAMF_SIGNATORY_SIZE
     + (MAX_YAMF_HASH_SIZE * 3)
-    + (MAX_VARU64_SIZE * 2);
+    + (MAX_VARU64_SIZE * 3);
 
 /// This is useful if you need to know at compile time how big an entry can get.
-pub const MAX_ENTRY_SIZE: usize = 316;
+pub const MAX_ENTRY_SIZE: usize = 325;
 
 // Yes, this is hacky. It's because cbindgen can't understand how to add consts together. This is a
 // way to hard code a value for MAX_ENTRY_SIZE that cbindgen can use, but make sure at compile time
@@ -44,6 +46,8 @@ where
     A: Borrow<[u8]>,
     S: Borrow<[u8]>,
 {
+    #[serde(rename = "feedId")]
+    pub log_id: u64,
     #[serde(rename = "isEndOfFeed")]
     pub is_end_of_feed: bool,
     #[cfg_attr(feature = "std", serde(bound(deserialize = "H: From<Vec<u8>>")))]
@@ -112,11 +116,18 @@ pub fn verify(
         }
     }
 
-    match (lipmaa_link, entry.lipmaa_link, entry.seq_num) {
+    let lipmaa_is_required = is_lipmaa_required(entry.seq_num);
+
+    match (
+        lipmaa_link,
+        entry.lipmaa_link,
+        entry.seq_num,
+        lipmaa_is_required,
+    ) {
         // Happy path 1: this is the first entry, so we won't find a lipmaa link in the store
-        (None, None, seq_num) if seq_num == 1 => Ok(()),
+        (None, None, seq_num, _) if seq_num == 1 => Ok(()),
         // Happy path 2: seq is larger than one and we can find the lipmaa link in the store
-        (Some(lipmaa), Some(ref entry_lipmaa), seq_num) if seq_num > 1 => {
+        (Some(lipmaa), Some(ref entry_lipmaa), seq_num, true) if seq_num > 1 => {
             // Hash the lipmaa entry
             let lipmaa_hash = new_blake2b(lipmaa);
             // Make sure the lipmaa entry hash matches what's in the entry.
@@ -124,16 +135,22 @@ pub fn verify(
                 return Err(Error::AddEntryLipmaaHashDidNotMatch);
             }
 
-            // Verify the author of the entry is the same as the author in the lipmaa link entry
             let lipmaa_entry =
                 decode(lipmaa).map_err(|_| Error::AddEntryDecodeLipmaalinkFromStore)?;
 
+            // Verify that the log_id of the entry is the same as the lipmaa entry
+            if entry.log_id != lipmaa_entry.log_id {
+                return Err(Error::AddEntryLogIdDidNotMatchLipmaaEntry);
+            }
+            // Verify the author of the entry is the same as the author in the lipmaa link entry
             if entry.author != lipmaa_entry.author {
                 return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry);
             }
             Ok(())
         }
-        (_, _, _) => Err(Error::AddEntryNoLipmaalinkInStore),
+        // Happy path 3: lipmaa link is not required because it would duplicate the backlink.
+        (_, _, seq_num, false) if seq_num > 1 => Ok(()),
+        (_, _, _, _) => Err(Error::AddEntryNoLipmaalinkInStore),
     }?;
 
     match (backlink, entry.backlink, entry.seq_num) {
@@ -146,6 +163,16 @@ pub fn verify(
 
             let backlink_entry = decode(backlink).map_err(|_| Error::AddEntryDecodeLastEntry)?;
 
+            // Verify that the log_id of the entry is the same as the lipmaa entry
+            if entry.log_id != backlink_entry.log_id {
+                return Err(Error::AddEntryLogIdDidNotMatchPreviousEntry);
+            }
+            // Verify the author of the entry is the same as the author in the lipmaa link entry
+            if entry.author != backlink_entry.author {
+                return Err(Error::AddEntryAuthorDidNotMatchPreviousEntry);
+            }
+
+            // Verify this wasn't published after an end of feed message.
             if backlink_entry.is_end_of_feed {
                 return Err(Error::AddEntryToFeedThatHasEnded);
             }
@@ -174,6 +201,7 @@ pub fn verify(
 pub fn publish(
     out: &mut [u8],
     key_pair: Option<&Keypair>,
+    log_id: u64,
     payload: &[u8],
     is_end_of_feed: bool,
     last_seq_num: u64,
@@ -194,6 +222,7 @@ pub fn publish(
     let seq_num = last_seq_num + 1;
 
     let mut entry: Entry<_, _, &[u8]> = Entry {
+        log_id,
         is_end_of_feed,
         payload_hash,
         payload_size,
@@ -215,10 +244,19 @@ pub fn publish(
             return Err(Error::PublishAfterEndOfFeed);
         }
 
-        let backlink = new_blake2b(backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?);
+        // Avoid publishing to a feed using an incorrect log_id
+        if log_id != backlink_entry.log_id {
+            return Err(Error::PublishWithIncorrectLogId);
+        }
 
+        let backlink = new_blake2b(backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?);
         entry.backlink = Some(backlink);
-        entry.lipmaa_link = Some(lipmaa_link);
+
+        // If the lipmaalink and backlink would be different, we should append the lipmaalink,
+        // otherwise we're allowed to omit it to save some bytes.
+        if is_lipmaa_required(seq_num) {
+            entry.lipmaa_link = Some(lipmaa_link);
+        }
     }
 
     let mut buff = [0u8; 512];
@@ -257,31 +295,47 @@ where
         }
         next_byte_num += 1;
 
-        next_byte_num += self
-            .payload_hash
-            .encode(&mut out[next_byte_num..])
-            .map_err(|_| Error::EncodePayloadHashError)?;
-        next_byte_num += varu64_encode(self.payload_size, &mut out[next_byte_num..]);
+        // Encode the author
         next_byte_num += self
             .author
             .encode(&mut out[next_byte_num..])
             .map_err(|_| Error::EncodeAuthorError)?;
+
+        // Encode the log_id
+        next_byte_num += varu64_encode(self.log_id, &mut out[next_byte_num..]);
+
+        // Encode the sequence number
         next_byte_num += varu64_encode(self.seq_num, &mut out[next_byte_num..]);
 
         // Encode the backlink and lipmaa links if its not the first sequence
         next_byte_num = match (self.seq_num, &self.backlink, &self.lipmaa_link) {
             (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
-                next_byte_num += backlink
-                    .encode(&mut out[next_byte_num..])
-                    .map_err(|_| Error::EncodeBacklinkError)?;
                 next_byte_num += lipmaa_link
                     .encode(&mut out[next_byte_num..])
                     .map_err(|_| Error::EncodeLipmaaError)?;
+                next_byte_num += backlink
+                    .encode(&mut out[next_byte_num..])
+                    .map_err(|_| Error::EncodeBacklinkError)?;
+                Ok(next_byte_num)
+            }
+            (n, Some(ref backlink), None) if n > 1 => {
+                next_byte_num += backlink
+                    .encode(&mut out[next_byte_num..])
+                    .map_err(|_| Error::EncodeBacklinkError)?;
                 Ok(next_byte_num)
             }
             (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
             _ => Ok(next_byte_num),
         }?;
+
+        // Encode the payload size
+        next_byte_num += varu64_encode(self.payload_size, &mut out[next_byte_num..]);
+
+        // Encode the payload hash
+        next_byte_num += self
+            .payload_hash
+            .encode(&mut out[next_byte_num..])
+            .map_err(|_| Error::EncodePayloadHashError)?;
 
         // Encode the signature
         if let Some(ref sig) = self.sig {
@@ -303,17 +357,13 @@ where
         w.write_all(&is_end_of_feed_byte[..])
             .map_err(|_| Error::EncodeIsEndOfFeedError)?;
 
-        // Encode the payload hash
-        self.payload_hash
-            .encode_write(&mut w)
-            .map_err(|_| Error::EncodePayloadHashError)?;
-
-        // Encode the payload size
-        varu64_encode_write(self.payload_size, &mut w)
-            .map_err(|_| Error::EncodePayloadSizeError)?;
+        // Encode the author
         self.author
             .encode_write(&mut w)
             .map_err(|_| Error::EncodeAuthorError)?;
+
+        // Encode the log_id
+        varu64_encode_write(self.log_id, &mut w).map_err(|_| Error::EncodeLogIdError)?;
 
         // Encode the sequence number
         varu64_encode_write(self.seq_num, &mut w).map_err(|_| Error::EncodeSeqError)?;
@@ -321,16 +371,29 @@ where
         // Encode the backlink and lipmaa links if its not the first sequence
         match (self.seq_num, &self.backlink, &self.lipmaa_link) {
             (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
-                backlink
-                    .encode_write(&mut w)
-                    .map_err(|_| Error::EncodeBacklinkError)?;
                 lipmaa_link
                     .encode_write(&mut w)
-                    .map_err(|_| Error::EncodeLipmaaError)
+                    .map_err(|_| Error::EncodeLipmaaError)?;
+
+                backlink
+                    .encode_write(&mut w)
+                    .map_err(|_| Error::EncodeBacklinkError)
             }
+            (n, Some(ref backlink), None) if n > 1 => backlink
+                .encode_write(&mut w)
+                .map_err(|_| Error::EncodeBacklinkError),
             (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
             _ => Ok(()),
         }?;
+
+        // Encode the payload size
+        varu64_encode_write(self.payload_size, &mut w)
+            .map_err(|_| Error::EncodePayloadSizeError)?;
+
+        // Encode the payload hash
+        self.payload_hash
+            .encode_write(&mut w)
+            .map_err(|_| Error::EncodePayloadHashError)?;
 
         // Encode the signature
         if let Some(ref sig) = self.sig {
@@ -345,6 +408,7 @@ where
         TAG_BYTE_LENGTH
             + self.payload_hash.encoding_length()
             + varu64_encoding_length(self.payload_size)
+            + varu64_encoding_length(self.log_id)
             + self.author.encoding_length()
             + varu64_encoding_length(self.seq_num)
             + self
@@ -399,18 +463,14 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [
     }
     let is_end_of_feed = bytes[0] == 1;
 
-    // Decode the payload hash
-    let (payload_hash, remaining_bytes) =
-        YamfHash::<&[u8]>::decode(&bytes[1..]).map_err(|_| Error::DecodePayloadHashError)?;
-
-    // Decode the payload size
-    let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
-        .map_err(|(err, _)| err)
-        .map_err(|_| Error::DecodePayloadSizeError)?;
-
     // Decode the author
     let (author, remaining_bytes) =
-        YamfSignatory::<&[u8]>::decode(remaining_bytes).map_err(|_| Error::DecodeAuthorError)?;
+        YamfSignatory::<&[u8]>::decode(&bytes[1..]).map_err(|_| Error::DecodeAuthorError)?;
+
+    // Decode the log id
+    let (log_id, remaining_bytes) = varu64_decode(remaining_bytes)
+        .map_err(|(err, _)| err)
+        .map_err(|_| Error::DecodeLogIdError)?;
 
     // Decode the sequence number
     let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
@@ -421,23 +481,40 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [
         return Err(Error::DecodeSeqIsZero);
     }
 
+    let lipmaa_is_required = is_lipmaa_required(seq_num);
+
     // Decode the backlink and lipmaa links if its not the first sequence
-    let (backlink, lipmaa_link, remaining_bytes) = match seq_num {
-        1 => (None, None, remaining_bytes),
-        _ => {
-            let (backlink, remaining_bytes) = YamfHash::<&[u8]>::decode(remaining_bytes)
-                .map_err(|_| Error::DecodeBacklinkError)?;
+    let (backlink, lipmaa_link, remaining_bytes) = match (seq_num, lipmaa_is_required) {
+        (1, _) => (None, None, remaining_bytes),
+        (_, true) => {
             let (lipmaa_link, remaining_bytes) =
                 YamfHash::<&[u8]>::decode(remaining_bytes).map_err(|_| Error::DecodeLipmaaError)?;
+            let (backlink, remaining_bytes) = YamfHash::<&[u8]>::decode(remaining_bytes)
+                .map_err(|_| Error::DecodeBacklinkError)?;
             (Some(backlink), Some(lipmaa_link), remaining_bytes)
         }
+        (_, false) => {
+            let (backlink, remaining_bytes) = YamfHash::<&[u8]>::decode(remaining_bytes)
+                .map_err(|_| Error::DecodeBacklinkError)?;
+            (Some(backlink), None, remaining_bytes)
+        }
     };
+
+    // Decode the payload size
+    let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
+        .map_err(|(err, _)| err)
+        .map_err(|_| Error::DecodePayloadSizeError)?;
+
+    // Decode the payload hash
+    let (payload_hash, remaining_bytes) =
+        YamfHash::<&[u8]>::decode(remaining_bytes).map_err(|_| Error::DecodePayloadHashError)?;
 
     // Decode the signature
     let (sig, _) =
         Signature::<&[u8]>::decode(remaining_bytes).map_err(|_| Error::DecodeSigError)?;
 
     Ok(Entry {
+        log_id,
         is_end_of_feed,
         payload_hash,
         payload_size,
@@ -447,4 +524,8 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [
         lipmaa_link,
         sig: Some(sig),
     })
+}
+
+fn is_lipmaa_required(sequence_num: u64) -> bool {
+    lipmaa(sequence_num) != sequence_num - 1
 }

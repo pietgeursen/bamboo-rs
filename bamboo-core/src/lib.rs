@@ -1,5 +1,10 @@
+//! # bamboo-core
+//!
+//! Sign, and Verify [bamboo](https://github.com/AljoschaMeyer/bamboo) messages.
+//!
+//! `bamboo-core` exposes a c-friendly api and can be built with `no_std`.
+//!
 #![cfg_attr(not(feature = "std"), no_std)]
-#![feature(const_fn)]
 
 #[cfg(not(feature = "std"))]
 #[panic_handler]
@@ -27,8 +32,8 @@ pub mod yamf_signatory;
 
 mod util;
 
-pub use ed25519_dalek::{Keypair, PublicKey, SecretKey};
-pub use entry::{publish, verify, Entry};
+pub use ed25519_dalek::{Keypair, PublicKey, SecretKey, SignatureError};
+pub use entry::{publish, verify, decode, Entry};
 pub use error::Error;
 pub use lipmaa_link::lipmaa;
 pub use signature::Signature;
@@ -54,6 +59,7 @@ pub struct PublishEd25519Blake2bEntryArgs<'a> {
     pub lipmaalink_length: usize,
     pub is_end_of_feed: bool,
     pub last_seq_num: u64,
+    pub log_id: u64,
 }
 
 #[repr(C)]
@@ -70,7 +76,7 @@ pub struct VerifyEd25519Blake2bEntryArgs<'a> {
 }
 
 #[no_mangle]
-pub extern "C" fn verify_ed25519_blake2b_entry(args: &mut VerifyEd25519Blake2bEntryArgs) -> isize {
+pub extern "C" fn verify_ed25519_blake2b_entry(args: &mut VerifyEd25519Blake2bEntryArgs) -> Error {
     let lipmaalink_slice =
         unsafe { slice::from_raw_parts(args.lipmaalink_bytes, args.lipmaalink_length) };
     let lipmaalink = match args.lipmaalink_length {
@@ -95,15 +101,15 @@ pub extern "C" fn verify_ed25519_blake2b_entry(args: &mut VerifyEd25519Blake2bEn
     verify(entry, payload, lipmaalink, backlink)
         .map(|is_valid| {
             args.is_valid = is_valid;
-            0
+            Error::NoError
         })
-        .unwrap_or_else(|err| err as isize)
+        .unwrap()
 }
 
 #[no_mangle]
 pub extern "C" fn publish_ed25519_blake2b_entry(
     args: &mut PublishEd25519Blake2bEntryArgs,
-) -> isize {
+) -> Error {
     let out: &mut [u8] = unsafe { slice::from_raw_parts_mut(args.out, args.out_length) };
     let payload: &[u8] = unsafe { slice::from_raw_parts(args.payload_bytes, args.payload_length) };
     let public_key: &[u8] =
@@ -132,12 +138,13 @@ pub extern "C" fn publish_ed25519_blake2b_entry(
     let key_pair = Keypair::from_bytes(&key_pair_bytes[..]);
 
     if let Err(_) = key_pair {
-        return -1;
+        return Error::PublishWithoutKeypair;
     }
 
     publish(
         out,
         Some(&key_pair.unwrap()),
+        args.log_id,
         payload,
         args.is_end_of_feed,
         args.last_seq_num,
@@ -146,7 +153,7 @@ pub extern "C" fn publish_ed25519_blake2b_entry(
     )
     .map(|encoded_size| {
         args.out_length = encoded_size;
-        0
+        Error::NoError    
     })
-    .unwrap_or_else(|err| err as isize)
+    .unwrap()
 }

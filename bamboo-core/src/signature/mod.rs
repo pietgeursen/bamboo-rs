@@ -94,7 +94,7 @@ mod tests {
     fn decode_signature_non_canonical() {
         let bytes = vec![248, 0x05, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xAA];
         match Signature::<&[u8]>::decode(&bytes) {
-            Err(Error::DecodeVaru64Error { source: _ }) => {}
+            Err(Error::DecodeVaru64Error) => {}
             e => {
                 println!("{:?}", e);
                 panic!("expected an error")
