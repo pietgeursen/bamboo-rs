@@ -20,9 +20,11 @@ main() {
     if [ -z $IS_NO_STD ]
     then
       cross build --target $TARGET --release
-      cp target/$TARGET/release/bamboo-cli $stage/
-      cp target/$TARGET/release/libbamboo_core.a $stage/
-      cp target/$TARGET/release/libbamboo_core.so $stage/
+      cp target/$TARGET/release/bamboo-cli $stage/ || true
+      cp target/$TARGET/release/bamboo-cli.exe $stage/ || true
+      cp target/$TARGET/release/libbamboo_core.a $stage/ || true
+      cp target/$TARGET/release/libbamboo_core.so $stage/ || true # this would fail for musl builds so fail quietly
+      cp target/$TARGET/release/libbamboo_core.dll $stage/ || true # if we're windows 
     else
       cd bamboo-core
       cross build -p bamboo-core --target $TARGET --release --no-default-features
