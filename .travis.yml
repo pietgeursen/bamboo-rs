@@ -12,6 +12,7 @@ sudo: required
 env:
   global:
     - CRATE_NAME=bamboo-rs
+    - secure: JyfETmJqBn0iddZ4if9qgl1wcRHdJZQsIE6MENebzC8pAsTRFpj79StluA36t7C/AFTDpF07hMimgc8Gx29eII1wiBbCD/hbidckuYjkdh+yqWSubsEo3AnF+Gkq1lh3Tu3mFfEntL8yheuTTLRI1v0Sc7ZuopwttKQ8gZy7eoYyDqavoQsxsX8LkS3dT0Z+1yuCJWc7NNlj28Y1qcegYMWzukPPkQSZMwZcbcqdf1YGmv93Pi1gtyQOBVNGRGGBtGJAr4S+HESFQ+IYaXaB9G0xYJssdjR48gOFbC/TYZMvWX8X00Yuhiu0X9Bfh9AYxlC/piZnRrtjeh/VR90L8RhbllVsPG8HFn+V5uMub+SxEn2PVsNSL0pCwpoDaVEi+R/WRpkElu1pZTPVdziEV82TFO6f38fL/kZjcLkt+dp/Nc1DeRzxhoZOG8d7DsQiX4Go1V8ILRirEVFshX1yfi5cBCmMNjxdqYvFJ+DG2RTh5/UVxx0q5zIAnH6bqWufqznZecPBvcX1D2QFevHBH4dpIzjsHNgKiLFTxVbj+/7kiC5wYP0Z3Dw/maDQ7mL1xDJttIKd+vZG6yJveVVHEK5zRJhNBiCumlJdYEaiM/caZ3uPip4FtGRDSectu5zNwZVGC3U84LCBMI14GnL1kMJJ3vp0mefALh6UBBfjiNs=
 
 matrix:
   # TODO These are all the build jobs. Adjust as necessary. Comment out what you
@@ -137,8 +138,6 @@ deploy:
   # - Create a `public_repo` GitHub token. Go to: https://github.com/settings/tokens/new
   # - Encrypt it: `travis encrypt 0123456789012345678901234567890123456789
   # - Paste the output down here
-  api_key:
-    secure: "fyyLTPX8YcIBWDBOsj3wpdMOmrcKGt/LbT8UDslessisxgTXsPiMcIuDBbNaI6iDshXNTpndkf7CTkCtBhkiXqf+cS0wbA0OnnPMc/q+D+ffH9NYIMhxHPES4OrGNq3GUgCNAlA1RWE1CRNDq9oJ/pmslx4pjyi/AUA4PNXc1KgiaxpFo5C+q2PxpKbd4Z/dVrknxnwZZbZyFKXWCmuDuSX7UWVsOOuum3Bl9T63gZxxzoaGdJfFpaTRP/pUjj8MRtgcrwJ2N8uTcnWaF9IDS2QCj8CXzhms8B9ZkMu9MtLLZhRtSddh91QQsezzx4DSRME9t1w9naVTcUXU/RxgNhEIGhO9rcDVmC732Dcc47+cQpEFTkfphda+C/v9VVPvdz5i1XOqidicLpLB+YMMNIuM4JqkAjIflDyZsBpMBq81mRw711RDM7L8+DW2hOuZVc+f5buyXepvjZUioZquoQp1qH0Ey17q7Cq7K3wZP71x5XEGGapN2FM4pD8f70e2K4Vnx66w8OqPCMCruoojILLP8WzymZJZ8tTS4hpEyN4fU4IKGCFtnv/9ZAHd+qa+XOuVW1dDH7lAY35S80McxUVyn/7mCR5XaND5vjMmkRclnmyKZp0CcNqulalPec7jT2CMl54IiRctRGHppSmmw+Pq60QbA9cxuU/kwVYCBpg="
   file_glob: true
   file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
   on:
