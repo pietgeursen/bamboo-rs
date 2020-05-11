@@ -1,50 +1,168 @@
+# Based on the "trust" template v0.1.2
+# https://github.com/japaric/trust/tree/v0.1.2
+
 dist: trusty
 language: rust
 services: docker
 sudo: required
+
+# TODO Rust builds on stable by default, this can be
+# overridden on a case by case basis down below.
+
 env:
   global:
-  - CRATE_NAME=bamboo-rs
+    - CRATE_NAME=bamboo-rs
+
 matrix:
+  # TODO These are all the build jobs. Adjust as necessary. Comment out what you
+  # don't need
   include:
-  - env: TARGET=x86_64-unknown-linux-gnu
-    rust: nightly
-  - env: TARGET=thumbv6m-none-eabi IS_NO_STD=1
-    rust: nightly
-  - env: TARGET=thumbv7em-none-eabi IS_NO_STD=1
-    rust: nightly
-  - env: TARGET=thumbv7em-none-eabihf IS_NO_STD=1
-    rust: nightly
-  - env: TARGET=thumbv7m-none-eabi IS_NO_STD=1
-    rust: nightly
+    # Android
+    #    - env: TARGET=aarch64-linux-android DISABLE_TESTS=1
+    #      rust: nightly
+    #    - env: TARGET=arm-linux-androideabi DISABLE_TESTS=1
+    #      rust: nightly
+    #    - env: TARGET=armv7-linux-androideabi DISABLE_TESTS=1
+    #      rust: nightly
+    #    - env: TARGET=i686-linux-android DISABLE_TESTS=1
+    #      rust: nightly
+    #    - env: TARGET=x86_64-linux-android DISABLE_TESTS=1
+    #      rust: nightly
+    #
+    #    # iOS
+    #    - env: TARGET=aarch64-apple-ios DISABLE_TESTS=1
+    #      rust: nightly
+    #      os: osx
+    #    - env: TARGET=armv7-apple-ios DISABLE_TESTS=1
+    #      rust: nightly
+    #      os: osx
+    #    - env: TARGET=armv7s-apple-ios DISABLE_TESTS=1
+    #      rust: nightly
+    #      os: osx
+    #    - env: TARGET=i386-apple-ios DISABLE_TESTS=1
+    #      rust: nightly
+    #      os: osx
+    #    - env: TARGET=x86_64-apple-ios DISABLE_TESTS=1
+    #      rust: nightly
+    #      os: osx
+
+    # Linux
+    #    - env: TARGET=aarch64-unknown-linux-gnu
+    #      rust: nightly
+    #    - env: TARGET=arm-unknown-linux-gnueabi
+    #      rust: nightly
+    #    - env: TARGET=armv7-unknown-linux-gnueabihf
+    #      rust: nightly
+    #    - env: TARGET=i686-unknown-linux-gnu
+    #      rust: nightly
+    #    - env: TARGET=i686-unknown-linux-musl
+    #      rust: nightly
+    #    - env: TARGET=mips-unknown-linux-gnu
+    #      rust: nightly
+    #    - env: TARGET=mips64-unknown-linux-gnuabi64
+    #      rust: nightly
+    #    - env: TARGET=mips64el-unknown-linux-gnuabi64
+    #      rust: nightly
+    #    - env: TARGET=mipsel-unknown-linux-gnu
+    #      rust: nightly
+    #    - env: TARGET=powerpc-unknown-linux-gnu
+    #      rust: nightly
+    #    - env: TARGET=powerpc64-unknown-linux-gnu
+    #      rust: nightly
+    #    - env: TARGET=powerpc64le-unknown-linux-gnu
+    #      rust: nightly
+    #    - env: TARGET=s390x-unknown-linux-gnu DISABLE_TESTS=1
+    #      rust: nightly
+    - env: TARGET=x86_64-unknown-linux-gnu
+      rust: nightly
+      #    - env: TARGET=x86_64-unknown-linux-musl
+      #      rust: nightly
+
+    # OSX
+    #    - env: TARGET=i686-apple-darwin
+    #      rust: nightly
+    #      os: osx
+    #    - env: TARGET=x86_64-apple-darwin
+    #      rust: nightly
+    #      os: osx
+    #
+    #    # *BSD
+    #    - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
+    #      rust: nightly
+    #    - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
+    #      rust: nightly
+    #    - env: TARGET=x86_64-unknown-netbsd DISABLE_TESTS=1
+    #      rust: nightly
+    #
+    #    # Windows
+    #    - env: TARGET=x86_64-pc-windows-gnu
+    #      rust: nightly
+    #
+    # Bare metal
+    # These targets don't support std and as such are likely not suitable for
+    # most crates.
+    - env: TARGET=thumbv6m-none-eabi IS_NO_STD=1
+      rust: nightly
+    - env: TARGET=thumbv7em-none-eabi IS_NO_STD=1
+      rust: nightly
+    - env: TARGET=thumbv7em-none-eabihf IS_NO_STD=1
+      rust: nightly
+    - env: TARGET=thumbv7m-none-eabi IS_NO_STD=1
+      rust: nightly
+    #
+    #    # Testing other channels
+    #    - env: TARGET=x86_64-unknown-linux-gnu
+    #      rust: nightly
+    #    - env: TARGET=x86_64-apple-darwin
+    #      os: osx
+    #      rust: nightly
+
 before_install:
-- set -e
-- rustup self update
+  - set -e
+  - rustup self update
+
 install:
-- sh ci/install.sh
-- source ~/.cargo/env || true
+  - sh ci/install.sh
+  - source ~/.cargo/env || true
+
 script:
-- bash ci/script.sh
+  - bash ci/script.sh
+
 after_script: set +e
+
 before_deploy:
-- sh ci/before_deploy.sh
+  - sh ci/before_deploy.sh
+
 deploy:
-  token:
-    secure: lsenrMRDSigv5kV4D/u4zGeiF6nmJwRk9GXm0ILo7p9QQBcxwMpZ1oE4OkWUc4xTn0qA6cQUxrLjZZE3A/4Kb1BdUZu71Y3zoufZOvDhbjG+aZBW8zW73uScBTyoGblkjTTW9MevFTZicsY21fLhQYVm4KkMXAn/Jr/Q5iT7omuzKTFK1/wRilupZp9yFI3C0B5mZtFhaXAxFHfv4G4kJ0z3NFh+0S+i0l88XVFiq8uRCVpGOXnTpWLS/Uahzh1SczaDVXgfyxMBZec5ZXIYqyWYl1Wkq9wN7+qLhbFmwf0Ozz3uDxL2FtmHHX+2RQtXWpFd7IHn20p/pGc2VD8i1dVDD+3dW4eZ46BAbkzUfUbEe41UZX23/ltZoGGbbi7AR3DtWTY2JsfS3KWAnt5sysdAB+rux/SpVrFUepyACKrZHlFynolWRt+VqQ2JobZB0CazsqelRGZAnG57e1V2Nc1CdkXy7DWtVY0n3cqpH/J5i8oj0KHxl89THlUT96kKUCjKyrcauWuZuuIh+56eN9WVM+vt/brs1xPu6gy4jfA3UfHKEHsHnpxE25tUyNHOyj7ydFwCTuzRLMAcbs5qZftvrai2sY1GOivh+UDQc1n4KgEKmrA7C8DoZVm0Z9vwfOFumSd+3K250giL6MMtOrjdlZffPjkgyWI93SPatIo=
+  # - Create a `public_repo` GitHub token. Go to: https://github.com/settings/tokens/new
+  # - Encrypt it: `travis encrypt 0123456789012345678901234567890123456789
+  # - Paste the output down here
   file_glob: true
-  file: "$CRATE_NAME-$TRAVIS_TAG-$TARGET.*"
+  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
   on:
-    condition: "$TRAVIS_RUST_VERSION = nightly"
+    # TODO Here you can pick which targets will generate binary releases
+    # In this example, there are some targets that are tested using the stable
+    # and nightly channels. This condition makes sure there is only one release
+    # for such targets and that's generated using the stable channel
+    condition: $TRAVIS_RUST_VERSION = nightly
     tags: true
   provider: releases
   skip_cleanup: true
+  edge: true
+  token:
+    secure: jo+oiNSs+5Y8exAAQITkcny4/B826YonokGGrGtq/T+AbAEsmewPtKGkdsr6hj1iEnnrsY0QE3FDY98xTGYkA9toz/lesF/RT30EQHhIQBZG2ejVoSFMO0d28AlSgunYpVIwgQ25+QvRie++qyom6FxE6/Bjg9Lm10rZSC7pHc/sgEhBh1jUurc8X6eF2EjX8NJQzeDrXkESjHbUj8CDlipgPThPBZYtEv057Cd5pcpZDOu1w770xuv/Smt650fbA+CmLbjpdhUdqR359tcY0aBvepVxVZrUCs2dj0/aJePIOySZ04HCERZ2ANNDguOdvhsKOsbZqEwHloaTu5u8OOt1STPitEVdnPTA2gKUqFcF5mQE2npasBHedI+/0Jd7YwkakSwmWKlEx3eUl+T8wo5uxjfypd2idEDSihDfiO3nPagomYRhBKnixKa+lx0KrRSycsm0uWyfgNPVmlL8kRAH23uzgewHJMRA1GHzVlIBlsV4WrqiBjFn2FfCxUrVycCGlanUtNsCjh3/j6EByeJIvOmK356TKaf65tNMElPr95bmLhEnk8m5wUYOhhyB2IAyfPT0F30F5/jmtUOCUaZ6oLn3hg/fKAVjKCc3cTYkyDRIIlQpTIEsFC/uYy8Ut/OcdUCdWYckXj+buVQnZ+Cs4qD8mkABXctip4+z7VU=
+
 cache: cargo
 before_cache:
-- chmod -R a+r $HOME/.cargo
+  # Travis can't cache files that are not readable by "others"
+  - chmod -R a+r $HOME/.cargo
+
 branches:
   only:
-  - "/^v\\d+\\.\\d+\\.\\d+.*$/"
-  - master
+    # release tags
+    - /^v\d+\.\d+\.\d+.*$/
+    - master
+
 notifications:
   email:
     on_success: never
