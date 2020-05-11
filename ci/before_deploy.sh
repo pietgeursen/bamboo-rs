@@ -20,19 +20,18 @@ main() {
     if [ -z $IS_NO_STD ]
     then
       cross build --target $TARGET --release
+      cp target/$TARGET/release/bamboo-cli $stage/
+      cp target/$TARGET/release/libbamboo_core.a $stage/
+      cp target/$TARGET/release/libbamboo_core.so $stage/
     else
       cd bamboo-core
       cross build -p bamboo-core --target $TARGET --release --no-default-features
+      cp target/$TARGET/release/libbamboo_core.a $stage/
+      cp target/$TARGET/release/libbamboo_core.so $stage/
       cd ..
     fi
 
     #strip target/$TARGET/release
-    cp target/$TARGET/release/bamboo-cli $stage/ || true
-
-    cd bamboo-core
-    cp target/$TARGET/release/libbamboo_core.a $stage/
-    cp target/$TARGET/release/libbamboo_core.so $stage/ || true
-    cd ..
 
     cd $stage
     tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *
