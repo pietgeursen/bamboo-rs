@@ -27,7 +27,6 @@ main() {
       cd bamboo-core
       cross build -p bamboo-core --target $TARGET --release --no-default-features
       cp target/$TARGET/release/libbamboo_core.a $stage/
-      cp target/$TARGET/release/libbamboo_core.so $stage/
       cd ..
     fi
 

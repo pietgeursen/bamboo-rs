@@ -18,86 +18,86 @@ matrix:
   # don't need
   include:
     # Android
-    #    - env: TARGET=aarch64-linux-android DISABLE_TESTS=1
-    #      rust: nightly
-    #    - env: TARGET=arm-linux-androideabi DISABLE_TESTS=1
-    #      rust: nightly
-    #    - env: TARGET=armv7-linux-androideabi DISABLE_TESTS=1
-    #      rust: nightly
-    #    - env: TARGET=i686-linux-android DISABLE_TESTS=1
-    #      rust: nightly
-    #    - env: TARGET=x86_64-linux-android DISABLE_TESTS=1
-    #      rust: nightly
-    #
-    #    # iOS
-    #    - env: TARGET=aarch64-apple-ios DISABLE_TESTS=1
-    #      rust: nightly
-    #      os: osx
-    #    - env: TARGET=armv7-apple-ios DISABLE_TESTS=1
-    #      rust: nightly
-    #      os: osx
-    #    - env: TARGET=armv7s-apple-ios DISABLE_TESTS=1
-    #      rust: nightly
-    #      os: osx
-    #    - env: TARGET=i386-apple-ios DISABLE_TESTS=1
-    #      rust: nightly
-    #      os: osx
-    #    - env: TARGET=x86_64-apple-ios DISABLE_TESTS=1
-    #      rust: nightly
-    #      os: osx
+    - env: TARGET=aarch64-linux-android DISABLE_TESTS=1
+      rust: nightly
+    - env: TARGET=arm-linux-androideabi DISABLE_TESTS=1
+      rust: nightly
+    - env: TARGET=armv7-linux-androideabi DISABLE_TESTS=1
+      rust: nightly
+    - env: TARGET=i686-linux-android DISABLE_TESTS=1
+      rust: nightly
+    - env: TARGET=x86_64-linux-android DISABLE_TESTS=1
+      rust: nightly
+
+    # iOS
+    - env: TARGET=aarch64-apple-ios DISABLE_TESTS=1
+      rust: nightly
+      os: osx
+    - env: TARGET=armv7-apple-ios DISABLE_TESTS=1
+      rust: nightly
+      os: osx
+    - env: TARGET=armv7s-apple-ios DISABLE_TESTS=1
+      rust: nightly
+      os: osx
+    - env: TARGET=i386-apple-ios DISABLE_TESTS=1
+      rust: nightly
+      os: osx
+    - env: TARGET=x86_64-apple-ios DISABLE_TESTS=1
+      rust: nightly
+      os: osx
 
     # Linux
-    #    - env: TARGET=aarch64-unknown-linux-gnu
-    #      rust: nightly
-    #    - env: TARGET=arm-unknown-linux-gnueabi
-    #      rust: nightly
-    #    - env: TARGET=armv7-unknown-linux-gnueabihf
-    #      rust: nightly
-    #    - env: TARGET=i686-unknown-linux-gnu
-    #      rust: nightly
-    #    - env: TARGET=i686-unknown-linux-musl
-    #      rust: nightly
-    #    - env: TARGET=mips-unknown-linux-gnu
-    #      rust: nightly
-    #    - env: TARGET=mips64-unknown-linux-gnuabi64
-    #      rust: nightly
-    #    - env: TARGET=mips64el-unknown-linux-gnuabi64
-    #      rust: nightly
-    #    - env: TARGET=mipsel-unknown-linux-gnu
-    #      rust: nightly
-    #    - env: TARGET=powerpc-unknown-linux-gnu
-    #      rust: nightly
-    #    - env: TARGET=powerpc64-unknown-linux-gnu
-    #      rust: nightly
-    #    - env: TARGET=powerpc64le-unknown-linux-gnu
-    #      rust: nightly
-    #    - env: TARGET=s390x-unknown-linux-gnu DISABLE_TESTS=1
-    #      rust: nightly
+    - env: TARGET=aarch64-unknown-linux-gnu
+      rust: nightly
+    - env: TARGET=arm-unknown-linux-gnueabi
+      rust: nightly
+    - env: TARGET=armv7-unknown-linux-gnueabihf
+      rust: nightly
+    - env: TARGET=i686-unknown-linux-gnu
+      rust: nightly
+    - env: TARGET=i686-unknown-linux-musl
+      rust: nightly
+    - env: TARGET=mips-unknown-linux-gnu
+      rust: nightly
+    - env: TARGET=mips64-unknown-linux-gnuabi64
+      rust: nightly
+    - env: TARGET=mips64el-unknown-linux-gnuabi64
+      rust: nightly
+    - env: TARGET=mipsel-unknown-linux-gnu
+      rust: nightly
+    - env: TARGET=powerpc-unknown-linux-gnu
+      rust: nightly
+    - env: TARGET=powerpc64-unknown-linux-gnu
+      rust: nightly
+    - env: TARGET=powerpc64le-unknown-linux-gnu
+      rust: nightly
+    - env: TARGET=s390x-unknown-linux-gnu DISABLE_TESTS=1
+      rust: nightly
     - env: TARGET=x86_64-unknown-linux-gnu
       rust: nightly
-      #    - env: TARGET=x86_64-unknown-linux-musl
-      #      rust: nightly
+    - env: TARGET=x86_64-unknown-linux-musl
+      rust: nightly
 
     # OSX
-    #    - env: TARGET=i686-apple-darwin
-    #      rust: nightly
-    #      os: osx
-    #    - env: TARGET=x86_64-apple-darwin
-    #      rust: nightly
-    #      os: osx
-    #
-    #    # *BSD
-    #    - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
-    #      rust: nightly
-    #    - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
-    #      rust: nightly
-    #    - env: TARGET=x86_64-unknown-netbsd DISABLE_TESTS=1
-    #      rust: nightly
-    #
-    #    # Windows
-    #    - env: TARGET=x86_64-pc-windows-gnu
-    #      rust: nightly
-    #
+    - env: TARGET=i686-apple-darwin
+      rust: nightly
+      os: osx
+    - env: TARGET=x86_64-apple-darwin
+      rust: nightly
+      os: osx
+
+    # *BSD
+    - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
+      rust: nightly
+    - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
+      rust: nightly
+    - env: TARGET=x86_64-unknown-netbsd DISABLE_TESTS=1
+      rust: nightly
+
+    # Windows
+    - env: TARGET=x86_64-pc-windows-gnu
+      rust: nightly
+
     # Bare metal
     # These targets don't support std and as such are likely not suitable for
     # most crates.
