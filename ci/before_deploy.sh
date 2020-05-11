@@ -21,21 +21,25 @@ main() {
     then
       cd bamboo-core
       cross build -p bamboo-core --target $TARGET --release
-      cd -
+      cd ..
       cd bamboo-cli
       cross build -p bamboo-cli --target $TARGET --release
-      cd -
+      cd ..
     else
       cd bamboo-core
       cross build -p bamboo-core --target $TARGET --release --no-default-features
-      cd -
+      cd ..
     fi
 
     #strip target/$TARGET/release
-    ls target/$TARGET/release
+    cd bamboo-cli
     cp target/$TARGET/release/bamboo-cli $stage/ || true
+    cd ..
+
+    cd bamboo-core
     cp target/$TARGET/release/libbamboo_core.a $stage/
     cp target/$TARGET/release/libbamboo_core.so $stage/ || true
+    cd ..
 
     cd $stage
     tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *
