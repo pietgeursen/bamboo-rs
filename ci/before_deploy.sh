@@ -19,12 +19,7 @@ main() {
 
     if [ -z $IS_NO_STD ]
     then
-      cd bamboo-core
-      cross build -p bamboo-core --target $TARGET --release
-      cd ..
-      cd bamboo-cli
-      cross build -p bamboo-cli --target $TARGET --release
-      cd ..
+      cross build --target $TARGET --release
     else
       cd bamboo-core
       cross build -p bamboo-core --target $TARGET --release --no-default-features
@@ -32,9 +27,7 @@ main() {
     fi
 
     #strip target/$TARGET/release
-    cd bamboo-cli
     cp target/$TARGET/release/bamboo-cli $stage/ || true
-    cd ..
 
     cd bamboo-core
     cp target/$TARGET/release/libbamboo_core.a $stage/
