@@ -6,16 +6,11 @@ language: rust
 services: docker
 sudo: required
 
-# TODO Rust builds on stable by default, this can be
-# overridden on a case by case basis down below.
-
 env:
   global:
     - CRATE_NAME=bamboo-rs
 
 matrix:
-  # TODO These are all the build jobs. Adjust as necessary. Comment out what you
-  # don't need
   include:
     # Android
     - env: TARGET=aarch64-linux-android DISABLE_TESTS=1
@@ -30,21 +25,21 @@ matrix:
       rust: nightly
 
     # iOS
-    #    - env: TARGET=aarch64-apple-ios DISABLE_TESTS=1
-    #      rust: nightly
-    #      os: osx
-    #    - env: TARGET=armv7-apple-ios DISABLE_TESTS=1
-    #      rust: nightly
-    #      os: osx
-    #    - env: TARGET=armv7s-apple-ios DISABLE_TESTS=1
-    #      rust: nightly
-    #      os: osx
-    #    - env: TARGET=i386-apple-ios DISABLE_TESTS=1
-    #      rust: nightly
-    #      os: osx
-    #    - env: TARGET=x86_64-apple-ios DISABLE_TESTS=1
-    #      rust: nightly
-    #      os: osx
+    - env: TARGET=aarch64-apple-ios DISABLE_TESTS=1
+      rust: nightly
+      os: osx
+    - env: TARGET=armv7-apple-ios DISABLE_TESTS=1
+      rust: nightly
+      os: osx
+    - env: TARGET=armv7s-apple-ios DISABLE_TESTS=1
+      rust: nightly
+      os: osx
+    - env: TARGET=i386-apple-ios DISABLE_TESTS=1
+      rust: nightly
+      os: osx
+    - env: TARGET=x86_64-apple-ios DISABLE_TESTS=1
+      rust: nightly
+      os: osx
 
     # Linux
     - env: TARGET=aarch64-unknown-linux-gnu
@@ -134,16 +129,9 @@ before_deploy:
   - sh ci/before_deploy.sh
 
 deploy:
-  # - Create a `public_repo` GitHub token. Go to: https://github.com/settings/tokens/new
-  # - Encrypt it: `travis encrypt 0123456789012345678901234567890123456789
-  # - Paste the output down here
   file_glob: true
   file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
   on:
-    # TODO Here you can pick which targets will generate binary releases
-    # In this example, there are some targets that are tested using the stable
-    # and nightly channels. This condition makes sure there is only one release
-    # for such targets and that's generated using the stable channel
     condition: $TRAVIS_RUST_VERSION = nightly
     tags: true
   provider: releases
