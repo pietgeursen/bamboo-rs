@@ -84,6 +84,13 @@ pub enum Opts {
         entry_file: String,
     },
 
+    /// Calculate the hash of the bytes in a file. Useful if you want to know the hash of an entry
+    /// or a payload. Uses the blake2b hashing algorithm.
+    Hash {
+        /// The file path of the file to hash.
+        file: String,
+    },
+
     /// Calculate the lipmaa number for the provided sequence number.
     Lipmaa {
         /// The sequence number.

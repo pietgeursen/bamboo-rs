@@ -1,5 +1,6 @@
 use bamboo_core::entry::MAX_ENTRY_SIZE;
 use bamboo_core::{decode, lipmaa, publish, verify, Keypair};
+use blake2b_simd::blake2b;
 use rand::rngs::OsRng;
 use snafu::ResultExt;
 use std::fs::File;
@@ -163,6 +164,12 @@ fn main() -> Result<()> {
         Opts::Lipmaa { sequence } => {
             let res = u64::from_str_radix(&sequence, 10).context(ParseSequenceNumber)?;
             println!("{}", lipmaa(res))
+        }
+        Opts::Hash { file } => {
+            let bytes = read_file(&file).context(DecodeEntryFile { filename: file })?;
+            let hash = blake2b(&bytes);
+
+            std::io::stdout().write_all(&hash.as_bytes()).unwrap();
         }
     };
     Ok(())
