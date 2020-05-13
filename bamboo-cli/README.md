@@ -58,6 +58,8 @@ So the lipmaa entry in this case will be entry_1
 
 Try out publishing a new entry. You'll have to provide the `--lipmaa-entry-file` and the `--previous-entry-file` arguments this time.
 
+You can run `$ bamboo-cli hash entry_1 | xxd -p` and `$ bamboo-cli hash payload_1 | xxd -p` to calculate the hashes and print them as a hex string. You can decode entry_2 and see that the entry_2 backlink value is the same as `$ bamboo-cli hash entry_1 | xxd -p`.
+
 ### Bonus fun: Post an entry to a "pub".
 
 Go here: https://mighty-sands-24362.herokuapp.com/swagger/index.html
