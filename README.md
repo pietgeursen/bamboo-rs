@@ -14,12 +14,33 @@ Bamboo releases target 29 different architectures. Releases of the bamboo_core l
 
 ### Fast
 
-The most likely bottleneck for applications is verification. Experience with scuttlebutt shows that once an application has to deal with a few years of data from a social network, onboarding a new user is painfully slow, and part of that slowness is due to verification.  
+The most likely bottleneck for applications is verification. Experience with scuttlebutt shows that once an application has to deal with a few years of data from a social network, onboarding a new user is painfully slow, and part of that slowness is due to verification. 
 
-`bamboo-rs` verification is fast because it: 
-  - TODO uses batch verification of hashes and cryptographic signatures.
-  - TODO use multi cpus where available.
-  - TODO use SIMD instructions where available. 
+`bamboo-rs` verification is fast because of the way the bamboo spec itself is designed. Imagine we have a feed of 100k entries that we want to verify before persisting. Rather than needing to verify all 100k entries, we calculate the lipmaa numbers from 100k down to 0 and only verify the entries that correspond to those numbers.
+
+The lipmaa entries from 100k down to 1 are:
+
+| sequence number |
+|---|
+|100000|
+|99996|
+|99992|
+|99871|
+|99507|
+|98414|
+|88573|
+|29524|
+|9841|
+|3280|
+|1093|
+|364|
+|121|
+|40|
+|13|
+|4|
+|1|
+
+So we only need to verify 17 entries out of the 100k to validate the feed. Scuttlebutt has to verify every message.
 
 ### Correct
 
