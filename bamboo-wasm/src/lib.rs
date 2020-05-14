@@ -16,8 +16,8 @@ use rand::rngs::OsRng;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[no_mangle]
-#[wasm_bindgen]
-pub extern "C" fn lipmaaLink(seq: u64) -> u64 {
+#[wasm_bindgen(js_name="lipmaaLink")]
+pub extern "C" fn lipmaa_link(seq: u64) -> u64 {
     lipmaa(seq)
 }
 
