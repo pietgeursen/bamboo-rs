@@ -2,7 +2,7 @@ mod utils;
 
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
-use bamboo_core::{lipmaa, YamfHash,Entry};
+use bamboo_core::{lipmaa, YamfHash, Entry, YamfSignatory};
 use bamboo_core::entry::{publish as publish_entry, into_owned, decode as decode_entry, verify as verify_entry};
 use bamboo_core::{PublicKey, Keypair, Signature, SecretKey};
 use bamboo_core::yamf_hash::{new_blake2b};
@@ -22,14 +22,14 @@ pub extern "C" fn lipmaa_link(seq: u64) -> u64 {
 }
 
 #[wasm_bindgen(inspectable)]
-pub struct HashedEntry{
+pub struct BambooEntry{
     hash: YamfHash<ArrayVec<[u8; 64]>>,
-    value: Entry<'static, ArrayVec<[u8; 64]>, ArrayVec<[u8; 64]>, ArrayVec<[u8; 64]>>
+    value: Entry<'static, ArrayVec<[u8; 64]>, ArrayVec<[u8; 32]>, ArrayVec<[u8; 64]>>
 }
 
 #[wasm_bindgen]
-impl HashedEntry{
-    #[wasm_bindgen(getter)]
+impl BambooEntry{
+    #[wasm_bindgen(getter, js_name="entryHash")]
     pub fn hash(&self) -> Box<[u8]>{
         match self.hash {
             YamfHash::Blake2b(ref bts) => bts.as_ref().into()
@@ -43,7 +43,7 @@ impl HashedEntry{
         }
     }
 
-    #[wasm_bindgen(getter, js_name="lipmaaLink")]
+    #[wasm_bindgen(getter, js_name="lipmaaLinkHash")]
     pub fn lipmaa_link(&self) -> Option<Box<[u8]>>{
         match self.value.lipmaa_link{
             Some(YamfHash::Blake2b(ref bts)) => Some(bts.as_ref().into()),
@@ -51,11 +51,27 @@ impl HashedEntry{
         }
     }
 
+    #[wasm_bindgen(getter, js_name="backLinkHash")]
+    pub fn back_link(&self) -> Option<Box<[u8]>>{
+        match self.value.backlink{
+            Some(YamfHash::Blake2b(ref bts)) => Some(bts.as_ref().into()),
+            None => None
+        }
+    }
+
+
     #[wasm_bindgen(getter)]
     pub fn signature(&self) -> Option<Box<[u8]>>{
         match self.value.sig{
             Some(Signature(ref bts)) => Some(bts.as_ref().into()),
             None => None
+        }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn author(&self) -> Box<[u8]>{
+        match self.value.author{
+            YamfSignatory::Ed25519(ref bts, _) => bts.as_ref().into()
         }
     }
 
@@ -76,24 +92,24 @@ impl HashedEntry{
 
     #[wasm_bindgen(getter)]
     pub fn sequence(&self) -> u64 { 
-        self.value.log_id
+        self.value.seq_num
     }
 }
 
 #[no_mangle]
 #[wasm_bindgen]
-pub extern "C" fn decode(buffer: &[u8]) -> Result<HashedEntry, JsValue>{
+pub extern "C" fn decode(buffer: &[u8]) -> Result<BambooEntry, JsValue>{
     let hash = new_blake2b(buffer); 
     let entry = decode_entry(buffer)
         .map_err(|err| JsValue::from_serde(&err).unwrap())?;
 
     let entry = into_owned(&entry);
-    let kv = HashedEntry{ 
+    let bamboo_entry = BambooEntry{ 
         hash: hash,
         value: entry
     };
 
-    Ok(kv)
+    Ok(bamboo_entry)
     //Ok(JsValue::from_serde(&kv).unwrap())
 }
 

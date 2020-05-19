@@ -527,7 +527,7 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [
 }
 
 #[cfg(feature = "std")]
-pub fn into_owned<H,A,S>(entry: &Entry<H,A,S>) -> Entry<'static, ArrayVec<[u8; 64]>, ArrayVec<[u8; 64]>, ArrayVec<[u8; 64]>>
+pub fn into_owned<H,A,S>(entry: &Entry<H,A,S>) -> Entry<'static, ArrayVec<[u8; 64]>, ArrayVec<[u8; 32]>, ArrayVec<[u8; 64]>>
 where
     H: Borrow<[u8]>,
     A: Borrow<[u8]>,
@@ -561,7 +561,7 @@ where
 
     let author = match entry.author {
         YamfSignatory::Ed25519(ref s, _) => {
-            let mut vec = ArrayVec::<[u8; 64]>::new();
+            let mut vec = ArrayVec::<[u8; 32]>::new();
             vec.try_extend_from_slice(&s.borrow()[..]).unwrap();
             YamfSignatory::Ed25519(vec, None)
         }
