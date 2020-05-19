@@ -3,7 +3,7 @@ mod utils;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 use bamboo_core::{lipmaa, YamfHash, Entry, YamfSignatory};
-use bamboo_core::entry::{publish as publish_entry, into_owned, decode as decode_entry, verify as verify_entry};
+use bamboo_core::entry::{publish as publish_entry, into_owned, decode as decode_entry, verify as verify_entry, MAX_ENTRY_SIZE };
 use bamboo_core::{PublicKey, Keypair, Signature, SecretKey};
 use bamboo_core::yamf_hash::{new_blake2b};
 use arrayvec::*;
@@ -19,6 +19,11 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 #[wasm_bindgen(js_name="lipmaaLink")]
 pub extern "C" fn lipmaa_link(seq: u64) -> u64 {
     lipmaa(seq)
+}
+
+#[wasm_bindgen(js_name="maxEntrySize")]
+pub fn max_entry_size() -> u32 {
+    MAX_ENTRY_SIZE as u32
 }
 
 #[wasm_bindgen(inspectable)]
