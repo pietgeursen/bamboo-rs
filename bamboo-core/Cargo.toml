@@ -15,7 +15,7 @@ default = ["std"]
 std = ["varu64/std", "hex/std"]
 
 [dependencies]
-arrayvec = { version = "0.4", default-features = false}
+arrayvec = { version = "0.5.1", default-features = false}
 serde = { version = "1.0", default-features = false , features = ["derive"] }
 serde_derive = { version = "1.0", default-features = false }
 hex = { git = "https://github.com/KokaKiwi/rust-hex", default-features = false }

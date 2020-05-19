@@ -526,6 +526,69 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [
     })
 }
 
+#[cfg(feature = "std")]
+pub fn into_owned<H,A,S>(entry: &Entry<H,A,S>) -> Entry<'static, ArrayVec<[u8; 64]>, ArrayVec<[u8; 64]>, ArrayVec<[u8; 64]>>
+where
+    H: Borrow<[u8]>,
+    A: Borrow<[u8]>,
+    S: Borrow<[u8]>,
+{
+    let sig = match entry.sig {
+        Some(Signature(ref s)) => {
+            let mut vec = ArrayVec::<[u8; 64]>::new();
+            vec.try_extend_from_slice(&s.borrow()[..]).unwrap();
+            Some(Signature(vec))
+        }
+        None => None
+    };
+
+    let payload_hash = match entry.payload_hash {
+        YamfHash::Blake2b(ref s) => {
+            let mut vec = ArrayVec::<[u8; 64]>::new();
+            vec.try_extend_from_slice(&s.borrow()[..]).unwrap();
+            YamfHash::Blake2b(vec)
+        }
+    };
+
+    let backlink = match entry.backlink {
+        Some(YamfHash::Blake2b(ref s)) => {
+            let mut vec = ArrayVec::<[u8; 64]>::new();
+            vec.try_extend_from_slice(&s.borrow()[..]).unwrap();
+            Some(YamfHash::Blake2b(vec))
+        }
+        None => None
+    };
+
+    let author = match entry.author {
+        YamfSignatory::Ed25519(ref s, _) => {
+            let mut vec = ArrayVec::<[u8; 64]>::new();
+            vec.try_extend_from_slice(&s.borrow()[..]).unwrap();
+            YamfSignatory::Ed25519(vec, None)
+        }
+    };
+
+    let lipmaa_link = match entry.lipmaa_link {
+        Some(YamfHash::Blake2b(ref s)) => {
+            let mut vec = ArrayVec::<[u8; 64]>::new();
+            vec.try_extend_from_slice(&s.borrow()[..]).unwrap();
+            Some(YamfHash::Blake2b(vec))
+        }
+        None => None
+    };
+
+    Entry{
+        is_end_of_feed: entry.is_end_of_feed,
+        payload_size: entry.payload_size,
+        seq_num: entry.seq_num,
+        log_id: entry.log_id,
+        payload_hash,
+        lipmaa_link,
+        backlink,
+        author,
+        sig 
+    }
+}
+
 fn is_lipmaa_required(sequence_num: u64) -> bool {
     lipmaa(sequence_num) != sequence_num - 1
 }

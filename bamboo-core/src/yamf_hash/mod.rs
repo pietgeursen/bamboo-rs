@@ -95,6 +95,20 @@ impl<T: Borrow<[u8]>> YamfHash<T> {
         }
     }
 
+    /// Decode the `bytes` as a `YamfHash`
+    pub fn decode_owned<'a>(bytes: &'a [u8]) -> Result<(YamfHash<ArrayVec<[u8;64]>>, &'a [u8]), Error> {
+        match varu64_decode(&bytes) {
+            Ok((BLAKE2B_NUMERIC_ID, remaining_bytes)) if remaining_bytes.len() >= 65 => {
+                let mut vec = ArrayVec::new();
+                let slice = &remaining_bytes[1..65];
+                vec.try_extend_from_slice(slice).unwrap();
+                Ok((YamfHash::Blake2b(vec), &remaining_bytes[65..]))
+            }
+            Err((_, _)) => Err(Error::DecodeVaru64Error),
+            _ => Err(Error::DecodeError {}),
+        }
+    }
+
     /// Encode a YamfHash into the writer.
     #[cfg(feature = "std")]
     pub fn encode_write<W: Write>(&self, mut w: W) -> Result<(), Error> {

@@ -3,8 +3,8 @@ mod utils;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 use bamboo_core::{lipmaa, YamfHash,Entry};
-use bamboo_core::entry::{publish as publish_entry, decode as decode_entry, verify as verify_entry};
-use bamboo_core::{PublicKey, Keypair, SecretKey};
+use bamboo_core::entry::{publish as publish_entry, into_owned, decode as decode_entry, verify as verify_entry};
+use bamboo_core::{PublicKey, Keypair, Signature, SecretKey};
 use bamboo_core::yamf_hash::{new_blake2b};
 use arrayvec::*;
 use rand::rngs::OsRng;
@@ -21,26 +21,80 @@ pub extern "C" fn lipmaa_link(seq: u64) -> u64 {
     lipmaa(seq)
 }
 
-#[derive(Serialize)]
-pub struct KeyedEntry<'a>{
-    pub key: YamfHash<ArrayVec<[u8; 64]>>,
-    pub value: &'a Entry<'a, &'a [u8], &'a [u8], &'a [u8]>
+#[wasm_bindgen(inspectable)]
+pub struct HashedEntry{
+    hash: YamfHash<ArrayVec<[u8; 64]>>,
+    value: Entry<'static, ArrayVec<[u8; 64]>, ArrayVec<[u8; 64]>, ArrayVec<[u8; 64]>>
+}
+
+#[wasm_bindgen]
+impl HashedEntry{
+    #[wasm_bindgen(getter)]
+    pub fn hash(&self) -> Box<[u8]>{
+        match self.hash {
+            YamfHash::Blake2b(ref bts) => bts.as_ref().into()
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name="payloadHash")]
+    pub fn payload_hash(&self) -> Box<[u8]>{
+        match self.value.payload_hash{
+            YamfHash::Blake2b(ref bts) => bts.as_ref().into()
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name="lipmaaLink")]
+    pub fn lipmaa_link(&self) -> Option<Box<[u8]>>{
+        match self.value.lipmaa_link{
+            Some(YamfHash::Blake2b(ref bts)) => Some(bts.as_ref().into()),
+            None => None
+        }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn signature(&self) -> Option<Box<[u8]>>{
+        match self.value.sig{
+            Some(Signature(ref bts)) => Some(bts.as_ref().into()),
+            None => None
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name="isEndOfFeed")]
+    pub fn is_end_of_feed(&self) -> bool { 
+        self.value.is_end_of_feed
+    }
+
+    #[wasm_bindgen(getter, js_name="logId")]
+    pub fn log_id(&self) -> u64 { 
+        self.value.log_id
+    }
+
+    #[wasm_bindgen(getter, js_name="payloadSize")]
+    pub fn payload_size(&self) -> u64 { 
+        self.value.payload_size
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn sequence(&self) -> u64 { 
+        self.value.log_id
+    }
 }
 
 #[no_mangle]
 #[wasm_bindgen]
-pub extern "C" fn decode(buffer: &[u8]) -> Result<JsValue, JsValue>{
+pub extern "C" fn decode(buffer: &[u8]) -> Result<HashedEntry, JsValue>{
     let hash = new_blake2b(buffer); 
     let entry = decode_entry(buffer)
         .map_err(|err| JsValue::from_serde(&err).unwrap())?;
 
-
-    let kv = KeyedEntry{ 
-        key: hash,
-        value: &entry
+    let entry = into_owned(&entry);
+    let kv = HashedEntry{ 
+        hash: hash,
+        value: entry
     };
 
-    Ok(JsValue::from_serde(&kv).unwrap())
+    Ok(kv)
+    //Ok(JsValue::from_serde(&kv).unwrap())
 }
 
 
