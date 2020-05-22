@@ -14,7 +14,7 @@ bamboo-core = {path = "../bamboo-core"}
 
 [dev-dependencies]
 bamboo-core = {path = "../bamboo-core"}
-arrayvec = { version = "0.4.11", default-features = false}
+arrayvec = { version = "0.5.1", default-features = false}
 serde = { version = "1.0.94", default-features = false , features = ["derive"] }
 serde_derive = { version = "1.0.94", default-features = false }
 serde_json = "1.0.40" 

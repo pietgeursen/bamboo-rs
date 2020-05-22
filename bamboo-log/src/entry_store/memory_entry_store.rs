@@ -18,8 +18,8 @@ impl MemoryEntryStore {
 }
 
 impl EntryStore for MemoryEntryStore {
-    fn get_last_seq(&self) -> u64 {
-        self.store.keys().max().map(|max| *max).unwrap_or(0)
+    fn get_last_seq(&self) -> Option<u64> {
+        self.store.keys().max().map(|max| *max)
     }
     fn get_entry(&self, seq_num: u64) -> Result<Option<Vec<u8>>> {
         if seq_num == 0 {
@@ -36,10 +36,16 @@ impl EntryStore for MemoryEntryStore {
         Ok(result)
     }
     fn get_last_entry(&self) -> Result<Option<Vec<u8>>> {
-        self.get_entry(self.get_last_seq())
+        match self.get_last_seq(){
+            Some(seq) => self.get_entry(seq),
+            None => Ok(None)
+        }
     }
     fn get_last_entry_ref<'a>(&'a self) -> Result<Option<&'a [u8]>> {
-        self.get_entry_ref(self.get_last_seq())
+        match self.get_last_seq(){
+            Some(seq) => self.get_entry_ref(seq),
+            None => Ok(None)
+        }
     }
     fn add_entry(&mut self, entry: &[u8], seq_num: u64) -> Result<()> {
         let mut vec = Vec::with_capacity(entry.len());

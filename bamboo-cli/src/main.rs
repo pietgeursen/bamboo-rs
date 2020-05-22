@@ -41,7 +41,7 @@ fn main() -> Result<()> {
             })?;
 
             let (previous, lipmaa, last_seq_num) = if is_start_of_feed {
-                (None, None, 0)
+                (None, None, None)
             } else {
                 let previous_entry_file = previous_entry_file.unwrap();
                 let previous_bytes = read_file(&previous_entry_file).context(PayloadFile {
@@ -58,7 +58,7 @@ fn main() -> Result<()> {
 
                 let seq_num = previous_entry.seq_num.clone();
 
-                (Some(previous_bytes), Some(lipmaa_bytes), seq_num)
+                (Some(previous_bytes), Some(lipmaa_bytes), Some(seq_num))
             };
 
             let mut entry_buff: [u8; MAX_ENTRY_SIZE] = [0; MAX_ENTRY_SIZE];

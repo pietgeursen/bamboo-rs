@@ -93,7 +93,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         )
@@ -117,7 +117,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         )
@@ -130,7 +130,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            1,
+            Some(1),
             Some(&out[..size]),
             Some(&out[..size]),
         )
@@ -153,7 +153,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         )
@@ -167,7 +167,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            1,
+            Some(1),
             None,
             Some(&out[..size]),
         ) {
@@ -189,7 +189,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         )
@@ -203,7 +203,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            1,
+            Some(1),
             Some(&out[..size]),
             None,
         ) {
@@ -226,7 +226,7 @@ mod tests {
             0,
             payload.as_bytes(),
             true,
-            0,
+            None,
             None,
             None,
         )
@@ -239,7 +239,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            1,
+            Some(1),
             Some(&out[..size]),
             Some(&out[..size]),
         ) {
@@ -261,7 +261,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         ) {
@@ -275,7 +275,7 @@ mod tests {
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        match publish(&mut out, None, 0, payload.as_bytes(), false, 0, None, None) {
+        match publish(&mut out, None, 0, payload.as_bytes(), false, None, None, None) {
             Err(Error::PublishWithoutKeypair) => {}
             _ => panic!(),
         }
@@ -293,7 +293,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         )
@@ -306,7 +306,7 @@ mod tests {
             1,
             payload.as_bytes(),
             false,
-            1,
+            Some(1),
             Some(&out[..size]),
             Some(&out[..size]),
         ) {
@@ -329,7 +329,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         )
@@ -357,7 +357,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         )
@@ -370,7 +370,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            1,
+            Some(1),
             Some(&out[..size]),
             Some(&out[..size]),
         )
@@ -409,7 +409,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         )
@@ -423,7 +423,7 @@ mod tests {
             0,
             payload.as_bytes(),
             false,
-            1,
+            Some(1),
             Some(&out[..size]),
             Some(&out[..size]),
         )

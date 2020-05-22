@@ -18,6 +18,9 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 #[no_mangle]
 #[wasm_bindgen(js_name="lipmaaLink")]
 pub extern "C" fn lipmaa_link(seq: u64) -> u64 {
+    if seq <= 1{
+        return 1
+    }
     lipmaa(seq)
 }
 
@@ -139,7 +142,7 @@ enum Error{
 
 #[no_mangle]
 #[wasm_bindgen]
-pub extern "C" fn publish(out: &mut[u8], public_key: &[u8], secret_key: &[u8], log_id: u64, payload: &[u8], is_end_of_feed: bool, last_seq_num: u64, lipmaa_entry_vec: Option<Vec<u8>>, backlink_vec: Option<Vec<u8>>) -> Result<usize, JsValue> {
+pub extern "C" fn publish(out: &mut[u8], public_key: &[u8], secret_key: &[u8], log_id: u64, payload: &[u8], is_end_of_feed: bool, last_seq_num: Option<u64>, lipmaa_entry_vec: Option<Vec<u8>>, backlink_vec: Option<Vec<u8>>) -> Result<usize, JsValue> {
     let public_key = PublicKey::from_bytes(public_key)
         .map_err(|_| JsValue::from_serde(&Error::PublicKeyFromBytesError).unwrap())?;
    

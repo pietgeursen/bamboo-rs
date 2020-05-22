@@ -147,7 +147,7 @@ pub extern "C" fn publish_ed25519_blake2b_entry(
         args.log_id,
         payload,
         args.is_end_of_feed,
-        args.last_seq_num,
+        Some(args.last_seq_num),
         lipmaalink,
         backlink,
     )

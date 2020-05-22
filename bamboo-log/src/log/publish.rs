@@ -11,7 +11,7 @@ impl<Store: EntryStore> Log<Store> {
         let mut buff = [0u8; 512];
 
         let last_seq_num = self.store.get_last_seq();
-        let seq_num = last_seq_num + 1;
+        let seq_num = last_seq_num.unwrap_or(0) + 1;
         let lipmaa_link_seq = lipmaa(seq_num);
 
         let lipmaa_entry_bytes = self
@@ -20,7 +20,7 @@ impl<Store: EntryStore> Log<Store> {
             .map_err(|_| Error::GetEntryFailed)?;
         let backlink_bytes = self
             .store
-            .get_entry_ref(last_seq_num)
+            .get_entry_ref(last_seq_num.unwrap_or(0))
             .map_err(|_| Error::GetEntryFailed)?;
 
         let length = publish(
