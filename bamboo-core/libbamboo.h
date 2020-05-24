@@ -118,6 +118,7 @@ typedef struct {
   uint64_t log_id;
   bool is_end_of_feed;
   uint8_t payload_hash_bytes[BLAKE2B_HASH_SIZE];
+  uint64_t payload_length;
   uint8_t author[ED25519_SIZE];
   uint64_t seq_num;
   uint8_t backlink[BLAKE2B_HASH_SIZE];

@@ -79,6 +79,7 @@ pub struct CEntry{
     pub log_id: u64,
     pub is_end_of_feed: bool,
     pub payload_hash_bytes: [u8; BLAKE2B_HASH_SIZE],
+    pub payload_length: u64,
     pub author: [u8; ED25519_SIZE] ,
     pub seq_num: u64,
     pub backlink: [u8; BLAKE2B_HASH_SIZE],
@@ -108,6 +109,7 @@ pub extern "C" fn decode_ed25519_blake2b_entry(args: &mut DecodeEd25519Blade2bEn
             args.out_decoded_entry.log_id = entry.log_id;
             args.out_decoded_entry.is_end_of_feed = entry.is_end_of_feed;
             args.out_decoded_entry.seq_num = entry.seq_num;
+            args.out_decoded_entry.payload_length = entry.payload_size;
             args.out_decoded_entry.has_backlink = entry.backlink.is_some();
             args.out_decoded_entry.has_lipmaa_link = entry.lipmaa_link.is_some();
 
