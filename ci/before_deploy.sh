@@ -18,14 +18,8 @@ main() {
     test -f Cargo.lock || cargo generate-lockfile
 
     # TODO generate the c headerfile and copy it too.
-    if [ -z $IS_NO_STD ]
-    then
-      cd bamboo-cli
-      cross build --target $TARGET --release
-      cd ..
-      cp target/$TARGET/release/bamboo-cli $stage/ || true
-      cp target/$TARGET/release/bamboo-cli.exe $stage/ || true # windows
-    fi
+    cp $src/bamboo-core/libbamboo.h $stage/
+
 
     cd bamboo-core
     cross build -p bamboo-core --target $TARGET --release --no-default-features
@@ -34,7 +28,14 @@ main() {
     cp target/$TARGET/release/bamboo_core.dll $stage/ || true # if we're windows 
     cd ..
 
-    cp $src/bamboo-core/libbamboo.h $stage/
+    if [ -z $IS_NO_STD ]
+    then
+      cd bamboo-cli
+      cross build --target $TARGET --release
+      cd ..
+      cp target/$TARGET/release/bamboo-cli $stage/ || true
+      cp target/$TARGET/release/bamboo-cli.exe $stage/ || true # windows
+    fi
 
     cd $stage
     tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *
