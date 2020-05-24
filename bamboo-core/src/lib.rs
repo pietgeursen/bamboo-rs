@@ -36,8 +36,8 @@ pub use ed25519_dalek::{Keypair, PublicKey, SecretKey, SignatureError};
 pub use entry::{publish, verify, decode, Entry};
 pub use error::Error;
 pub use lipmaa_link::lipmaa;
-pub use signature::Signature;
-pub use yamf_hash::YamfHash;
+pub use signature::{Signature, ED25519_SIGNATURE_SIZE};
+pub use yamf_hash::{YamfHash, BLAKE2B_HASH_SIZE, OUTBYTES};
 pub use yamf_signatory::{YamfSignatory, ED25519_SIZE};
 
 use core::slice;
@@ -64,7 +64,6 @@ pub struct PublishEd25519Blake2bEntryArgs<'a> {
 
 #[repr(C)]
 pub struct VerifyEd25519Blake2bEntryArgs<'a> {
-    pub is_valid: bool,
     pub entry_bytes: &'a u8,
     pub entry_length: usize,
     pub payload_bytes: &'a u8,
@@ -73,6 +72,80 @@ pub struct VerifyEd25519Blake2bEntryArgs<'a> {
     pub backlink_length: usize,
     pub lipmaalink_bytes: &'a u8,
     pub lipmaalink_length: usize,
+}
+
+#[repr(C)]
+pub struct CEntry{
+    pub log_id: u64,
+    pub is_end_of_feed: bool,
+    pub payload_hash_bytes: [u8; BLAKE2B_HASH_SIZE],
+    pub author: [u8; ED25519_SIZE] ,
+    pub seq_num: u64,
+    pub backlink: [u8; BLAKE2B_HASH_SIZE],
+    pub has_backlink: bool,
+    pub lipmaa_link: [u8; BLAKE2B_HASH_SIZE],
+    pub has_lipmaa_link: bool,
+    pub sig: [u8; ED25519_SIGNATURE_SIZE],
+}
+
+#[repr(C)]
+pub struct DecodeEd25519Blade2bEntryArgs<'a> {
+    pub out_decoded_entry: CEntry,
+    pub entry_bytes: &'a u8,
+    pub entry_length: usize,
+}
+
+/// Attempts to decode bytes as an entry. 
+///
+/// Returns `Error` which will have a value of `0` if decoding was
+/// successful. 
+#[no_mangle]
+pub extern "C" fn decode_ed25519_blake2b_entry(args: &mut DecodeEd25519Blade2bEntryArgs) -> Error {
+    let entry_slice = unsafe{slice::from_raw_parts(args.entry_bytes, args.entry_length)};
+
+    decode(&entry_slice)
+        .and_then::<(), _>(|entry|{
+            args.out_decoded_entry.log_id = entry.log_id;
+            args.out_decoded_entry.is_end_of_feed = entry.is_end_of_feed;
+            args.out_decoded_entry.seq_num = entry.seq_num;
+            args.out_decoded_entry.has_backlink = entry.backlink.is_some();
+            args.out_decoded_entry.has_lipmaa_link = entry.lipmaa_link.is_some();
+
+            entry.sig.map(|sig|{
+                args.out_decoded_entry.sig[..].copy_from_slice(&sig.0[..]);
+            });
+
+            entry.lipmaa_link.map(|lipmaa_link|{
+                match lipmaa_link{
+                    YamfHash::Blake2b(bytes) => {
+                        args.out_decoded_entry.lipmaa_link[..].copy_from_slice(&bytes[..]);
+                    }
+                }
+            });
+
+            entry.backlink.map(|backlink|{
+                match backlink{
+                    YamfHash::Blake2b(bytes) => {
+                        args.out_decoded_entry.backlink[..].copy_from_slice(&bytes[..]);
+                    }
+                }
+            });
+
+            match entry.payload_hash{
+                YamfHash::Blake2b(bytes) => {
+                    args.out_decoded_entry.payload_hash_bytes[..].copy_from_slice(&bytes[..]);
+                }
+            };
+
+            match entry.author{
+                YamfSignatory::Ed25519(bytes, _) => {
+                    args.out_decoded_entry.author[..].copy_from_slice(&bytes[..]);
+                }
+            };
+
+            Err(Error::NoError)
+        })
+        .unwrap_err()
 }
 
 #[no_mangle]
@@ -100,8 +173,11 @@ pub extern "C" fn verify_ed25519_blake2b_entry(args: &mut VerifyEd25519Blake2bEn
 
     verify(entry, payload, lipmaalink, backlink)
         .map(|is_valid| {
-            args.is_valid = is_valid;
-            Error::NoError
+            if is_valid{
+                Error::NoError
+            }else{
+                Error::SignatureInvalid
+            }
         })
         .unwrap()
 }

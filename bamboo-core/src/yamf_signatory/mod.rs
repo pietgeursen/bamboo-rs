@@ -6,11 +6,16 @@ use std::io::Write;
 #[cfg(feature = "std")]
 use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
 use arrayvec::ArrayVec;
-use ed25519_dalek::PUBLIC_KEY_LENGTH;
 use varu64::{decode as varu64_decode, encode as varu64_encode, encoding_length};
 
 pub const ED25519_NUMERIC_ID: u64 = 0;
-pub const ED25519_SIZE: usize = PUBLIC_KEY_LENGTH;
+pub const ED25519_SIZE: usize = 32;
+
+pub use ed25519_dalek::PUBLIC_KEY_LENGTH;
+// This is a way to hard code a value that cbindgen can use, but make sure at compile time
+// that the value is actually correct.
+const_assert_eq!(public_key_length; PUBLIC_KEY_LENGTH, ED25519_SIZE);
+
 
 /// The maximum number of bytes this will use for any variant.
 ///

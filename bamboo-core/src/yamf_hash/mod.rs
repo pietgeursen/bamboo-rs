@@ -2,7 +2,7 @@ use crate::error::*;
 #[cfg(feature = "std")]
 use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
 use arrayvec::ArrayVec;
-use blake2b_simd::{blake2b, OUTBYTES};
+use blake2b_simd::blake2b;
 use core::borrow::Borrow;
 use core::iter::FromIterator;
 
@@ -11,7 +11,13 @@ use std::io::Write;
 
 use varu64::{decode as varu64_decode, encode as varu64_encode, encoding_length};
 
-pub const BLAKE2B_HASH_SIZE: usize = OUTBYTES;
+pub use blake2b_simd::OUTBYTES;
+pub const BLAKE2B_HASH_SIZE: usize = 64;
+// This is a way to hard code a value that cbindgen can use, but make sure at compile time
+// that the value is actually correct.
+const_assert_eq!(blake2b_hash_size; BLAKE2B_HASH_SIZE, OUTBYTES);
+
+
 pub const BLAKE2B_NUMERIC_ID: u64 = 0;
 
 /// The maximum number of bytes this will use for any variant.

@@ -1,9 +1,13 @@
 use crate::error::*;
-use ed25519_dalek::SIGNATURE_LENGTH;
 #[cfg(feature = "std")]
 use std::io::Write;
 
-pub const ED25519_SIGNATURE_SIZE: usize = SIGNATURE_LENGTH;
+pub const ED25519_SIGNATURE_SIZE: usize = 64;
+pub use ed25519_dalek::SIGNATURE_LENGTH;
+// This is a way to hard code a value that cbindgen can use, but make sure at compile time
+// that the value is actually correct.
+const_assert_eq!(ed25519_sig_size; ED25519_SIGNATURE_SIZE, SIGNATURE_LENGTH);
+
 
 /// The maximum number of bytes this will use.
 ///

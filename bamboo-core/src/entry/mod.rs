@@ -40,6 +40,7 @@ const_assert_eq!(max_entry_size; MAX_ENTRY_SIZE_ as isize, MAX_ENTRY_SIZE as isi
 
 #[cfg_attr(feature = "std", derive(Deserialize))]
 #[derive(Serialize, Debug, Eq, PartialEq)]
+#[repr(C)]
 pub struct Entry<'a, H, A, S>
 where
     H: Borrow<[u8]>,
