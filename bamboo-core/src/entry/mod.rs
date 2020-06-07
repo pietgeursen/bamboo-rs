@@ -31,7 +31,7 @@ pub const MAX_ENTRY_SIZE_: usize = TAG_BYTE_LENGTH
     + (MAX_VARU64_SIZE * 3);
 
 /// This is useful if you need to know at compile time how big an entry can get.
-pub const MAX_ENTRY_SIZE: usize = 325;
+pub const MAX_ENTRY_SIZE: usize = 324;
 
 // Yes, this is hacky. It's because cbindgen can't understand how to add consts together. This is a
 // way to hard code a value for MAX_ENTRY_SIZE that cbindgen can use, but make sure at compile time

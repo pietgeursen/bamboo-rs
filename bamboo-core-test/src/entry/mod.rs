@@ -4,6 +4,7 @@ mod tests {
     use bamboo_core::entry::decode;
     use bamboo_core::yamf_hash::BLAKE2B_HASH_SIZE;
     use bamboo_core::Error;
+    use bamboo_core::signature::ED25519_SIGNATURE_SIZE;
     use bamboo_core::{publish, verify, Entry, Signature, YamfHash, YamfSignatory};
     use ed25519_dalek::Keypair;
     use rand::rngs::OsRng;
@@ -18,7 +19,7 @@ mod tests {
         let payload_size = 512;
         let seq_num = 2;
         let log_id = 333;
-        let sig_bytes = [0xDD; 128];
+        let sig_bytes = [0xDD; ED25519_SIGNATURE_SIZE];
         let sig = Signature(&sig_bytes[..]);
         let author_bytes = [0xEE; 32];
         let author = YamfSignatory::Ed25519(&author_bytes[..], None);
