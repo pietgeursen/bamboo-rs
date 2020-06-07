@@ -16,17 +16,14 @@
 /**
  * This is useful if you need to know at compile time how big an entry can get.
  */
-#define MAX_ENTRY_SIZE 325
+#define MAX_ENTRY_SIZE 324
 
 #define MAX_ENTRY_SIZE_ ((((TAG_BYTE_LENGTH + MAX_SIGNATURE_SIZE) + MAX_YAMF_SIGNATORY_SIZE) + (MAX_YAMF_HASH_SIZE * 3)) + (MAX_VARU64_SIZE * 3))
 
 /**
  * The maximum number of bytes this will use.
- *
- * This is a bit yuck because it knows the number of bytes varu64 uses to encode the
- * signature.
  */
-#define MAX_SIGNATURE_SIZE (ED25519_SIGNATURE_SIZE + 1)
+#define MAX_SIGNATURE_SIZE ED25519_SIGNATURE_SIZE
 
 /**
  * The maximum number of bytes this will use for any variant.
