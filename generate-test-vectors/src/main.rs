@@ -48,6 +48,8 @@ pub fn main() {
 fn valid_first_entry() -> Value {
     let mut csprng: OsRng = OsRng{};
     let keypair: Keypair = Keypair::generate(&mut csprng);
+    let secret_byte_string = hex::encode(&keypair.secret);
+    let public_byte_string = hex::encode(&keypair.public);
 
     let mut log = Log::new(
         MemoryEntryStore::new(),
@@ -69,6 +71,10 @@ fn valid_first_entry() -> Value {
     json!({
         "description": "A valid first entry. Note that the previous and limpaa links are None / null. And that the seq_num starts at 1.",
         "payload": hex::encode(payload),
+        "author": {
+            "public": public_byte_string,
+            "secret": secret_byte_string,
+        },
         "decoded": entry,
         "encoded": Bytes(&buffer[..buff_size])
     })
@@ -78,6 +84,8 @@ fn valid_first_entry() -> Value {
 fn n_valid_entries(n: u64) -> Value {
     let mut csprng: OsRng = OsRng{};
     let keypair: Keypair = Keypair::generate(&mut csprng);
+    let secret_byte_string = hex::encode(&keypair.secret);
+    let public_byte_string = hex::encode(&keypair.public);
     let mut log = Log::new(
         MemoryEntryStore::new(),
         keypair.public.clone(),
@@ -105,6 +113,10 @@ fn n_valid_entries(n: u64) -> Value {
 
     json!({
         "description": format!("A valid collection of {} entries.", n),
+        "author": {
+            "public": public_byte_string,
+            "secret": secret_byte_string,
+        },
         "entries": vals
     })
 }
@@ -114,6 +126,8 @@ fn valid_partially_replicated_feed(n: u64) -> Value {
     let mut csprng: OsRng = OsRng{};
     let keypair: Keypair = Keypair::generate(&mut csprng);
     let public = keypair.public.clone();
+    let secret_byte_string = hex::encode(&keypair.secret);
+    let public_byte_string = hex::encode(&keypair.public);
     let mut log = Log::new(MemoryEntryStore::new(), public.clone(), Some(keypair), 0);
 
     (1..n).into_iter().for_each(|i| {
@@ -125,7 +139,7 @@ fn valid_partially_replicated_feed(n: u64) -> Value {
 
     let mut partial_log = Log::new(MemoryEntryStore::new(), public.clone(), None, 0);
 
-    lipmaa_seqs
+    let vals = lipmaa_seqs
         .iter()
         .rev()
         .map(|lipmaa_seq| {
@@ -141,7 +155,16 @@ fn valid_partially_replicated_feed(n: u64) -> Value {
                 "encoded": Bytes(&buffer[..buff_size])
             })
         })
-        .collect()
+        .collect::<Value>();
+
+    json!({
+        "description": format!("A valid collection of {} entries.", n),
+        "author": {
+            "public": public_byte_string,
+            "secret": secret_byte_string,
+        },
+        "entries": vals
+    })
 }
 
 fn build_lipmaa_set(n: u64, mut vec: Option<Vec<u64>>) -> Vec<u64> {
