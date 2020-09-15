@@ -15,7 +15,6 @@ pub const MAX_SIGNATURE_SIZE: usize = ED25519_SIGNATURE_SIZE;
 #[cfg(feature = "std")]
 use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
 use core::borrow::Borrow;
-#[cfg(feature = "std")]
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Signature<B: Borrow<[u8]>>(
