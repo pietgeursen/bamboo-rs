@@ -1,4 +1,6 @@
-mod utils;
+pub mod utils;
+
+pub use utils::set_panic_hook;
 
 use serde::Serialize;
 use wasm_bindgen::prelude::*;

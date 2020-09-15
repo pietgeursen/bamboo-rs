@@ -12,7 +12,7 @@ use varu64::{
 #[cfg(feature = "std")]
 use varu64::encode_write as varu64_encode_write;
 
-use ed25519_dalek::{PublicKey as DalekPublicKey, Signature as DalekSignature};
+use ed25519_dalek::{PublicKey as DalekPublicKey, Signature as DalekSignature, Signer, Verifier};
 
 use super::signature::{Signature, MAX_SIGNATURE_SIZE};
 use super::yamf_hash::{YamfHash, MAX_YAMF_HASH_SIZE};
@@ -432,7 +432,7 @@ where
         //Pluck off the signature before we encode it
         let sig = self.sig.take();
 
-        let ssb_sig = DalekSignature::from_bytes(sig.as_ref().unwrap().0.borrow())
+        let ssb_sig = DalekSignature::try_from(sig.as_ref().unwrap().0.borrow())
             .map_err(|_| Error::DecodeSsbSigError)?;
 
         let mut buff = [0u8; 512];

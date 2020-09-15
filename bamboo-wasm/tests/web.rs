@@ -4,10 +4,10 @@
 
 extern crate wasm_bindgen_test;
 use wasm_bindgen_test::*;
-
-wasm_bindgen_test_configure!(run_in_browser);
+use bamboo_wasm::*;
 
 #[wasm_bindgen_test]
 fn pass() {
+    let keypair = KeyPair::new();
     assert_eq!(1 + 1, 2);
 }
