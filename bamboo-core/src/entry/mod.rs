@@ -527,8 +527,11 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [
     })
 }
 
-#[cfg(feature = "std")]
-pub fn into_owned<H,A,S>(entry: &Entry<H,A,S>) -> Entry<'static, ArrayVec<[u8; 64]>, ArrayVec<[u8; 32]>, ArrayVec<[u8; 64]>>
+pub type OwnedEntry = Entry<'static, ArrayVec<[u8; 64]>, ArrayVec<[u8; 32]>, ArrayVec<[u8; 64]>>;
+
+pub fn into_owned<H, A, S>(
+    entry: &Entry<H, A, S>,
+) -> OwnedEntry 
 where
     H: Borrow<[u8]>,
     A: Borrow<[u8]>,
@@ -540,7 +543,7 @@ where
             vec.try_extend_from_slice(&s.borrow()[..]).unwrap();
             Some(Signature(vec))
         }
-        None => None
+        None => None,
     };
 
     let payload_hash = match entry.payload_hash {
@@ -557,7 +560,7 @@ where
             vec.try_extend_from_slice(&s.borrow()[..]).unwrap();
             Some(YamfHash::Blake2b(vec))
         }
-        None => None
+        None => None,
     };
 
     let author = match entry.author {
@@ -574,10 +577,10 @@ where
             vec.try_extend_from_slice(&s.borrow()[..]).unwrap();
             Some(YamfHash::Blake2b(vec))
         }
-        None => None
+        None => None,
     };
 
-    Entry{
+    Entry {
         is_end_of_feed: entry.is_end_of_feed,
         payload_size: entry.payload_size,
         seq_num: entry.seq_num,
@@ -586,7 +589,7 @@ where
         lipmaa_link,
         backlink,
         author,
-        sig 
+        sig,
     }
 }
 
