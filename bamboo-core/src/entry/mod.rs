@@ -529,9 +529,7 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Error> {
     })
 }
 
-pub type OwnedEntry = Entry<ArrayVec<[u8; 64]>, ArrayVec<[u8; 64]>>;
-
-pub fn into_owned<H, S>(entry: &Entry<H, S>) -> OwnedEntry
+pub fn into_owned<H, S>(entry: &Entry<H, S>) -> Entry<ArrayVec<[u8; 64]>, ArrayVec<[u8; 64]>>
 where
     H: Borrow<[u8]>,
     S: Borrow<[u8]>,
