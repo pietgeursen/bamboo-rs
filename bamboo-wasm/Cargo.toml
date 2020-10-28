@@ -1,6 +1,6 @@
 [package]
 name = "bamboo-wasm"
-version = "0.3.6"
+version = "0.4.0"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 
@@ -12,7 +12,7 @@ default = ["wee_alloc", "console_error_panic_hook"]
 
 [dependencies]
 arrayvec = { version = "0.5", default-features = false}
-wasm-bindgen = { version = "0.2.62" , features = ["serde-serialize"] }
+wasm-bindgen = { version = "0.2.68", features = ["serde-serialize"] }
 bamboo-core = {path = "../bamboo-core"}
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend", "alloc", "serde"] }
 rand = { version = "0.7.3", features = ["wasm-bindgen"] }
@@ -30,7 +30,7 @@ console_error_panic_hook = { version = "0.1.1", optional = true }
 # allocator, however.
 #
 # Unfortunately, `wee_alloc` requires nightly Rust when targeting wasm for now.
-wee_alloc = { version = "0.4.2", optional = true }
+wee_alloc = { version = "0.4.5", optional = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2"
