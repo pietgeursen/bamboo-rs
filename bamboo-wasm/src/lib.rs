@@ -4,7 +4,7 @@ pub use utils::set_panic_hook;
 
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
-use bamboo_core::{lipmaa, YamfHash, Entry, YamfSignatory};
+use bamboo_core::{lipmaa, YamfHash, Entry};
 use bamboo_core::entry::{publish as publish_entry, into_owned, decode as decode_entry, verify as verify_entry, MAX_ENTRY_SIZE };
 use bamboo_core::{PublicKey, Keypair, Signature, SecretKey};
 use bamboo_core::yamf_hash::{new_blake2b};
@@ -34,7 +34,7 @@ pub fn max_entry_size() -> u32 {
 #[wasm_bindgen(inspectable)]
 pub struct BambooEntry{
     hash: YamfHash<ArrayVec<[u8; 64]>>,
-    value: Entry<'static, ArrayVec<[u8; 64]>, ArrayVec<[u8; 32]>, ArrayVec<[u8; 64]>>
+    value: Entry<ArrayVec<[u8; 64]>, ArrayVec<[u8; 64]>>
 }
 
 #[wasm_bindgen]
@@ -80,9 +80,7 @@ impl BambooEntry{
 
     #[wasm_bindgen(getter)]
     pub fn author(&self) -> Box<[u8]>{
-        match self.value.author{
-            YamfSignatory::Ed25519(ref bts, _) => bts.as_ref().into()
-        }
+        self.value.author.as_bytes().to_vec().into()
     }
 
     #[wasm_bindgen(getter, js_name="isEndOfFeed")]
