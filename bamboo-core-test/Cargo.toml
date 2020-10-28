@@ -4,11 +4,6 @@ version = "1.0.0"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[lib]
-name = "bamboo"
-crate-type = ["staticlib", "cdylib"]
-
 [dependencies]
 bamboo-core = {path = "../bamboo-core"}
 
@@ -22,7 +17,7 @@ hex = { git = "https://github.com/KokaKiwi/rust-hex", default-features = false }
 varu64 = { git = "https://github.com/AljoschaMeyer/varu64-rs", default-features = false } 
 lipmaa-link = "0.1.1"
 blake2b_simd = { version = "0.5.5", default-features = false }
-ed25519-dalek = { version = "1.0.0", default-features = false, features = ["u64_backend", "nightly", "alloc", "serde"] }
+ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend", "alloc", "serde"] }
 criterion = "0.2"
 rand = "0.7.0"
 
