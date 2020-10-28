@@ -3,7 +3,7 @@ extern crate criterion;
 extern crate varu64;
 
 use bamboo_core::entry::decode;
-use bamboo_core::entry::{publish, Entry};
+use bamboo_core::entry::publish;
 
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
@@ -12,7 +12,7 @@ use criterion::Criterion;
 
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("publish", |b| {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -24,7 +24,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         )
@@ -38,7 +38,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 0,
                 payload.as_bytes(),
                 false,
-                1,
+                Some(1),
                 Some(&out[..size]),
                 Some(&out[..size]),
             )
@@ -46,7 +46,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         })
     });
     c.bench_function("verify", |b| {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -58,7 +58,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         )
@@ -68,7 +68,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| entry.verify_signature())
     });
     c.bench_function("encode entry", |b| {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -80,7 +80,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         )
@@ -93,7 +93,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         })
     });
     c.bench_function("decode entry", |b| {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -105,7 +105,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             0,
             payload.as_bytes(),
             false,
-            0,
+            None,
             None,
             None,
         )
