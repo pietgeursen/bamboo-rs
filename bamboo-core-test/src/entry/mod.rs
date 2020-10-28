@@ -1,12 +1,14 @@
+
 #[cfg(test)]
 mod tests {
 
+    use std::io::Write;
     use bamboo_core::entry::decode;
     use bamboo_core::yamf_hash::BLAKE2B_HASH_SIZE;
     use bamboo_core::Error;
     use bamboo_core::signature::ED25519_SIGNATURE_SIZE;
-    use bamboo_core::{publish, verify, Entry, Signature, YamfHash, YamfSignatory};
-    use ed25519_dalek::Keypair;
+    use bamboo_core::{publish, verify, Entry, Signature, YamfHash};
+    use ed25519_dalek::{Keypair, PublicKey};
     use rand::rngs::OsRng;
     use varu64::encode_write as varu64_encode_write;
 
@@ -22,12 +24,12 @@ mod tests {
         let sig_bytes = [0xDD; ED25519_SIGNATURE_SIZE];
         let sig = Signature(&sig_bytes[..]);
         let author_bytes = [0xEE; 32];
-        let author = YamfSignatory::Ed25519(&author_bytes[..], None);
+        let author = PublicKey::from_bytes(&author_bytes[..]).unwrap();
 
         let mut entry_vec = Vec::new();
 
         entry_vec.push(1u8); // end of feed is true
-        author.encode_write(&mut entry_vec).unwrap();
+        entry_vec.write_all(author.as_bytes()).unwrap();
         varu64_encode_write(log_id, &mut entry_vec).unwrap();
         varu64_encode_write(seq_num, &mut entry_vec).unwrap();
         //lipmaa_link.encode_write(&mut entry_vec).unwrap();
@@ -58,12 +60,7 @@ mod tests {
             _ => panic!(),
         }
 
-        match entry.author {
-            YamfSignatory::Ed25519(ref auth, None) => {
-                assert_eq!(auth.as_ref(), &author_bytes[..]);
-            }
-            _ => panic!(),
-        }
+        assert_eq!(author.as_bytes(), &author_bytes);
 
         assert_eq!(entry.log_id,log_id);
 
@@ -339,7 +336,8 @@ mod tests {
         let entry = decode(&out[..size]).unwrap();
 
         let string = serde_json::to_string(&entry).unwrap();
-        let parsed: Entry<Vec<u8>, Vec<u8>, Vec<u8>> = serde_json::from_str(&string).unwrap();
+
+        let parsed: Entry<Vec<u8>, Vec<u8>> = serde_json::from_str(&string).unwrap();
 
         assert_eq!(parsed.payload_hash, entry.payload_hash);
     }

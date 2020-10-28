@@ -8,11 +8,11 @@ repository = "https://github.com/pietgeursen/bamboo-rs"
 
 [lib]
 name = "bamboo_core"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [features]
 default = ["std"]
-std = ["varu64/std", "hex/std"]
+std = ["varu64/std", "hex/std", "ed25519-dalek/serde"]
 
 [dependencies]
 arrayvec = { version = "0.5.1", default-features = false}
@@ -22,5 +22,5 @@ hex = { git = "https://github.com/KokaKiwi/rust-hex", default-features = false }
 varu64 = { git = "https://github.com/AljoschaMeyer/varu64-rs", default-features = false } 
 lipmaa-link = "0.1"
 blake2b_simd = { version = "0.5", default-features = false }
-ed25519-dalek = { version = "1.0.0", default-features = false, features = ["u32_backend", "nightly"] }
+ed25519-dalek = { version = "1.0.0", default-features = false, features = ["u64_backend", "nightly"] }
 static_assertions = "0.3"

@@ -4,19 +4,25 @@ use core::convert::TryFrom;
 use lipmaa_link::lipmaa;
 
 #[cfg(feature = "std")]
+use crate::util::hex_serde::*;
+
+#[cfg(feature = "std")]
 use std::io::Write;
 use varu64::{
     decode as varu64_decode, encode as varu64_encode, encoding_length as varu64_encoding_length,
 };
 
 #[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "std")]
 use varu64::encode_write as varu64_encode_write;
 
-use ed25519_dalek::{PublicKey as DalekPublicKey, Signature as DalekSignature, Signer, Verifier};
+use ed25519_dalek::{
+    PublicKey as DalekPublicKey, Signature as DalekSignature, Signer, Verifier, PUBLIC_KEY_LENGTH,
+};
 
 use super::signature::{Signature, MAX_SIGNATURE_SIZE};
 use super::yamf_hash::{YamfHash, MAX_YAMF_HASH_SIZE};
-use super::yamf_signatory::{YamfSignatory, MAX_YAMF_SIGNATORY_SIZE};
 use crate::yamf_hash::new_blake2b;
 use ed25519_dalek::Keypair;
 
@@ -26,66 +32,63 @@ const TAG_BYTE_LENGTH: usize = 1;
 const MAX_VARU64_SIZE: usize = 9;
 pub const MAX_ENTRY_SIZE_: usize = TAG_BYTE_LENGTH
     + MAX_SIGNATURE_SIZE
-    + MAX_YAMF_SIGNATORY_SIZE
+    + PUBLIC_KEY_LENGTH
     + (MAX_YAMF_HASH_SIZE * 3)
     + (MAX_VARU64_SIZE * 3);
 
 /// This is useful if you need to know at compile time how big an entry can get.
-pub const MAX_ENTRY_SIZE: usize = 324;
+pub const MAX_ENTRY_SIZE: usize = 322;
 
 // Yes, this is hacky. It's because cbindgen can't understand how to add consts together. This is a
 // way to hard code a value for MAX_ENTRY_SIZE that cbindgen can use, but make sure at compile time
 // that the value is actually correct.
 const_assert_eq!(max_entry_size; MAX_ENTRY_SIZE_ as isize, MAX_ENTRY_SIZE as isize);
 
-#[cfg_attr(feature = "std", derive(Deserialize))]
-#[derive(Serialize, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "std", derive(Deserialize, Serialize))]
+#[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
+#[derive(Debug, Eq, PartialEq)]
 #[repr(C)]
-pub struct Entry<'a, H, A, S>
+pub struct Entry<H, S>
 where
     H: Borrow<[u8]>,
-    A: Borrow<[u8]>,
     S: Borrow<[u8]>,
 {
-    #[serde(rename = "feedId")]
     pub log_id: u64,
-    #[serde(rename = "isEndOfFeed")]
     pub is_end_of_feed: bool,
     #[cfg_attr(feature = "std", serde(bound(deserialize = "H: From<Vec<u8>>")))]
-    #[serde(rename = "payloadHash")]
     pub payload_hash: YamfHash<H>,
-    #[serde(rename = "payloadSize")]
     pub payload_size: u64,
-    #[cfg_attr(feature = "std", serde(bound(deserialize = "A: From<Vec<u8>>")))]
-    pub author: YamfSignatory<'a, A>,
-    #[serde(rename = "sequenceNumber")]
+    #[cfg_attr(
+        feature = "std",
+        serde(
+            serialize_with = "serialize_pub_key",
+            deserialize_with = "deserialize_pub_key"
+        )
+    )]
+    pub author: DalekPublicKey,
     pub seq_num: u64,
-    #[serde(rename = "backLink")]
     pub backlink: Option<YamfHash<H>>,
-    #[serde(rename = "lipmaaLink")]
     pub lipmaa_link: Option<YamfHash<H>>,
-    #[serde(rename = "signature")]
     #[cfg_attr(feature = "std", serde(bound(deserialize = "S: From<Vec<u8>>")))]
     pub sig: Option<Signature<S>>,
 }
 
-impl<'a> TryFrom<&'a [u8]> for Entry<'a, &'a [u8], &'a [u8], &'a [u8]> {
+impl<'a> TryFrom<&'a [u8]> for Entry<&'a [u8], &'a [u8]> {
     type Error = Error;
 
-    fn try_from(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [u8]>, Self::Error> {
+    fn try_from(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Self::Error> {
         decode(bytes)
     }
 }
 
-impl<'a, H, A, S> TryFrom<Entry<'a, H, A, S>> for ArrayVec<[u8; 512]>
+impl<'a, H, S> TryFrom<Entry<H, S>> for ArrayVec<[u8; 512]>
 where
     H: Borrow<[u8]>,
-    A: Borrow<[u8]>,
     S: Borrow<[u8]>,
 {
     type Error = Error;
 
-    fn try_from(entry: Entry<'a, H, A, S>) -> Result<ArrayVec<[u8; 512]>, Self::Error> {
+    fn try_from(entry: Entry<H, S>) -> Result<ArrayVec<[u8; 512]>, Self::Error> {
         let mut buff = [0u8; 512];
         let len = entry.encode(&mut buff)?;
         let mut vec = ArrayVec::<[u8; 512]>::from(buff);
@@ -209,12 +212,10 @@ pub fn publish(
     lipmaa_entry_bytes: Option<&[u8]>,
     backlink_bytes: Option<&[u8]>,
 ) -> Result<usize, Error> {
-    let public_key = key_pair
+    let author = key_pair
         .as_ref()
         .map(|keys| keys.public.clone())
         .ok_or(Error::PublishWithoutKeypair)?;
-
-    let author = YamfSignatory::<&[u8]>::Ed25519(&public_key.as_bytes()[..], None);
 
     // calc the payload hash
     let payload_hash = new_blake2b(payload);
@@ -222,7 +223,7 @@ pub fn publish(
 
     let seq_num = last_seq_num.unwrap_or(0) + 1;
 
-    let mut entry: Entry<_, _, &[u8]> = Entry {
+    let mut entry: Entry<_, &[u8]> = Entry {
         log_id,
         is_end_of_feed,
         payload_hash,
@@ -275,10 +276,9 @@ pub fn publish(
     entry.encode(out)
 }
 
-impl<'a, H, A, S> Entry<'a, H, A, S>
+impl<'a, H, S> Entry<H, S>
 where
     H: Borrow<[u8]>,
-    A: Borrow<[u8]>,
     S: Borrow<[u8]>,
 {
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
@@ -297,10 +297,9 @@ where
         next_byte_num += 1;
 
         // Encode the author
-        next_byte_num += self
-            .author
-            .encode(&mut out[next_byte_num..])
-            .map_err(|_| Error::EncodeAuthorError)?;
+        let author_bytes = self.author.as_bytes();
+        out[next_byte_num..author_bytes.len() + next_byte_num].copy_from_slice(&author_bytes[..]);
+        next_byte_num += author_bytes.len();
 
         // Encode the log_id
         next_byte_num += varu64_encode(self.log_id, &mut out[next_byte_num..]);
@@ -359,8 +358,9 @@ where
             .map_err(|_| Error::EncodeIsEndOfFeedError)?;
 
         // Encode the author
-        self.author
-            .encode_write(&mut w)
+        let author_bytes = self.author.as_bytes();
+
+        w.write_all(author_bytes)
             .map_err(|_| Error::EncodeAuthorError)?;
 
         // Encode the log_id
@@ -410,7 +410,7 @@ where
             + self.payload_hash.encoding_length()
             + varu64_encoding_length(self.payload_size)
             + varu64_encoding_length(self.log_id)
-            + self.author.encoding_length()
+            + self.author.as_bytes().len()
             + varu64_encoding_length(self.seq_num)
             + self
                 .backlink
@@ -439,16 +439,12 @@ where
 
         let encoded_size = self.encode(&mut buff).unwrap();
 
-        let result = match self.author {
-            YamfSignatory::Ed25519(ref author, _) => {
-                let pub_key = DalekPublicKey::from_bytes(author.borrow())
-                    .map_err(|_| Error::DecodeSsbPubKeyError)?;
-                pub_key
-                    .verify(&buff[..encoded_size], &ssb_sig)
-                    .map(|_| true)
-                    .unwrap_or(false)
-            }
-        };
+        let pub_key = self.author.borrow();
+
+        let result = pub_key
+            .verify(&buff[..encoded_size], &ssb_sig)
+            .map(|_| true)
+            .unwrap_or(false);
 
         // Put the signature back on
         self.sig = sig;
@@ -457,7 +453,7 @@ where
     }
 }
 
-pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [u8]>, Error> {
+pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Error> {
     // Decode is end of feed
     if bytes.len() == 0 {
         return Err(Error::DecodeInputIsLengthZero);
@@ -465,8 +461,14 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [
     let is_end_of_feed = bytes[0] == 1;
 
     // Decode the author
-    let (author, remaining_bytes) =
-        YamfSignatory::<&[u8]>::decode(&bytes[1..]).map_err(|_| Error::DecodeAuthorError)?;
+    if bytes.len() < PUBLIC_KEY_LENGTH + 1 {
+        return Err(Error::DecodeAuthorError);
+    }
+
+    let author = DalekPublicKey::from_bytes(&bytes[1..PUBLIC_KEY_LENGTH + 1])
+        .map_err(|_| Error::DecodeAuthorError)?;
+
+    let remaining_bytes = &bytes[PUBLIC_KEY_LENGTH + 1..];
 
     // Decode the log id
     let (log_id, remaining_bytes) = varu64_decode(remaining_bytes)
@@ -527,14 +529,11 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<'a, &'a [u8], &'a [u8], &'a [
     })
 }
 
-pub type OwnedEntry = Entry<'static, ArrayVec<[u8; 64]>, ArrayVec<[u8; 32]>, ArrayVec<[u8; 64]>>;
+pub type OwnedEntry = Entry<ArrayVec<[u8; 64]>, ArrayVec<[u8; 64]>>;
 
-pub fn into_owned<H, A, S>(
-    entry: &Entry<H, A, S>,
-) -> OwnedEntry 
+pub fn into_owned<H, S>(entry: &Entry<H, S>) -> OwnedEntry
 where
     H: Borrow<[u8]>,
-    A: Borrow<[u8]>,
     S: Borrow<[u8]>,
 {
     let sig = match entry.sig {
@@ -563,14 +562,6 @@ where
         None => None,
     };
 
-    let author = match entry.author {
-        YamfSignatory::Ed25519(ref s, _) => {
-            let mut vec = ArrayVec::<[u8; 32]>::new();
-            vec.try_extend_from_slice(&s.borrow()[..]).unwrap();
-            YamfSignatory::Ed25519(vec, None)
-        }
-    };
-
     let lipmaa_link = match entry.lipmaa_link {
         Some(YamfHash::Blake2b(ref s)) => {
             let mut vec = ArrayVec::<[u8; 64]>::new();
@@ -588,7 +579,7 @@ where
         payload_hash,
         lipmaa_link,
         backlink,
-        author,
+        author: entry.author,
         sig,
     }
 }

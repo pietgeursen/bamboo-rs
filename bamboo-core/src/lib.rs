@@ -6,18 +6,18 @@
 //!
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(not(feature = "std"))]
-#[panic_handler]
-#[no_mangle]
-pub extern "C" fn panic(panic_info: &core::panic::PanicInfo) -> ! {
-    if let Some(location) = panic_info.location() {
-        //println!("panic occurred in file '{}' at line {}", location.file(),
-        let _line = location.line();
-    } else {
-        //jprintln!("panic occurred but can't get location information...");
-    }
-    loop {}
-}
+//#[cfg(not(feature = "std"))]
+//#[panic_handler]
+//#[no_mangle]
+//pub extern "C" fn panic(panic_info: &core::panic::PanicInfo) -> ! {
+//    if let Some(location) = panic_info.location() {
+//        //println!("panic occurred in file '{}' at line {}", location.file(),
+//        let _line = location.line();
+//    } else {
+//        //jprintln!("panic occurred but can't get location information...");
+//    }
+//    loop {}
+//}
 
 #[macro_use]
 extern crate serde_derive;
@@ -28,7 +28,6 @@ pub mod entry;
 pub mod error;
 pub mod signature;
 pub mod yamf_hash;
-pub mod yamf_signatory;
 
 mod util;
 
@@ -38,10 +37,9 @@ pub use error::Error;
 pub use lipmaa_link::lipmaa;
 pub use signature::{Signature, ED25519_SIGNATURE_SIZE};
 pub use yamf_hash::{YamfHash, BLAKE2B_HASH_SIZE, OUTBYTES};
-pub use yamf_signatory::{YamfSignatory, ED25519_SIZE};
 
 use core::slice;
-use ed25519_dalek::{KEYPAIR_LENGTH, SECRET_KEY_LENGTH};
+use ed25519_dalek::{KEYPAIR_LENGTH, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH};
 
 #[repr(C)]
 pub struct PublishEd25519Blake2bEntryArgs<'a> {
@@ -80,7 +78,7 @@ pub struct CEntry{
     pub is_end_of_feed: bool,
     pub payload_hash_bytes: [u8; BLAKE2B_HASH_SIZE],
     pub payload_length: u64,
-    pub author: [u8; ED25519_SIZE] ,
+    pub author: [u8; PUBLIC_KEY_LENGTH] ,
     pub seq_num: u64,
     pub backlink: [u8; BLAKE2B_HASH_SIZE],
     pub has_backlink: bool,
@@ -139,11 +137,7 @@ pub extern "C" fn decode_ed25519_blake2b_entry(args: &mut DecodeEd25519Blade2bEn
                 }
             };
 
-            match entry.author{
-                YamfSignatory::Ed25519(bytes, _) => {
-                    args.out_decoded_entry.author[..].copy_from_slice(&bytes[..]);
-                }
-            };
+            args.out_decoded_entry.author[..].copy_from_slice(&entry.author.as_bytes()[..]);
 
             Err(Error::NoError)
         })
