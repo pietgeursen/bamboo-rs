@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde;
@@ -6,16 +5,15 @@ extern crate serde;
 extern crate bamboo_core;
 extern crate bamboo_log;
 extern crate hex;
-extern crate rand;
 
 use bamboo_core::entry::decode;
-use bamboo_core::{lipmaa, Keypair};
+use bamboo_core::{lipmaa};
+use ed25519_dalek::Keypair;
 use bamboo_log::entry_store::MemoryEntryStore;
 use bamboo_log::{EntryStore, Log};
 use serde::Serializer;
+use serde_json::json;
 use serde_json::Value;
-
-use rand::rngs::OsRng;
 
 pub fn hex_from_bytes<'de, S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -29,11 +27,19 @@ where
     }
 }
 
+const KEYPAIR_JSON: &str = r#"{"key_pair":[206,108,137,246,21,54,25,238,73,100,235,70,5,159,133,163,200,85,166,249,55,91,93,231,152,238,224,179,232,86,135,173,1,53,15,209,39,244,3,211,176,103,216,168,14,121,189,141,255,75,90,135,60,222,103,45,33,64,168,48,218,120,236,180]}"#;
+
+#[derive(Deserialize)]
+struct KeyPairJson {
+    key_pair: Keypair,
+}
+
 #[derive(Serialize)]
 struct Bytes<'a>(#[serde(serialize_with = "hex_from_bytes")] &'a [u8]);
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn main() {
+
     let jsn = json!({
         "validFirstEntry": valid_first_entry(),
         "fiveValidEntries": n_valid_entries(5),
@@ -46,8 +52,11 @@ pub fn main() {
 
 #[cfg_attr(tarpaulin, skip)]
 fn valid_first_entry() -> Value {
-    let mut csprng: OsRng = OsRng{};
-    let keypair: Keypair = Keypair::generate(&mut csprng);
+
+    let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
+        .unwrap()
+        .key_pair;
+
     let secret_byte_string = hex::encode(&keypair.secret);
     let public_byte_string = hex::encode(&keypair.public);
 
@@ -55,7 +64,7 @@ fn valid_first_entry() -> Value {
         MemoryEntryStore::new(),
         keypair.public.clone(),
         Some(keypair),
-        0
+        0,
     );
     let payload = "hello bamboo!";
     log.publish(payload.as_bytes(), false).unwrap();
@@ -82,15 +91,17 @@ fn valid_first_entry() -> Value {
 
 #[cfg_attr(tarpaulin, skip)]
 fn n_valid_entries(n: u64) -> Value {
-    let mut csprng: OsRng = OsRng{};
-    let keypair: Keypair = Keypair::generate(&mut csprng);
+
+    let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
+        .unwrap()
+        .key_pair;
     let secret_byte_string = hex::encode(&keypair.secret);
     let public_byte_string = hex::encode(&keypair.public);
     let mut log = Log::new(
         MemoryEntryStore::new(),
         keypair.public.clone(),
         Some(keypair),
-        0
+        0,
     );
 
     let vals: Vec<Value> = (1..n)
@@ -123,8 +134,10 @@ fn n_valid_entries(n: u64) -> Value {
 
 #[cfg_attr(tarpaulin, skip)]
 fn valid_partially_replicated_feed(n: u64) -> Value {
-    let mut csprng: OsRng = OsRng{};
-    let keypair: Keypair = Keypair::generate(&mut csprng);
+
+    let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
+        .unwrap()
+        .key_pair;
     let public = keypair.public.clone();
     let secret_byte_string = hex::encode(&keypair.secret);
     let public_byte_string = hex::encode(&keypair.public);
