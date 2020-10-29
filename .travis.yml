@@ -14,103 +14,100 @@ matrix:
   include:
     # Android
     - env: TARGET=aarch64-linux-android DISABLE_TESTS=1
-      rust: nightly
+      rust: stable
     - env: TARGET=arm-linux-androideabi DISABLE_TESTS=1
-      rust: nightly
+      rust: stable
     - env: TARGET=armv7-linux-androideabi DISABLE_TESTS=1
-      rust: nightly
+      rust: stable
     - env: TARGET=i686-linux-android DISABLE_TESTS=1
-      rust: nightly
+      rust: stable
     - env: TARGET=x86_64-linux-android DISABLE_TESTS=1
-      rust: nightly
+      rust: stable
 
     # iOS
     - env: TARGET=aarch64-apple-ios DISABLE_TESTS=1
-      rust: nightly
-      os: osx
-    - env: TARGET=armv7-apple-ios DISABLE_TESTS=1
-      rust: nightly
-      os: osx
-    - env: TARGET=armv7s-apple-ios DISABLE_TESTS=1
-      rust: nightly
-      os: osx
-    - env: TARGET=i386-apple-ios DISABLE_TESTS=1
-      rust: nightly
+      rust: stable
       os: osx
     - env: TARGET=x86_64-apple-ios DISABLE_TESTS=1
-      rust: nightly
+      rust: stable
       os: osx
 
     # Linux
     - env: TARGET=aarch64-unknown-linux-gnu
-      rust: nightly
+      rust: stable
     - env: TARGET=arm-unknown-linux-gnueabi
-      rust: nightly
+      rust: stable
     - env: TARGET=armv7-unknown-linux-gnueabihf
-      rust: nightly
+      rust: stable
     - env: TARGET=i686-unknown-linux-gnu
-      rust: nightly
+      rust: stable
     - env: TARGET=i686-unknown-linux-musl
-      rust: nightly
+      rust: stable
     - env: TARGET=mips-unknown-linux-gnu
-      rust: nightly
+      rust: stable
     - env: TARGET=mips64-unknown-linux-gnuabi64
-      rust: nightly
+      rust: stable
     - env: TARGET=mips64el-unknown-linux-gnuabi64
-      rust: nightly
+      rust: stable
     - env: TARGET=mipsel-unknown-linux-gnu
-      rust: nightly
+      rust: stable
     - env: TARGET=powerpc-unknown-linux-gnu
-      rust: nightly
-    - env: TARGET=powerpc64-unknown-linux-gnu
-      rust: nightly
+      rust: stable
+
+      # Linking seems to break
+      #- env: TARGET=powerpc64-unknown-linux-gnu
+      #rust: stable
+      
     - env: TARGET=powerpc64le-unknown-linux-gnu
-      rust: nightly
+      rust: stable
     - env: TARGET=s390x-unknown-linux-gnu DISABLE_TESTS=1
-      rust: nightly
+      rust: stable
     - env: TARGET=x86_64-unknown-linux-gnu
-      rust: nightly
+      rust: stable
     - env: TARGET=x86_64-unknown-linux-musl
-      rust: nightly
+      rust: stable
 
     # OSX
-    - env: TARGET=i686-apple-darwin
-      rust: nightly
-      os: osx
+    
+    # Fails with target not installed.
+    #- env: TARGET=i686-apple-darwin
+    #  rust: stable
+    #  os: osx
+
     - env: TARGET=x86_64-apple-darwin
-      rust: nightly
+      rust: stable
       os: osx
 
     # *BSD
-    - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
-      rust: nightly
-    - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
-      rust: nightly
+    # - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
+    #  rust: stable
+    #- env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
+    #  rust: stable
     - env: TARGET=x86_64-unknown-netbsd DISABLE_TESTS=1
-      rust: nightly
+      rust: stable
 
     # Windows
     - env: TARGET=x86_64-pc-windows-gnu
-      rust: nightly
+      rust: stable
 
     # Bare metal
     # These targets don't support std and as such are likely not suitable for
     # most crates.
     - env: TARGET=thumbv6m-none-eabi IS_NO_STD=1
-      rust: nightly
+      rust: stable
     - env: TARGET=thumbv7em-none-eabi IS_NO_STD=1
-      rust: nightly
+      rust: stable
     - env: TARGET=thumbv7em-none-eabihf IS_NO_STD=1
-      rust: nightly
+      rust: stable
     - env: TARGET=thumbv7m-none-eabi IS_NO_STD=1
-      rust: nightly
+      rust: stable
     #
     #    # Testing other channels
     #    - env: TARGET=x86_64-unknown-linux-gnu
-    #      rust: nightly
+    #      rust: stable
     #    - env: TARGET=x86_64-apple-darwin
     #      os: osx
-    #      rust: nightly
+    #      rust: stable
 
 before_install:
   - set -e
@@ -132,7 +129,7 @@ deploy:
   file_glob: true
   file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
   on:
-    condition: $TRAVIS_RUST_VERSION = nightly
+    condition: $TRAVIS_RUST_VERSION = stable
     tags: true
   provider: releases
   skip_cleanup: true

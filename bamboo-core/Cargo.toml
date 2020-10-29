@@ -1,6 +1,6 @@
 [package]
 name = "bamboo-core"
-version = "1.0.0"
+version = "0.1.0-pre-25"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 license = "AGPL-3.0"
@@ -8,19 +8,19 @@ repository = "https://github.com/pietgeursen/bamboo-rs"
 
 [lib]
 name = "bamboo_core"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["cdylib", "staticlib", "rlib"]
 
 [features]
 default = ["std"]
-std = ["varu64/std", "hex/std"]
+std = ["varu64/std", "hex/std", "ed25519-dalek/serde", "ed25519-dalek/std"]
 
 [dependencies]
 arrayvec = { version = "0.5.1", default-features = false}
 serde = { version = "1.0", default-features = false , features = ["derive"] }
 serde_derive = { version = "1.0", default-features = false }
-hex = { git = "https://github.com/KokaKiwi/rust-hex", default-features = false }
+hex = { version = "0.4", default-features = false }
 varu64 = { git = "https://github.com/AljoschaMeyer/varu64-rs", default-features = false } 
 lipmaa-link = "0.1"
 blake2b_simd = { version = "0.5", default-features = false }
-ed25519-dalek = { version = "1.0.0", default-features = false, features = ["u32_backend", "nightly"] }
+ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }
 static_assertions = "0.3"

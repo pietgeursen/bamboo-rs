@@ -1,6 +1,6 @@
 # bamboo-rs
 
-> Rust implementation of [bamboo](https://github.com/AljoschaMeyer/bamboo) in rust.
+> Rust implementation of [bamboo](https://github.com/AljoschaMeyer/bamboo).
 
 ## About
 
