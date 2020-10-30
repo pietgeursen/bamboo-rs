@@ -1,6 +1,7 @@
 use core::fmt::Debug;
 use super::Log;
 use crate::entry_store::EntryStore;
+
 use bamboo_rs_core::entry::decode;
 use bamboo_rs_core::entry::verify;
 use lipmaa_link::lipmaa;
@@ -14,7 +15,7 @@ impl<Store: EntryStore + Debug> Log<Store> {
     /// Add a valid message to the Log.
     ///
     /// Typically you would use this when you have an entry published by some other author and you
-    /// want to add it to your store. This method does a bunch of checking to make sure the entry
+    /// want to add it to your store. This checks to make sure the entry
     /// is legit.
     ///
     /// Caveat:
@@ -385,3 +386,5 @@ mod tests {
         }
     }
 }
+=======
+>>>>>>> e0ce4368 (Get bamboo-log going again.):bamboo-log/src/log/add.rs

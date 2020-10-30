@@ -12,8 +12,8 @@ pub use error::*;
 pub struct Log<Store: EntryStore> {
     pub store: Store,
     pub public_key: PublicKey,
+    pub log_id: u64,
     key_pair: Option<Keypair>,
-    log_id: u64,
 }
 
 impl<Store: EntryStore> Log<Store> {

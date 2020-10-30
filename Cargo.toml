@@ -9,12 +9,8 @@ members = [
     "bamboo-wasm"
 ]
 
-exclude = [
-    "bamboo-rs-log"
-]
-
 [profile.release]
 codegen-units = 1
-#opt-level = 'z'  # Optimize for size.
+opt-level = 3
 lto = true
 panic = 'abort'

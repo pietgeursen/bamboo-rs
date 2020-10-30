@@ -56,13 +56,15 @@ mod tests {
 
     #[test]
     fn publish_and_verify_signature() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng {};
         let keypair: Keypair = Keypair::generate(&mut csprng);
+        let log_id = 0;
 
         let mut log = Log::new(
             MemoryEntryStore::new(),
             keypair.public.clone(),
             Some(keypair),
+            log_id,
         );
         let payload = [1, 2, 3];
         log.publish(&payload, false).unwrap();
@@ -75,13 +77,15 @@ mod tests {
 
     #[test]
     fn publish_after_an_end_of_feed_message_errors() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng {};
         let keypair: Keypair = Keypair::generate(&mut csprng);
+        let log_id = 0;
 
         let mut log = Log::new(
             MemoryEntryStore::new(),
             keypair.public.clone(),
             Some(keypair),
+            log_id,
         );
         let payload = [1, 2, 3];
 
@@ -96,10 +100,16 @@ mod tests {
 
     #[test]
     fn publish_without_secret_key_errors() {
-        let mut csprng: OsRng = OsRng::new().unwrap();
+        let mut csprng: OsRng = OsRng {};
         let keypair: Keypair = Keypair::generate(&mut csprng);
+        let log_id = 0;
 
-        let mut log = Log::new(MemoryEntryStore::new(), keypair.public.clone(), None);
+        let mut log = Log::new(
+            MemoryEntryStore::new(),
+            keypair.public.clone(),
+            None,
+            log_id,
+        );
         let payload = [1, 2, 3];
 
         match log.publish(&payload, false) {
