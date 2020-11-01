@@ -10,6 +10,7 @@ use bamboo_rs_core::entry::decode;
 use bamboo_rs_core::lipmaa;
 use bamboo_rs_log::entry_store::MemoryEntryStore;
 use bamboo_rs_log::{EntryStore, Log};
+//use bamboo_log::entry_store::{EntryStorer, MemoryEntryStore};
 use ed25519_dalek::Keypair;
 use serde::Serializer;
 use serde_json::json;
@@ -53,15 +54,13 @@ fn valid_first_entry() -> Value {
         .unwrap()
         .key_pair;
 
+    let log_id = 0;
+
     let secret_byte_string = hex::encode(&keypair.secret);
     let public_byte_string = hex::encode(&keypair.public);
+    let public_key = keypair.public.clone();
 
-    let mut log = Log::new(
-        MemoryEntryStore::new(),
-        keypair.public.clone(),
-        Some(keypair),
-        0,
-    );
+    let mut log = Log::new(MemoryEntryStore::new(), Some(keypair));
     let payload = "hello bamboo!";
     log.publish(payload.as_bytes(), false).unwrap();
 
@@ -73,15 +72,34 @@ fn valid_first_entry() -> Value {
     let mut buffer = [0u8; 512];
     let buff_size = entry.encode(&mut buffer).unwrap();
 
-    json!({
-        "description": "A valid first entry. Note that the previous and limpaa links are None / null. And that the seq_num starts at 1.",
-        "payload": hex::encode(payload),
-        "author": {
-            "public": public_byte_string,
-            "secret": secret_byte_string,
-        },
-        "decoded": entry,
-        "encoded": Bytes(&buffer[..buff_size])
+    smol::block_on(async move {
+        log.publish(payload.as_bytes(), log_id, false)
+            .await
+            .unwrap();
+
+        let entry = log
+            .store
+            .get_entry_ref(public_key, log_id, 1)
+            .await
+            .unwrap()
+            .unwrap();
+
+        let entry = decode(entry).unwrap();
+        assert!(entry.verify_signature().unwrap());
+
+        let mut buffer = [0u8; 512];
+        let buff_size = entry.encode(&mut buffer).unwrap();
+
+        json!({
+            "description": "A valid first entry. Note that the previous and limpaa links are None / null. And that the seq_num starts at 1.",
+            "payload": hex::encode(payload),
+            "author": {
+                "public": public_byte_string,
+                "secret": secret_byte_string,
+            },
+            "decoded": entry,
+            "encoded": Bytes(&buffer[..buff_size])
+        })
     })
 }
 
@@ -89,29 +107,39 @@ fn n_valid_entries(n: u64) -> Value {
     let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
         .unwrap()
         .key_pair;
+
+    let log_id = 0;
     let secret_byte_string = hex::encode(&keypair.secret);
     let public_byte_string = hex::encode(&keypair.public);
-    let mut log = Log::new(
-        MemoryEntryStore::new(),
-        keypair.public.clone(),
-        Some(keypair),
-        0,
-    );
+
+    let public_key = keypair.public.clone();
+
+    let mut log = Log::new(MemoryEntryStore::new(), Some(keypair));
 
     let vals: Vec<Value> = (1..n)
         .into_iter()
         .map(|i| {
             let payload = format!("message number {}", i);
-            log.publish(&payload.as_bytes(), false).unwrap();
-            let entry_bytes = log.store.get_entry_ref(i).unwrap().unwrap();
-            let entry = decode(entry_bytes).unwrap();
-            let mut buffer = [0u8; 512];
-            let buff_size = entry.encode(&mut buffer).unwrap();
 
-            json!({
-                "payload": hex::encode(payload),
-                "decoded": entry,
-                "encoded": Bytes(&buffer[..buff_size])
+            smol::block_on(async {
+                log.publish(&payload.as_bytes(), log_id, false)
+                    .await
+                    .unwrap();
+                let entry_bytes = log
+                    .store
+                    .get_entry_ref(public_key, log_id, i)
+                    .await
+                    .unwrap()
+                    .unwrap();
+                let entry = decode(entry_bytes).unwrap();
+                let mut buffer = [0u8; 512];
+                let buff_size = entry.encode(&mut buffer).unwrap();
+
+                json!({
+                    "payload": hex::encode(payload),
+                    "decoded": entry,
+                    "encoded": Bytes(&buffer[..buff_size])
+                })
             })
         })
         .collect();
@@ -130,34 +158,49 @@ fn valid_partially_replicated_feed(n: u64) -> Value {
     let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
         .unwrap()
         .key_pair;
-    let public = keypair.public.clone();
+    let log_id = 0;
+
     let secret_byte_string = hex::encode(&keypair.secret);
     let public_byte_string = hex::encode(&keypair.public);
-    let mut log = Log::new(MemoryEntryStore::new(), public.clone(), Some(keypair), 0);
+
+    let public_key = keypair.public.clone();
+
+    let mut log = Log::new(MemoryEntryStore::new(), Some(keypair));
 
     (1..n).into_iter().for_each(|i| {
         let payload = format!("message number {}", i);
-        log.publish(&payload.as_bytes(), false).unwrap();
+        smol::block_on(async {
+            log.publish(&payload.as_bytes(), log_id, false)
+                .await
+                .unwrap();
+        });
     });
 
     let lipmaa_seqs = build_lipmaa_set(n - 1, None);
 
-    let mut partial_log = Log::new(MemoryEntryStore::new(), public.clone(), None, 0);
+    let mut partial_log = Log::new(MemoryEntryStore::new(), None);
 
     let vals = lipmaa_seqs
         .iter()
         .rev()
         .map(|lipmaa_seq| {
-            let entry_bytes = log.store.get_entry_ref(*lipmaa_seq).unwrap().unwrap();
-            let entry = decode(entry_bytes).unwrap();
-            partial_log.add(entry_bytes, None).unwrap();
+            smol::block_on(async {
+                let entry_bytes = log
+                    .store
+                    .get_entry_ref(public_key, log_id, *lipmaa_seq)
+                    .await
+                    .unwrap()
+                    .unwrap();
+                let entry = decode(entry_bytes).unwrap();
+                partial_log.add(entry_bytes, None).await.unwrap();
 
-            let mut buffer = [0u8; 512];
-            let buff_size = entry.encode(&mut buffer).unwrap();
+                let mut buffer = [0u8; 512];
+                let buff_size = entry.encode(&mut buffer).unwrap();
 
-            json!({
-                "decoded": entry,
-                "encoded": Bytes(&buffer[..buff_size])
+                json!({
+                    "decoded": entry,
+                    "encoded": Bytes(&buffer[..buff_size])
+                })
             })
         })
         .collect::<Value>();

@@ -8,8 +8,9 @@ edition = "2018"
 bamboo-rs-core = {path = "../bamboo-rs-core"}
 lipmaa-link = "0.1.1"
 snafu = "0.6.10"
+async-trait = "0.1.41"
 
 [dev-dependencies]
-arrayvec = "0.5.1"
-rand = "0.7"
 ed25519-dalek = { version = "1.0.1", features = ["u64_backend"] }
+rand = "0.7"
+smol = "1.2.4"
