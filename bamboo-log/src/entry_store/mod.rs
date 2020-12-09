@@ -10,6 +10,7 @@ pub use memory_entry_store::*;
 /// Note that it doesn't store / retrieve payloads.
 #[async_trait]
 pub trait EntryStorer {
+
     async fn get_last_seq(&self, public_key: PublicKey, log_id: u64) -> Option<u64>;
 
     /// get_entries should return the same number of results as seq_nums.len()
@@ -58,4 +59,9 @@ pub trait EntryStorer {
         log_id: u64,
         entries: &[&[u8]],
     ) -> Result<()>;
+
+    // TODO consider adding a method for storing info about broken feeds. Also ended feeds?
+    // - Feeds can be forked
+    // - Feeds can be tombstoned
+    // - ?
 }

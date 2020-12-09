@@ -16,7 +16,18 @@ impl<Store: EntryStorer> Log<Store> {
     /// - the lipmaa link that this message references must already exist in the Log. That means if you
     /// are doing partial replication, you must sort your messages by sequence number and add them
     /// from oldest to newest.
-    pub async fn add(&mut self, entry_bytes: &[u8], payload: Option<&[u8]>) -> Result<()> {
+
+    // TODO batch? Also, it they're batched then we can sort them here
+    // What if we changed the types of entry bytes to be a new type that validates that it's all.
+    // Actually the public api should be slices of bytes and we do the validation and implement
+    // private methods that are more like the domain level that do expect valid types.
+    // from a given author + feed id and sorts them by seq.
+    // even better would be to be able to throw all messages from all authors and have this sort it for you.
+    //
+    // Need to decide how to handle broken feeds.
+    // - Should entry store expose methods to record broken feeds?
+    // - Should entry store expose stuff to handle storing payloads too which can be overridden?
+    pub async fn add_batch(&mut self, entry_bytes: &[u8], payload: Option<&[u8]>) -> Result<()> {
         // Decode the entry that we want to add.
         let entry = decode(entry_bytes).map_err(|_| Error::AddEntryDecodeFailed)?;
 
@@ -25,7 +36,7 @@ impl<Store: EntryStorer> Log<Store> {
             n => n,
         };
 
-        // Get the lipmaa entry the backlink entry
+        // Get the lipmaa entry and the backlink entry
         let links = self
             .store
             .get_entries_ref(entry.author, entry.log_id, &[lipmaa_seq, entry.seq_num - 1])
