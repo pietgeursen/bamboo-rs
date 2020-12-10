@@ -71,7 +71,7 @@ fn valid_first_entry() -> Value {
 
     let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
 
-    let mut entry = decode(entry_bytes).unwrap();
+    let entry = decode(entry_bytes).unwrap();
     assert!(entry.verify_signature().unwrap());
 
     let mut buffer = [0u8; 512];

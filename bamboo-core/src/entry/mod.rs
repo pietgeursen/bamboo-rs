@@ -1,7 +1,10 @@
+use crate::BLAKE2B_HASH_SIZE;
 use arrayvec::ArrayVec;
 use core::borrow::Borrow;
 use core::convert::TryFrom;
+use ed25519_dalek::PublicKey;
 use lipmaa_link::lipmaa;
+use std::collections::HashMap;
 
 #[cfg(feature = "std")]
 use crate::util::hex_serde::*;
@@ -20,6 +23,9 @@ use varu64::encode_write as varu64_encode_write;
 use ed25519_dalek::{
     PublicKey as DalekPublicKey, Signature as DalekSignature, Signer, Verifier, PUBLIC_KEY_LENGTH,
 };
+
+#[cfg(feature = "std")]
+use ed25519_dalek::verify_batch;
 
 use super::signature::{Signature, MAX_SIGNATURE_SIZE};
 use super::yamf_hash::{YamfHash, MAX_YAMF_HASH_SIZE};
@@ -99,19 +105,15 @@ where
     }
 }
 
-pub fn verify(
-    entry_bytes: &[u8],
-    payload: Option<&[u8]>,
-    lipmaa_link: Option<&[u8]>,
-    backlink: Option<&[u8]>,
-) -> Result<bool, Error> {
-    // Decode the entry that we want to add.
-    let entry = decode(entry_bytes).map_err(|_| Error::AddEntryDecodeFailed)?;
-
+pub fn verify_links_and_payload(
+    entry: &Entry<&[u8], &[u8]>,
+    payload: Option<(&[u8], YamfHash<ArrayVec<[u8; 64]>>)>,
+    lipmaa_link: Option<(&[u8], YamfHash<ArrayVec<[u8; 64]>>)>,
+    backlink: Option<(&[u8], YamfHash<ArrayVec<[u8; 64]>>)>,
+) -> Result<(), Error> {
     // If we have the payload, check that its hash and length match what is encoded in the
     // entry.
-    if let Some(payload) = payload {
-        let payload_hash = new_blake2b(payload);
+    if let Some((payload, payload_hash)) = payload {
         if payload_hash != entry.payload_hash {
             return Err(Error::AddEntryPayloadHashDidNotMatch);
         }
@@ -124,18 +126,16 @@ pub fn verify(
 
     match (
         lipmaa_link,
-        entry.lipmaa_link,
+        entry.lipmaa_link.as_ref(),
         entry.seq_num,
         lipmaa_is_required,
     ) {
         // Happy path 1: this is the first entry, so we won't find a lipmaa link in the store
         (None, None, seq_num, _) if seq_num == 1 => Ok(()),
         // Happy path 2: seq is larger than one and we can find the lipmaa link in the store
-        (Some(lipmaa), Some(ref entry_lipmaa), seq_num, true) if seq_num > 1 => {
-            // Hash the lipmaa entry
-            let lipmaa_hash = new_blake2b(lipmaa);
+        (Some((lipmaa, lipmaa_hash)), Some(ref entry_lipmaa), seq_num, true) if seq_num > 1 => {
             // Make sure the lipmaa entry hash matches what's in the entry.
-            if lipmaa_hash != *entry_lipmaa {
+            if lipmaa_hash != **entry_lipmaa {
                 return Err(Error::AddEntryLipmaaHashDidNotMatch);
             }
 
@@ -157,14 +157,12 @@ pub fn verify(
         (_, _, _, _) => Err(Error::AddEntryNoLipmaalinkInStore),
     }?;
 
-    match (backlink, entry.backlink, entry.seq_num) {
+    match (backlink, entry.backlink.as_ref(), entry.seq_num) {
         // Happy path 1: This is the first entry and doesn't have a backlink.
         (_, None, seq_num) if seq_num == 1 => Ok(()),
 
         //Happy path 2: This does have a backlink and we found it.
-        (Some(backlink), Some(ref entry_backlink), seq_num) if seq_num > 1 => {
-            let backlink_hash = new_blake2b(backlink);
-
+        (Some((backlink, backlink_hash)), Some(ref entry_backlink), seq_num) if seq_num > 1 => {
             let backlink_entry = decode(backlink).map_err(|_| Error::AddEntryDecodeLastEntry)?;
 
             // Verify that the log_id of the entry is the same as the lipmaa entry
@@ -181,7 +179,7 @@ pub fn verify(
                 return Err(Error::AddEntryToFeedThatHasEnded);
             }
 
-            if backlink_hash != *entry_backlink {
+            if backlink_hash != **entry_backlink {
                 return Err(Error::AddEntryBacklinkHashDidNotMatch);
             }
             Ok(())
@@ -192,10 +190,30 @@ pub fn verify(
         (_, _, _) => Err(Error::AddEntryBacklinkHashDidNotMatch),
     }?;
 
-    // Verify the signature.
-    let mut entry_to_verify =
-        decode(&entry_bytes).map_err(|_| Error::AddEntryDecodeEntryBytesForSigning)?;
-    let is_valid = entry_to_verify
+    Ok(())
+}
+
+pub fn verify(
+    entry_bytes: &[u8],
+    payload: Option<&[u8]>,
+    lipmaa_link: Option<&[u8]>,
+    backlink: Option<&[u8]>,
+) -> Result<bool, Error> {
+    // Decode the entry that we want to add.
+    let entry = decode(entry_bytes).map_err(|_| Error::AddEntryDecodeFailed)?;
+
+    let payload_and_hash = payload.map(|payload| (payload, new_blake2b(payload)));
+    let lipmaa_link_and_hash = lipmaa_link.map(|link| (link, new_blake2b(link)));
+    let backlink_and_hash = backlink.map(|link| (link, new_blake2b(link)));
+
+    verify_links_and_payload(
+        &entry,
+        payload_and_hash,
+        lipmaa_link_and_hash,
+        backlink_and_hash,
+    )?;
+
+    let is_valid = entry
         .verify_signature()
         .map_err(|_| Error::AddEntrySigNotValidError)?;
 
@@ -282,6 +300,18 @@ where
     S: Borrow<[u8]>,
 {
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {
+        let mut next_byte_num = self.encode_for_signing(out)?;
+        // Encode the signature
+        if let Some(ref sig) = self.sig {
+            next_byte_num += sig
+                .encode(&mut out[next_byte_num..])
+                .map_err(|_| Error::EncodeSigError)?;
+        }
+
+        Ok(next_byte_num as usize)
+    }
+
+    pub fn encode_for_signing(&self, out: &mut [u8]) -> Result<usize, Error> {
         if out.len() < self.encoding_length() {
             return Err(Error::EncodeBufferLength);
         }
@@ -337,18 +367,12 @@ where
             .encode(&mut out[next_byte_num..])
             .map_err(|_| Error::EncodePayloadHashError)?;
 
-        // Encode the signature
-        if let Some(ref sig) = self.sig {
-            next_byte_num += sig
-                .encode(&mut out[next_byte_num..])
-                .map_err(|_| Error::EncodeSigError)?;
-        }
-
         Ok(next_byte_num as usize)
     }
 
+    /// Encode the entry ready for signing.
     #[cfg(feature = "std")]
-    pub fn encode_write<W: Write>(&self, mut w: W) -> Result<()> {
+    pub fn encode_for_signing_write<W: Write>(&self, mut w: W) -> Result<()> {
         // Encode the "is end of feed" tag.
         let mut is_end_of_feed_byte = [0];
         if self.is_end_of_feed {
@@ -396,6 +420,13 @@ where
             .encode_write(&mut w)
             .map_err(|_| Error::EncodePayloadHashError)?;
 
+        Ok(())
+    }
+
+    #[cfg(feature = "std")]
+    pub fn encode_write<W: Write>(&self, mut w: W) -> Result<()> {
+        self.encode_for_signing_write(&mut w)?;
+
         // Encode the signature
         if let Some(ref sig) = self.sig {
             sig.encode_write(&mut w)
@@ -428,16 +459,14 @@ where
                 .map(|sig| sig.encoding_length())
                 .unwrap_or(0)
     }
-    pub fn verify_signature(&mut self) -> Result<bool> {
-        //Pluck off the signature before we encode it
-        let sig = self.sig.take();
 
-        let ssb_sig = DalekSignature::try_from(sig.as_ref().unwrap().0.borrow())
+    pub fn verify_signature(&self) -> Result<bool> {
+        let ssb_sig = DalekSignature::try_from(self.sig.as_ref().unwrap().0.borrow())
             .map_err(|_| Error::DecodeSsbSigError)?;
 
         let mut buff = [0u8; 512];
 
-        let encoded_size = self.encode(&mut buff).unwrap();
+        let encoded_size = self.encode_for_signing(&mut buff).unwrap();
 
         let pub_key = self.author.borrow();
 
@@ -445,9 +474,6 @@ where
             .verify(&buff[..encoded_size], &ssb_sig)
             .map(|_| true)
             .unwrap_or(false);
-
-        // Put the signature back on
-        self.sig = sig;
 
         Ok(result)
     }
@@ -582,6 +608,132 @@ where
     }
 }
 
-fn is_lipmaa_required(sequence_num: u64) -> bool {
+pub fn is_lipmaa_required(sequence_num: u64) -> bool {
     lipmaa(sequence_num) != sequence_num - 1
+}
+
+#[cfg(feature = "std")]
+use blake2b_simd::{
+    many::{hash_many, HashManyJob},
+    Params,
+};
+
+/// Batch verify a collection of entries that are **all from the same author and same log_id**
+#[cfg(feature = "std")]
+pub fn batch_verify<E: AsRef<[u8]>, P: AsRef<[u8]>>(entries_and_payloads: &[(E, Option<P>)]) -> Result<()> {
+    batch_verify_links_and_payload(entries_and_payloads)?;
+    let bytes_iter = entries_and_payloads.iter().map(|(bytes, _)| bytes.as_ref());
+    batch_verify_signatures(bytes_iter)?;
+
+    Ok(())
+}
+/// Batch verify the links + payloads of a collection of entries that are **all from the same author and same log_id**
+#[cfg(feature = "std")]
+pub fn batch_verify_links_and_payload<E: AsRef<[u8]>, P: AsRef<[u8]>>(
+    entries_and_payloads: &[(E, Option<P>)],
+) -> Result<()> {
+    let params = Params::new();
+
+    // Build a hashmap from seq num to bytes and hashes we need.
+    let mut hash_map = entries_and_payloads
+        .iter()
+        .map(|(bytes, payload)| {
+            let entry = Entry::try_from(bytes.as_ref())?;
+            let entry_job = HashManyJob::new(&params, bytes.as_ref());
+
+            let payload_and_job = payload.as_ref().map(|payload| {
+                (
+                    payload.as_ref(),
+                    HashManyJob::new(&params, payload.as_ref()),
+                )
+            });
+
+            Ok((
+                entry.seq_num,
+                (bytes.as_ref(), entry, entry_job, payload_and_job),
+            ))
+        })
+        .collect::<Result<HashMap<u64, (_, _, _, _)>>>()?;
+
+    // Hash all the entries at once.
+    hash_many(hash_map.iter_mut().map(|(_, (_, _, job, _))| job));
+
+    let payload_jobs = hash_map
+        .iter_mut()
+        .filter_map(|(_, (_, _, _, payload_and_job))| payload_and_job.as_mut().map(|(_, job)| job));
+
+    // Hash all the payloads at once.
+    hash_many(payload_jobs);
+
+    hash_map
+        .iter()
+        .map(|(seq_num, (_, entry, _, payload_and_job))| {
+            let backlink_and_hash = hash_map.get(&(seq_num - 1)).map(
+                |(bytes, _, entry_job, _)| -> (_, YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>) {
+                    (*bytes, entry_job.to_hash().into())
+                },
+            );
+
+            let lipmaa_link_and_hash = hash_map.get(&(lipmaa_link::lipmaa(*seq_num))).map(
+                |(bytes, _, entry_job, _)| -> (_, YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>) {
+                    (*bytes, entry_job.to_hash().into())
+                },
+            );
+
+            let payload_and_hash = payload_and_job
+                .as_ref()
+                .map(|(payload, job)| (*payload, job.to_hash().into()));
+
+            verify_links_and_payload(
+                entry,
+                payload_and_hash,
+                lipmaa_link_and_hash,
+                backlink_and_hash,
+            )
+        })
+        .collect()
+}
+
+/// Batch verify the signatures of a collection of entries that are **all from the same author and same log_id**
+#[cfg(feature = "std")]
+pub fn batch_verify_signatures<'a, I: IntoIterator<Item = &'a [u8]>>(
+    entries_bytes: I,
+) -> Result<()> {
+    let entries = entries_bytes
+        .into_iter()
+        .map(|bytes| Entry::try_from(bytes))
+        .collect::<Result<Vec<_>>>()?;
+
+    let unsigned_encoding_vecs = entries
+        .iter()
+        .map(|entry| {
+            let mut vec = Vec::with_capacity(entry.encoding_length());
+            entry.encode_for_signing_write(&mut vec)?;
+            Ok(vec)
+        })
+        .collect::<Result<Vec<Vec<u8>>>>()?;
+
+    let unsigned_encodings = unsigned_encoding_vecs
+        .iter()
+        .map(|entry| entry.as_ref())
+        .collect::<Vec<_>>();
+
+    let signatures = entries
+        .iter()
+        .map(|entry| {
+            let ssb_sig = DalekSignature::try_from(entry.sig.as_ref().unwrap().0.borrow())
+                .map_err(|_| Error::DecodeSsbSigError)?;
+            Ok(ssb_sig)
+        })
+        .collect::<Result<Vec<DalekSignature>>>()?;
+
+    let pub_keys = entries
+        .iter()
+        .map(|entry| entry.author.clone())
+        .collect::<Vec<PublicKey>>();
+
+    verify_batch(&unsigned_encodings, &signatures, &pub_keys[..])
+        .map_err(|_| Error::SignatureInvalid)?;
+
+    Ok(())
 }

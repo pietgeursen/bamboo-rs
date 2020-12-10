@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Batch verify
+
 ## [0.1.0-pre-25] - 2020-10-29
 ### Changed
 - Change how `author` is encoded in an entry. No longer uses YamfSignatory (this was removed from the spec.) Breaking change to `Entry` encoding.

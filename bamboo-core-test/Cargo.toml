@@ -9,6 +9,7 @@ bamboo-core = {path = "../bamboo-core"}
 
 [dev-dependencies]
 bamboo-core = {path = "../bamboo-core"}
+bamboo-log = {path = "../bamboo-log"}
 arrayvec = { version = "0.5.1", default-features = false}
 serde = { version = "1.0.94", default-features = false , features = ["derive"] }
 serde_derive = { version = "1.0.94", default-features = false }

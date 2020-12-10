@@ -1,9 +1,9 @@
 
 #[cfg(test)]
 mod tests {
-
-    use std::io::Write;
-    use bamboo_core::entry::decode;
+    use bamboo_core::entry::batch_verify;
+use std::io::Write;
+    use bamboo_core::entry::{decode, batch_verify_signatures};
     use bamboo_core::yamf_hash::BLAKE2B_HASH_SIZE;
     use bamboo_core::Error;
     use bamboo_core::signature::ED25519_SIGNATURE_SIZE;
@@ -97,7 +97,7 @@ mod tests {
         )
         .unwrap();
 
-        let mut entry = decode(&out[..size]).unwrap();
+        let entry = decode(&out[..size]).unwrap();
         assert!(entry.verify_signature().unwrap());
     }
 
@@ -133,7 +133,7 @@ mod tests {
             Some(&out[..size]),
         )
         .unwrap();
-        let mut entry2 = decode(&out2[..size2]).unwrap();
+        let entry2 = decode(&out2[..size2]).unwrap();
 
         assert!(entry2.verify_signature().unwrap());
     }
@@ -340,6 +340,96 @@ mod tests {
         let parsed: Entry<Vec<u8>, Vec<u8>> = serde_json::from_str(&string).unwrap();
 
         assert_eq!(parsed.payload_hash, entry.payload_hash);
+    }
+
+    #[test]
+    fn batch_verify_signatures_works() {
+        let mut csprng: OsRng = OsRng{};
+        let key_pair: Keypair = Keypair::generate(&mut csprng);
+
+        let payload = "hello bamboo!";
+        let mut out = [0u8; 512];
+
+        let size = publish(
+            &mut out,
+            Some(&key_pair),
+            0,
+            payload.as_bytes(),
+            false,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+
+        let mut out2 = [0u8; 512];
+        let size2 = publish(
+            &mut out2,
+            Some(&key_pair),
+            0,
+            payload.as_bytes(),
+            false,
+            Some(1),
+            Some(&out[..size]),
+            Some(&out[..size]),
+        )
+        .unwrap();
+
+        let entry1_bytes = &out[..size];
+
+
+        let entry2_bytes = &out2[..size2];
+
+        let entries = [entry1_bytes, entry2_bytes];
+
+        match batch_verify_signatures(entries.iter().map(|i| *i)) {
+            Ok(_) => {}
+            err => panic!("{:?}", err),
+        }
+    }
+
+    #[test]
+    fn batch_verify_entries() {
+        let mut csprng: OsRng = OsRng{};
+        let key_pair: Keypair = Keypair::generate(&mut csprng);
+
+        let payload = "hello bamboo!";
+        let mut out = [0u8; 512];
+
+        let size = publish(
+            &mut out,
+            Some(&key_pair),
+            0,
+            payload.as_bytes(),
+            false,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+
+        let mut out2 = [0u8; 512];
+        let size2 = publish(
+            &mut out2,
+            Some(&key_pair),
+            0,
+            payload.as_bytes(),
+            false,
+            Some(1),
+            Some(&out[..size]),
+            Some(&out[..size]),
+        )
+        .unwrap();
+
+        let entry1_bytes = &out[..size];
+        let entry2_bytes = &out2[..size2];
+
+        let entries = [(entry1_bytes, Some(payload.as_bytes())), (entry2_bytes, Some(payload.as_bytes()))];
+
+        match batch_verify(&entries[..]) {
+            Ok(_) => {}
+            err => panic!("{:?}", err),
+        }
     }
 
     #[test]
