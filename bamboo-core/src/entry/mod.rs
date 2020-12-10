@@ -7,10 +7,12 @@ pub mod decode;
 pub mod encode;
 pub mod publish;
 pub mod verify;
+#[cfg(feature = "std")]
 pub mod verify_batch;
 
 pub use decode::decode;
 pub use verify::verify;
+#[cfg(feature = "std")]
 pub use verify_batch::verify_batch;
 pub use publish::publish;
 

@@ -3,6 +3,7 @@ use arrayvec::ArrayVec;
 use core::borrow::Borrow;
 use core::convert::TryFrom;
 use ed25519_dalek::PublicKey;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
 
 use ed25519_dalek::{
