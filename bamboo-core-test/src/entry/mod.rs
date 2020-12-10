@@ -1,15 +1,15 @@
-
 #[cfg(test)]
 mod tests {
-    use bamboo_core::entry::batch_verify;
-use std::io::Write;
-    use bamboo_core::entry::{decode, batch_verify_signatures};
+    use bamboo_core::entry::verify_batch;
+    use bamboo_core::entry::decode;
+    use bamboo_core::entry::verify_batch::verify_batch_signatures;
+    use bamboo_core::signature::ED25519_SIGNATURE_SIZE;
     use bamboo_core::yamf_hash::BLAKE2B_HASH_SIZE;
     use bamboo_core::Error;
-    use bamboo_core::signature::ED25519_SIGNATURE_SIZE;
     use bamboo_core::{publish, verify, Entry, Signature, YamfHash};
     use ed25519_dalek::{Keypair, PublicKey};
     use rand::rngs::OsRng;
+    use std::io::Write;
     use varu64::encode_write as varu64_encode_write;
 
     #[test]
@@ -62,7 +62,7 @@ use std::io::Write;
 
         assert_eq!(author.as_bytes(), &author_bytes);
 
-        assert_eq!(entry.log_id,log_id);
+        assert_eq!(entry.log_id, log_id);
 
         let mut encoded = Vec::new();
 
@@ -79,7 +79,7 @@ use std::io::Write;
 
     #[test]
     fn publish_first_entry() {
-        let mut csprng: OsRng = OsRng{};
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -103,7 +103,7 @@ use std::io::Write;
 
     #[test]
     fn publish_entry_with_backlinks() {
-        let mut csprng: OsRng = OsRng{};
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -139,7 +139,7 @@ use std::io::Write;
     }
     #[test]
     fn publish_entry_with_missing_lipmaalink_errors() {
-        let mut csprng: OsRng = OsRng{};
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -175,7 +175,7 @@ use std::io::Write;
     }
     #[test]
     fn publish_entry_with_missing_backlink_errors() {
-        let mut csprng: OsRng = OsRng{};
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -212,7 +212,7 @@ use std::io::Write;
 
     #[test]
     fn publish_after_an_end_of_feed_message_errors() {
-        let mut csprng: OsRng = OsRng{};
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -247,7 +247,7 @@ use std::io::Write;
     }
     #[test]
     fn publish_with_out_buffer_too_small() {
-        let mut csprng: OsRng = OsRng{};
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -273,14 +273,23 @@ use std::io::Write;
         let payload = "hello bamboo!";
         let mut out = [0u8; 512];
 
-        match publish(&mut out, None, 0, payload.as_bytes(), false, None, None, None) {
+        match publish(
+            &mut out,
+            None,
+            0,
+            payload.as_bytes(),
+            false,
+            None,
+            None,
+            None,
+        ) {
             Err(Error::PublishWithoutKeypair) => {}
             _ => panic!(),
         }
     }
     #[test]
     fn publish_with_different_log_id_to_previous_errors() {
-        let mut csprng: OsRng = OsRng{};
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -315,7 +324,7 @@ use std::io::Write;
 
     #[test]
     fn serde_entry() {
-        let mut csprng: OsRng = OsRng{};
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -344,7 +353,7 @@ use std::io::Write;
 
     #[test]
     fn batch_verify_signatures_works() {
-        let mut csprng: OsRng = OsRng{};
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -377,12 +386,11 @@ use std::io::Write;
 
         let entry1_bytes = &out[..size];
 
-
         let entry2_bytes = &out2[..size2];
 
         let entries = [entry1_bytes, entry2_bytes];
 
-        match batch_verify_signatures(entries.iter().map(|i| *i)) {
+        match verify_batch_signatures(entries.iter().map(|i| *i)) {
             Ok(_) => {}
             err => panic!("{:?}", err),
         }
@@ -390,7 +398,7 @@ use std::io::Write;
 
     #[test]
     fn batch_verify_entries() {
-        let mut csprng: OsRng = OsRng{};
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -424,9 +432,12 @@ use std::io::Write;
         let entry1_bytes = &out[..size];
         let entry2_bytes = &out2[..size2];
 
-        let entries = [(entry1_bytes, Some(payload.as_bytes())), (entry2_bytes, Some(payload.as_bytes()))];
+        let entries = [
+            (entry1_bytes, Some(payload.as_bytes())),
+            (entry2_bytes, Some(payload.as_bytes())),
+        ];
 
-        match batch_verify(&entries[..]) {
+        match verify_batch(&entries[..]) {
             Ok(_) => {}
             err => panic!("{:?}", err),
         }
@@ -434,7 +445,7 @@ use std::io::Write;
 
     #[test]
     fn verify_entries() {
-        let mut csprng: OsRng = OsRng{};
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
@@ -485,8 +496,8 @@ use std::io::Write;
         }
     }
     #[test]
-    fn verify_entry_detects_incorrect_log_id(){
-        let mut csprng: OsRng = OsRng{};
+    fn verify_entry_detects_incorrect_log_id() {
+        let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
         let payload = "hello bamboo!";
