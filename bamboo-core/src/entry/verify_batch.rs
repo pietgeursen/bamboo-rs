@@ -6,19 +6,18 @@ use ed25519_dalek::PublicKey;
 #[cfg(feature = "std")]
 use std::collections::HashMap;
 
-use ed25519_dalek::{
-    Signature as DalekSignature
-};
+use ed25519_dalek::Signature as DalekSignature;
 
 #[cfg(feature = "std")]
 use ed25519_dalek::verify_batch as verify_batch_dalek;
 
-use crate::yamf_hash::{YamfHash};
+use crate::yamf_hash::YamfHash;
 
-use crate::error::*;
-use super::{Entry};
 use super::verify::verify_links_and_payload;
-
+use super::Entry;
+use crate::error::*;
+use rayon::prelude::*;
+use std::ops::DerefMut;
 
 #[cfg(feature = "std")]
 use blake2b_simd::{
@@ -28,7 +27,9 @@ use blake2b_simd::{
 
 /// Batch verify a collection of entries that are **all from the same author and same log_id**
 #[cfg(feature = "std")]
-pub fn verify_batch<E: AsRef<[u8]>, P: AsRef<[u8]>>(entries_and_payloads: &[(E, Option<P>)]) -> Result<()> {
+pub fn verify_batch<E: AsRef<[u8]> + Sync, P: AsRef<[u8]> + Sync>(
+    entries_and_payloads: &[(E, Option<P>)],
+) -> Result<()> {
     verify_batch_links_and_payload(entries_and_payloads)?;
     let bytes_iter = entries_and_payloads.iter().map(|(bytes, _)| bytes.as_ref());
     verify_batch_signatures(bytes_iter)?;
@@ -37,14 +38,14 @@ pub fn verify_batch<E: AsRef<[u8]>, P: AsRef<[u8]>>(entries_and_payloads: &[(E, 
 }
 /// Batch verify the links + payloads of a collection of entries that are **all from the same author and same log_id**
 #[cfg(feature = "std")]
-pub fn verify_batch_links_and_payload<E: AsRef<[u8]>, P: AsRef<[u8]>>(
+pub fn verify_batch_links_and_payload<E: AsRef<[u8]> + Sync, P: AsRef<[u8]> + Sync>(
     entries_and_payloads: &[(E, Option<P>)],
 ) -> Result<()> {
     let params = Params::new();
 
     // Build a hashmap from seq num to bytes and hashes we need.
-    let mut hash_map = entries_and_payloads
-        .iter()
+    let mut hash_map = entries_and_payloads[..]
+        .par_iter()
         .map(|(bytes, payload)| {
             let entry = Entry::try_from(bytes.as_ref())?;
             let entry_job = HashManyJob::new(&params, bytes.as_ref());
@@ -63,6 +64,20 @@ pub fn verify_batch_links_and_payload<E: AsRef<[u8]>, P: AsRef<[u8]>>(
         })
         .collect::<Result<HashMap<u64, (_, _, _, _)>>>()?;
 
+//    let mut jobs = hash_map
+//        .iter_mut()
+//        .map(|(_, (_, _, job, _))| job)
+//        .collect::<Vec<&mut HashManyJob>>();
+//
+//    jobs.as_parallel_slice_mut()
+//        .par_chunks_mut(50)
+//        .fold(
+//            || (),
+//            |_, jobs| hash_many(jobs.iter_mut().map(|j| j.deref_mut())),
+//        )
+//        .reduce(|| (), |_, _| ());
+
+    //hash_map.as_parallel_slice();
     // Hash all the entries at once.
     hash_many(hash_map.iter_mut().map(|(_, (_, _, job, _))| job));
 
@@ -74,7 +89,7 @@ pub fn verify_batch_links_and_payload<E: AsRef<[u8]>, P: AsRef<[u8]>>(
     hash_many(payload_jobs);
 
     hash_map
-        .iter()
+        .par_iter()
         .map(|(seq_num, (_, entry, _, payload_and_job))| {
             let backlink_and_hash = hash_map.get(&(seq_num - 1)).map(
                 |(bytes, _, entry_job, _)| -> (_, YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>) {

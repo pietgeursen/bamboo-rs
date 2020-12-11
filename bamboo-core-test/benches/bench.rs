@@ -181,7 +181,7 @@ fn verify_entries_benches(c: &mut Criterion) {
 
     c.bench_function("batch_verify_100_entries", |b| {
         let entries = create_n_entries(100);
-        b.iter(|| verify_batch(&entries[..]))
+        b.iter(|| verify_batch(&entries[..]).unwrap())
     });
 }
 
