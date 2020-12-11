@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Batch verify
+- Batch verify using rayon and simd now in bamboo-core when using std
 
 ## [0.1.0-pre-25] - 2020-10-29
 ### Changed

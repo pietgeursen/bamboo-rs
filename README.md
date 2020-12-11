@@ -16,7 +16,7 @@ Bamboo releases target 29 different architectures. Releases of the bamboo_core l
 
 The most likely bottleneck for applications is verification. Experience with scuttlebutt shows that once an application has to deal with a few years of data from a social network, onboarding a new user is painfully slow, and part of that slowness is due to verification. 
 
-TODO
+`bamboo-rs` exports a batch verification function that uses [rayon](https://docs.rs/rayon) and signature batch verification that uses SIMD instructions for ~3-4 * speed up.
 
 ### Correct
 
