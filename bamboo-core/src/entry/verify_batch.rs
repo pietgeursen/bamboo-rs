@@ -17,12 +17,10 @@ use super::verify::verify_links_and_payload;
 use super::Entry;
 use crate::error::*;
 use rayon::prelude::*;
-use std::ops::DerefMut;
 
 #[cfg(feature = "std")]
 use blake2b_simd::{
-    many::{hash_many, HashManyJob},
-    Params,
+    blake2b,
 };
 
 /// Batch verify a collection of entries that are **all from the same author and same log_id**
@@ -41,19 +39,18 @@ pub fn verify_batch<E: AsRef<[u8]> + Sync, P: AsRef<[u8]> + Sync>(
 pub fn verify_batch_links_and_payload<E: AsRef<[u8]> + Sync, P: AsRef<[u8]> + Sync>(
     entries_and_payloads: &[(E, Option<P>)],
 ) -> Result<()> {
-    let params = Params::new();
 
     // Build a hashmap from seq num to bytes and hashes we need.
-    let mut hash_map = entries_and_payloads[..]
+    let hash_map = entries_and_payloads[..]
         .par_iter()
         .map(|(bytes, payload)| {
             let entry = Entry::try_from(bytes.as_ref())?;
-            let entry_job = HashManyJob::new(&params, bytes.as_ref());
+            let entry_job = blake2b(bytes.as_ref()); //HashManyJob::new(&params, bytes.as_ref());
 
             let payload_and_job = payload.as_ref().map(|payload| {
                 (
                     payload.as_ref(),
-                    HashManyJob::new(&params, payload.as_ref()),
+                    blake2b(payload.as_ref())
                 )
             });
 
@@ -64,48 +61,24 @@ pub fn verify_batch_links_and_payload<E: AsRef<[u8]> + Sync, P: AsRef<[u8]> + Sy
         })
         .collect::<Result<HashMap<u64, (_, _, _, _)>>>()?;
 
-//    let mut jobs = hash_map
-//        .iter_mut()
-//        .map(|(_, (_, _, job, _))| job)
-//        .collect::<Vec<&mut HashManyJob>>();
-//
-//    jobs.as_parallel_slice_mut()
-//        .par_chunks_mut(50)
-//        .fold(
-//            || (),
-//            |_, jobs| hash_many(jobs.iter_mut().map(|j| j.deref_mut())),
-//        )
-//        .reduce(|| (), |_, _| ());
-
-    //hash_map.as_parallel_slice();
-    // Hash all the entries at once.
-    hash_many(hash_map.iter_mut().map(|(_, (_, _, job, _))| job));
-
-    let payload_jobs = hash_map
-        .iter_mut()
-        .filter_map(|(_, (_, _, _, payload_and_job))| payload_and_job.as_mut().map(|(_, job)| job));
-
-    // Hash all the payloads at once.
-    hash_many(payload_jobs);
-
     hash_map
         .par_iter()
         .map(|(seq_num, (_, entry, _, payload_and_job))| {
             let backlink_and_hash = hash_map.get(&(seq_num - 1)).map(
                 |(bytes, _, entry_job, _)| -> (_, YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>) {
-                    (*bytes, entry_job.to_hash().into())
+                    (*bytes, (*entry_job).into())
                 },
             );
 
             let lipmaa_link_and_hash = hash_map.get(&(lipmaa_link::lipmaa(*seq_num))).map(
                 |(bytes, _, entry_job, _)| -> (_, YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>) {
-                    (*bytes, entry_job.to_hash().into())
+                    (*bytes, (*entry_job).into())
                 },
             );
 
             let payload_and_hash = payload_and_job
                 .as_ref()
-                .map(|(payload, job)| (*payload, job.to_hash().into()));
+                .map(|(payload, job)| (*payload, (*job).into()));
 
             verify_links_and_payload(
                 entry,
@@ -126,9 +99,8 @@ where
     [T]: ParallelSlice<T>,
     T: Sync,
 {
-
     entries_bytes.as_parallel_slice()
-        .par_chunks(24)
+        .par_chunks(125)
         .try_fold(
             || (),
             |_, chunk| {
