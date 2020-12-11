@@ -31,8 +31,8 @@ pub fn verify_batch<E: AsRef<[u8]> + Sync, P: AsRef<[u8]> + Sync>(
     entries_and_payloads: &[(E, Option<P>)],
 ) -> Result<()> {
     verify_batch_links_and_payload(entries_and_payloads)?;
-    let bytes_iter = entries_and_payloads.iter().map(|(bytes, _)| bytes.as_ref());
-    verify_batch_signatures(bytes_iter)?;
+    let bytes_iter = entries_and_payloads.iter().map(|(bytes, _)| bytes.as_ref()).collect::<Vec<_>>();
+    verify_batch_signatures(&bytes_iter)?;
 
     Ok(())
 }
@@ -119,44 +119,56 @@ pub fn verify_batch_links_and_payload<E: AsRef<[u8]> + Sync, P: AsRef<[u8]> + Sy
 
 /// Batch verify the signatures of a collection of entries that are **all from the same author and same log_id**
 #[cfg(feature = "std")]
-pub fn verify_batch_signatures<'a, I: IntoIterator<Item = &'a [u8]>>(
-    entries_bytes: I,
-) -> Result<()> {
-    let entries = entries_bytes
-        .into_iter()
-        .map(|bytes| Entry::try_from(bytes))
-        .collect::<Result<Vec<_>>>()?;
+pub fn verify_batch_signatures<'a, T: AsRef<[u8]>>(
+    entries_bytes: &'a[T],
+) -> Result<()> 
+where
+    [T]: ParallelSlice<T>,
+    T: Sync,
+{
 
-    let unsigned_encoding_vecs = entries
-        .iter()
-        .map(|entry| {
-            let mut vec = Vec::with_capacity(entry.encoding_length());
-            entry.encode_for_signing_write(&mut vec)?;
-            Ok(vec)
-        })
-        .collect::<Result<Vec<Vec<u8>>>>()?;
+    entries_bytes.as_parallel_slice()
+        .par_chunks(24)
+        .try_fold(
+            || (),
+            |_, chunk| {
+                let entries = chunk
+                    .into_iter()
+                    .map(|bytes| Entry::try_from(bytes.as_ref()))
+                    .collect::<Result<Vec<_>>>()?;
 
-    let unsigned_encodings = unsigned_encoding_vecs
-        .iter()
-        .map(|entry| entry.as_ref())
-        .collect::<Vec<_>>();
+                let unsigned_encoding_vecs = entries
+                    .iter()
+                    .map(|entry| {
+                        let mut vec = Vec::with_capacity(entry.encoding_length());
+                        entry.encode_for_signing_write(&mut vec)?;
+                        Ok(vec)
+                    })
+                .collect::<Result<Vec<Vec<u8>>>>()?;
 
-    let signatures = entries
-        .iter()
-        .map(|entry| {
-            let ssb_sig = DalekSignature::try_from(entry.sig.as_ref().unwrap().0.borrow())
-                .map_err(|_| Error::DecodeSsbSigError)?;
-            Ok(ssb_sig)
-        })
-        .collect::<Result<Vec<DalekSignature>>>()?;
+                let unsigned_encodings = unsigned_encoding_vecs
+                    .iter()
+                    .map(|entry| entry.as_ref())
+                    .collect::<Vec<_>>();
 
-    let pub_keys = entries
-        .iter()
-        .map(|entry| entry.author.clone())
-        .collect::<Vec<PublicKey>>();
+                let signatures = entries
+                    .iter()
+                    .map(|entry| {
+                        let ssb_sig = DalekSignature::try_from(entry.sig.as_ref().unwrap().0.borrow())
+                            .map_err(|_| Error::DecodeSsbSigError)?;
+                        Ok(ssb_sig)
+                    })
+                .collect::<Result<Vec<DalekSignature>>>()?;
 
-    verify_batch_dalek(&unsigned_encodings, &signatures, &pub_keys[..])
-        .map_err(|_| Error::SignatureInvalid)?;
+                let pub_keys = entries
+                    .iter()
+                    .map(|entry| entry.author.clone())
+                    .collect::<Vec<PublicKey>>();
 
-    Ok(())
+                verify_batch_dalek(&unsigned_encodings, &signatures, &pub_keys[..])
+                    .map_err(|_| Error::SignatureInvalid)?;
+
+                Ok(())
+            })
+        .try_reduce(|| (), |_, _| Ok(()))
 }

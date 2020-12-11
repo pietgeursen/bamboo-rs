@@ -390,7 +390,7 @@ mod tests {
 
         let entries = [entry1_bytes, entry2_bytes];
 
-        match verify_batch_signatures(entries.iter().map(|i| *i)) {
+        match verify_batch_signatures(&entries) {
             Ok(_) => {}
             err => panic!("{:?}", err),
         }

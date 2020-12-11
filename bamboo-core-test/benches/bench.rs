@@ -150,7 +150,7 @@ fn verify_signature_benches(c: &mut Criterion) {
 
         let entries = (0..100).map(|_| &out[..size]).collect::<Vec<_>>();
 
-        b.iter(|| verify_batch_signatures(entries.iter().map(|i| *i)).unwrap())
+        b.iter(|| verify_batch_signatures(&entries).unwrap())
     });
 }
 
