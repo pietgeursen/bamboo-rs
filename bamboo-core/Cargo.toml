@@ -1,6 +1,6 @@
 [package]
 name = "bamboo-core"
-version = "0.1.0-pre-25"
+version = "0.1.0-pre-26"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 license = "AGPL-3.0"
@@ -12,7 +12,7 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 
 [features]
 default = ["std"]
-std = ["varu64/std", "hex/std", "ed25519-dalek/serde", "ed25519-dalek/std"]
+std = ["varu64/std", "hex/std", "rayon", "ed25519-dalek/serde", "ed25519-dalek/std", "ed25519-dalek/batch"]
 
 [dependencies]
 arrayvec = { version = "0.5.1", default-features = false}
@@ -21,6 +21,7 @@ serde_derive = { version = "1.0", default-features = false }
 hex = { version = "0.4", default-features = false }
 varu64 = { version ="0.6.2", default-features = false } 
 lipmaa-link = "0.1"
+rayon = { version = "1.5", optional = true }
 blake2b_simd = { version = "0.5", default-features = false }
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }
 static_assertions = "0.3"

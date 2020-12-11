@@ -63,6 +63,14 @@ impl<'a> From<&'a YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>> for YamfHash<&'a 
     }
 }
 
+impl<'a> From<blake2b_simd::Hash> for YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>> {
+    fn from(hash: blake2b_simd::Hash) -> Self {
+        let vec_bytes: ArrayVec<[u8; BLAKE2B_HASH_SIZE]> =
+            ArrayVec::from_iter(hash.as_bytes().iter().map(|b| *b));
+
+        YamfHash::Blake2b(vec_bytes)
+    }
+}
 impl<T: Borrow<[u8]>> YamfHash<T> {
     /// Encode a YamfHash into the out buffer.
     pub fn encode(&self, out: &mut [u8]) -> Result<usize, Error> {

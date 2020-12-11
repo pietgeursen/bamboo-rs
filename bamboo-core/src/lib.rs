@@ -33,6 +33,8 @@ mod util;
 
 pub use ed25519_dalek::{Keypair, PublicKey, SecretKey, SignatureError};
 pub use entry::{publish, verify, decode, Entry};
+#[cfg(feature = "std")]
+pub use entry::verify_batch;
 pub use error::Error;
 pub use lipmaa_link::lipmaa;
 pub use signature::{Signature, ED25519_SIGNATURE_SIZE};
