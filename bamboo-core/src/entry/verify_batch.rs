@@ -47,9 +47,9 @@ pub fn verify_batch_links_and_payload<E: AsRef<[u8]> + Sync, P: AsRef<[u8]> + Sy
         .par_iter()
         .map(|(bytes, payload)| {
             let entry = Entry::try_from(bytes.as_ref())?;
-            let entry_job = blake2b(bytes.as_ref()); //HashManyJob::new(&params, bytes.as_ref());
+            let entry_hash = blake2b(bytes.as_ref()); //HashManyJob::new(&params, bytes.as_ref());
 
-            let payload_and_job = payload.as_ref().map(|payload| {
+            let payload_and_hash = payload.as_ref().map(|payload| {
                 (
                     payload.as_ref(),
                     blake2b(payload.as_ref())
@@ -58,27 +58,27 @@ pub fn verify_batch_links_and_payload<E: AsRef<[u8]> + Sync, P: AsRef<[u8]> + Sy
 
             Ok((
                 entry.seq_num,
-                (bytes.as_ref(), entry, entry_job, payload_and_job),
+                (bytes.as_ref(), entry, entry_hash, payload_and_hash),
             ))
         })
         .collect::<Result<HashMap<u64, (_, _, _, _)>>>()?;
 
     hash_map
         .par_iter()
-        .map(|(seq_num, (_, entry, _, payload_and_job))| {
+        .map(|(seq_num, (_, entry, _, payload_and_hash))| {
             let backlink_and_hash = hash_map.get(&(seq_num - 1)).map(
-                |(bytes, _, entry_job, _)| -> (_, YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>) {
-                    (*bytes, (*entry_job).into())
+                |(bytes, _, entry_hash, _)| -> (_, YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>) {
+                    (*bytes, (*entry_hash).into())
                 },
             );
 
             let lipmaa_link_and_hash = hash_map.get(&(lipmaa_link::lipmaa(*seq_num))).map(
-                |(bytes, _, entry_job, _)| -> (_, YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>) {
-                    (*bytes, (*entry_job).into())
+                |(bytes, _, entry_hash, _)| -> (_, YamfHash<ArrayVec<[u8; BLAKE2B_HASH_SIZE]>>) {
+                    (*bytes, (*entry_hash).into())
                 },
             );
 
-            let payload_and_hash = payload_and_job
+            let payload_and_hash = payload_and_hash
                 .as_ref()
                 .map(|(payload, job)| (*payload, (*job).into()));
 
