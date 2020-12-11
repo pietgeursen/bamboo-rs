@@ -24,6 +24,8 @@ use blake2b_simd::{
 };
 
 /// Batch verify a collection of entries that are **all from the same author and same log_id**
+///
+/// Uses rayon and signature batch verification to utilize multiple processors + SIMD instruction.
 #[cfg(feature = "std")]
 pub fn verify_batch<E: AsRef<[u8]> + Sync, P: AsRef<[u8]> + Sync>(
     entries_and_payloads: &[(E, Option<P>)],
