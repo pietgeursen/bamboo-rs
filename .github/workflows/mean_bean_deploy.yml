@@ -58,7 +58,7 @@ jobs:
       - run: bash ci/build.bash cargo ${{ matrix.target }} RELEASE
       - run: |
           cd ./target/${{ matrix.target }}/release/
-          7z a "${{ env.BIN }}.zip" "${{ env.BIN }}.exe"
+          7z a "${{ env.BIN }}.zip" "${{ env.BAMBOO_CLI }}"
           mv "${{ env.BIN }}.zip" $GITHUB_WORKSPACE
         shell: bash
         # We're using using a fork of `actions/create-release` that detects
@@ -81,28 +81,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.LIB_BAMBOO_SO }}.zip
-          asset_name: ${{ env.LIB_BAMBOO_SO }}-${{ matrix.target }}.zip
-          asset_content_type: application/zip
-      - name: upload-static-lib
-        uses: actions/upload-release-asset@v1
-        id: upload-static-lib
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.LIB_BAMBOO_A }}.zip
-          asset_name: ${{ env.LIB_BAMBOO_A }}-${{ matrix.target }}.zip
-          asset_content_type: application/zip
-      - name: upload-cli
-        uses: actions/upload-release-asset@v1
-        id: upload-cli
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.BAMBOO_CLI }}.zip
-          asset_name: ${{ env.BAMBOO_CLI }}-${{ matrix.target }}.zip
+          asset_path: ${{ env.BIN }}.zip
+          asset_name: ${{ env.BIN }}-${{ matrix.target }}.zip
           asset_content_type: application/zip
   macos:
     env:
@@ -133,7 +113,7 @@ jobs:
 
       - run: ci/set_rust_version.bash stable ${{ matrix.target }}
       - run: ci/build.bash cross ${{ matrix.target }} RELEASE
-        #- run: tar -czvf ${{ env.BIN }}.tar.gz --directory=target/${{ matrix.target }}/release ${{ env.BIN }}
+      - run: tar -czvf ${{ env.BIN }}.tar.gz --directory=target/${{ matrix.target }}/release ${{ env.LIB_BAMBOO_SO }} ${{ env.LIB_BAMBOO_A }} ${{ env.BAMBOO_CLI }}
       - uses: XAMPPRocky/create-release@v1.0.2
         id: create_release
         env:
@@ -150,28 +130,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.LIB_BAMBOO_SO }}.zip
-          asset_name: ${{ env.LIB_BAMBOO_SO }}-${{ matrix.target }}.zip
-          asset_content_type: application/zip
-      - name: upload-static-lib
-        uses: actions/upload-release-asset@v1
-        id: upload-static-lib
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.LIB_BAMBOO_A }}.zip
-          asset_name: ${{ env.LIB_BAMBOO_A }}-${{ matrix.target }}.zip
-          asset_content_type: application/zip
-      - name: upload-cli
-        uses: actions/upload-release-asset@v1
-        id: upload-cli
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.BAMBOO_CLI }}.zip
-          asset_name: ${{ env.BAMBOO_CLI }}-${{ matrix.target }}.zip
+          asset_path: ${{ env.BIN }}.tar.gz
+          asset_name: ${{ env.BIN }}-${{ matrix.target }}.tar.gz
           asset_content_type: application/zip
   linux:
     env:
@@ -215,7 +175,7 @@ jobs:
           # - x86_64-unknown-freebsd
           - x86_64-unknown-netbsd
           # Solaris
-          - sparcv9-sun-solaris
+          #- sparcv9-sun-solaris
           # Bare Metal
           # These are no-std embedded targets, so they will only build if your
           # crate is `no_std` compatible.
@@ -233,7 +193,7 @@ jobs:
 
       - run: ci/set_rust_version.bash stable ${{ matrix.target }}
       - run: ci/build.bash /tmp/cross ${{ matrix.target }} RELEASE
-        #- run: tar -czvf ${{ env.BIN }}.tar.gz --directory=target/${{ matrix.target }}/release ${{ env.BIN }}
+      - run: tar -czvf ${{ env.BIN }}.tar.gz --directory=target/${{ matrix.target }}/release ${{ env.LIB_BAMBOO_SO }} ${{ env.LIB_BAMBOO_A }} ${{ env.BAMBOO_CLI }}
       - uses: XAMPPRocky/create-release@v1.0.2
         id: create_release
         env:
@@ -250,26 +210,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.LIB_BAMBOO_SO }}.zip
-          asset_name: ${{ env.LIB_BAMBOO_SO }}-${{ matrix.target }}.zip
-          asset_content_type: application/zip
-      - name: upload-static-lib
-        uses: actions/upload-release-asset@v1
-        id: upload-static-lib
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.LIB_BAMBOO_A }}.zip
-          asset_name: ${{ env.LIB_BAMBOO_A }}-${{ matrix.target }}.zip
-          asset_content_type: application/zip
-      - name: upload-cli
-        uses: actions/upload-release-asset@v1
-        id: upload-cli
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.BAMBOO_CLI }}.zip
-          asset_name: ${{ env.BAMBOO_CLI }}-${{ matrix.target }}.zip
+          asset_path: ${{ env.BIN }}.tar.gz
+          asset_name: ${{ env.BIN }}-${{ matrix.target }}.tar.gz
           asset_content_type: application/zip
