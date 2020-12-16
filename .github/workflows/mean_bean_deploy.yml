@@ -43,6 +43,7 @@ jobs:
     runs-on: windows-latest
     needs: install-cross
     strategy:
+      fail-fast: false
       matrix:
         target:
           # MSVC
@@ -111,6 +112,7 @@ jobs:
     runs-on: macos-latest
     needs: install-cross
     strategy:
+      fail-fast: false
       matrix:
         target:
           # macOS
@@ -179,6 +181,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: install-cross
     strategy:
+      fail-fast: false
       matrix:
         target:
           # WASM, off by default as most rust projects aren't compatible yet.
@@ -196,7 +199,7 @@ jobs:
             #- powerpc-unknown-linux-gnu
             #- powerpc64-unknown-linux-gnu
             #- powerpc64le-unknown-linux-gnu
-          - s390x-unknown-linux-gnu
+            #- s390x-unknown-linux-gnu
           - x86_64-unknown-linux-gnu
           - x86_64-unknown-linux-musl
           # Android
