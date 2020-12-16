@@ -86,9 +86,9 @@ jobs:
           asset_content_type: application/zip
   macos:
     env:
-      LIB_BAMBOO_SO: libbamboo_core.so 
-      LIB_BAMBOO_A: libbamboo_core.a 
-      BAMBOO_CLI: bamboo-cli 
+      LIB_BAMBOO_SO: libbamboo_core.dylib
+      LIB_BAMBOO_A: libbamboo_core.a
+      BAMBOO_CLI: bamboo-cli
     runs-on: macos-latest
     needs: install-cross
     strategy:
@@ -135,7 +135,8 @@ jobs:
           asset_content_type: application/zip
   linux:
     env:
-      LIB_BAMBOO_SO: libbamboo_core.so 
+      # The * is because musl targets don't produce dynamic libs
+      LIB_BAMBOO_SO: libbamboo_core.so* 
       LIB_BAMBOO_A: libbamboo_core.a 
       BAMBOO_CLI: bamboo-cli 
     runs-on: ubuntu-latest
