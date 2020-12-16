@@ -5,9 +5,9 @@ on:
       - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
 
 name: Mean Bean Deploy
-#env:
+env:
   # TODO: Rename to your binary
-  #  BIN: bamboo-rs 
+  BIN: bamboo_rs 
 
 jobs:
   # This job downloads and stores `cross` as an artifact, so that it can be
