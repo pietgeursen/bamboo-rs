@@ -73,8 +73,9 @@ jobs:
           # get draft releases from its API, so there's no point using it.
           draft: false
           prerelease: false
-      - uses: actions/upload-release-asset@v1
-        id: upload-release-asset
+      - name: upload-dynamic-lib
+        uses: actions/upload-release-asset@v1
+        id: upload-dynamic-lib
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -82,8 +83,9 @@ jobs:
           asset_path: ${{ env.LIB_BAMBOO_SO }}.zip
           asset_name: ${{ env.LIB_BAMBOO_SO }}-${{ matrix.target }}.zip
           asset_content_type: application/zip
-      - uses: actions/upload-release-asset@v1
-        id: upload-release-asset
+      - name: upload-static-lib
+        uses: actions/upload-release-asset@v1
+        id: upload-static-lib
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -91,8 +93,9 @@ jobs:
           asset_path: ${{ env.LIB_BAMBOO_A }}.zip
           asset_name: ${{ env.LIB_BAMBOO_A }}-${{ matrix.target }}.zip
           asset_content_type: application/zip
-      - uses: actions/upload-release-asset@v1
-        id: upload-release-asset
+      - name: upload-cli
+        uses: actions/upload-release-asset@v1
+        id: upload-cli
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -138,8 +141,9 @@ jobs:
           release_name: ${{ github.ref }}
           draft: false
           prerelease: false
-      - uses: actions/upload-release-asset@v1
-        id: upload-release-asset
+      - name: upload-dynamic-lib
+        uses: actions/upload-release-asset@v1
+        id: upload-dynamic-lib
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -147,8 +151,9 @@ jobs:
           asset_path: ${{ env.LIB_BAMBOO_SO }}.zip
           asset_name: ${{ env.LIB_BAMBOO_SO }}-${{ matrix.target }}.zip
           asset_content_type: application/zip
-      - uses: actions/upload-release-asset@v1
-        id: upload-release-asset
+      - name: upload-static-lib
+        uses: actions/upload-release-asset@v1
+        id: upload-static-lib
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -156,8 +161,9 @@ jobs:
           asset_path: ${{ env.LIB_BAMBOO_A }}.zip
           asset_name: ${{ env.LIB_BAMBOO_A }}-${{ matrix.target }}.zip
           asset_content_type: application/zip
-      - uses: actions/upload-release-asset@v1
-        id: upload-release-asset
+      - name: upload-cli
+        uses: actions/upload-release-asset@v1
+        id: upload-cli
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -165,7 +171,6 @@ jobs:
           asset_path: ${{ env.BAMBOO_CLI }}.zip
           asset_name: ${{ env.BAMBOO_CLI }}-${{ matrix.target }}.zip
           asset_content_type: application/zip
-
   linux:
     env:
       LIB_BAMBOO_SO: libbamboo_core.so 
@@ -235,10 +240,9 @@ jobs:
           release_name: ${{ github.ref }}
           draft: false
           prerelease: false
-      - name: Upload Release Asset
-        id: upload-release-asset
-      - uses: actions/upload-release-asset@v1
-        id: upload-release-asset
+      - name: upload-dynamic-lib
+        uses: actions/upload-release-asset@v1
+        id: upload-dynamic-lib
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -246,8 +250,9 @@ jobs:
           asset_path: ${{ env.LIB_BAMBOO_SO }}.zip
           asset_name: ${{ env.LIB_BAMBOO_SO }}-${{ matrix.target }}.zip
           asset_content_type: application/zip
-      - uses: actions/upload-release-asset@v1
-        id: upload-release-asset
+      - name: upload-static-lib
+        uses: actions/upload-release-asset@v1
+        id: upload-static-lib
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -255,8 +260,9 @@ jobs:
           asset_path: ${{ env.LIB_BAMBOO_A }}.zip
           asset_name: ${{ env.LIB_BAMBOO_A }}-${{ matrix.target }}.zip
           asset_content_type: application/zip
-      - uses: actions/upload-release-asset@v1
-        id: upload-release-asset
+      - name: upload-cli
+        uses: actions/upload-release-asset@v1
+        id: upload-cli
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
