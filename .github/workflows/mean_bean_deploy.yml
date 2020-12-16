@@ -131,7 +131,7 @@ jobs:
 
       - run: ci/set_rust_version.bash stable ${{ matrix.target }}
       - run: ci/build.bash cross ${{ matrix.target }} RELEASE
-      - run: tar -czvf ${{ env.BIN }}.tar.gz --directory=target/${{ matrix.target }}/release ${{ env.BIN }}
+        #- run: tar -czvf ${{ env.BIN }}.tar.gz --directory=target/${{ matrix.target }}/release ${{ env.BIN }}
       - uses: XAMPPRocky/create-release@v1.0.2
         id: create_release
         env:
@@ -190,12 +190,12 @@ jobs:
           - i686-unknown-linux-gnu
           - i686-unknown-linux-musl
           - mips-unknown-linux-gnu
-          - mips64-unknown-linux-gnuabi64
-          - mips64el-unknown-linux-gnuabi64
-          - mipsel-unknown-linux-gnu
-          - powerpc-unknown-linux-gnu
-          - powerpc64-unknown-linux-gnu
-          - powerpc64le-unknown-linux-gnu
+            #- mips64-unknown-linux-gnuabi64
+            #- mips64el-unknown-linux-gnuabi64
+            #- mipsel-unknown-linux-gnu
+            #- powerpc-unknown-linux-gnu
+            #- powerpc64-unknown-linux-gnu
+            #- powerpc64le-unknown-linux-gnu
           - s390x-unknown-linux-gnu
           - x86_64-unknown-linux-gnu
           - x86_64-unknown-linux-musl
@@ -230,7 +230,7 @@ jobs:
 
       - run: ci/set_rust_version.bash stable ${{ matrix.target }}
       - run: ci/build.bash /tmp/cross ${{ matrix.target }} RELEASE
-      - run: tar -czvf ${{ env.BIN }}.tar.gz --directory=target/${{ matrix.target }}/release ${{ env.BIN }}
+        #- run: tar -czvf ${{ env.BIN }}.tar.gz --directory=target/${{ matrix.target }}/release ${{ env.BIN }}
       - uses: XAMPPRocky/create-release@v1.0.2
         id: create_release
         env:
