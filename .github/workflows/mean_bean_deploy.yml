@@ -5,9 +5,9 @@ on:
       - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
 
 name: Mean Bean Deploy
-env:
+#env:
   # TODO: Rename to your binary
-  BIN: bamboo-rs 
+  #  BIN: bamboo-rs 
 
 jobs:
   # This job downloads and stores `cross` as an artifact, so that it can be
@@ -36,6 +36,10 @@ jobs:
         platform: [linux-musl, apple-darwin]
 
   windows:
+    env:
+      LIB_BAMBOO_SO: bamboo_core.dll 
+      LIB_BAMBOO_A: libbamboo_core.a 
+      BAMBOO_CLI: bamboo-cli.exe 
     runs-on: windows-latest
     needs: install-cross
     strategy:
@@ -75,11 +79,32 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.BIN }}.zip
-          asset_name: ${{ env.BIN }}-${{ matrix.target }}.zip
+          asset_path: ${{ env.LIB_BAMBOO_SO }}.zip
+          asset_name: ${{ env.LIB_BAMBOO_SO }}-${{ matrix.target }}.zip
           asset_content_type: application/zip
-
+      - uses: actions/upload-release-asset@v1
+        id: upload-release-asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.LIB_BAMBOO_A }}.zip
+          asset_name: ${{ env.LIB_BAMBOO_A }}-${{ matrix.target }}.zip
+          asset_content_type: application/zip
+      - uses: actions/upload-release-asset@v1
+        id: upload-release-asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.BAMBOO_CLI }}.zip
+          asset_name: ${{ env.BAMBOO_CLI }}-${{ matrix.target }}.zip
+          asset_content_type: application/zip
   macos:
+    env:
+      LIB_BAMBOO_SO: libbamboo_core.so 
+      LIB_BAMBOO_A: libbamboo_core.a 
+      BAMBOO_CLI: bamboo-cli 
     runs-on: macos-latest
     needs: install-cross
     strategy:
@@ -119,11 +144,33 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.BIN }}.tar.gz
-          asset_name: ${{ env.BIN }}-${{ matrix.target }}.tar.gz
-          asset_content_type: application/gzip
+          asset_path: ${{ env.LIB_BAMBOO_SO }}.zip
+          asset_name: ${{ env.LIB_BAMBOO_SO }}-${{ matrix.target }}.zip
+          asset_content_type: application/zip
+      - uses: actions/upload-release-asset@v1
+        id: upload-release-asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.LIB_BAMBOO_A }}.zip
+          asset_name: ${{ env.LIB_BAMBOO_A }}-${{ matrix.target }}.zip
+          asset_content_type: application/zip
+      - uses: actions/upload-release-asset@v1
+        id: upload-release-asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.BAMBOO_CLI }}.zip
+          asset_name: ${{ env.BAMBOO_CLI }}-${{ matrix.target }}.zip
+          asset_content_type: application/zip
 
   linux:
+    env:
+      LIB_BAMBOO_SO: libbamboo_core.so 
+      LIB_BAMBOO_A: libbamboo_core.a 
+      BAMBOO_CLI: bamboo-cli 
     runs-on: ubuntu-latest
     needs: install-cross
     strategy:
@@ -190,11 +237,30 @@ jobs:
           prerelease: false
       - name: Upload Release Asset
         id: upload-release-asset
-        uses: actions/upload-release-asset@v1
+      - uses: actions/upload-release-asset@v1
+        id: upload-release-asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.BIN }}.tar.gz
-          asset_name: ${{ env.BIN }}-${{ matrix.target }}.tar.gz
-          asset_content_type: application/gzip
+          asset_path: ${{ env.LIB_BAMBOO_SO }}.zip
+          asset_name: ${{ env.LIB_BAMBOO_SO }}-${{ matrix.target }}.zip
+          asset_content_type: application/zip
+      - uses: actions/upload-release-asset@v1
+        id: upload-release-asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.LIB_BAMBOO_A }}.zip
+          asset_name: ${{ env.LIB_BAMBOO_A }}-${{ matrix.target }}.zip
+          asset_content_type: application/zip
+      - uses: actions/upload-release-asset@v1
+        id: upload-release-asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.BAMBOO_CLI }}.zip
+          asset_name: ${{ env.BAMBOO_CLI }}-${{ matrix.target }}.zip
+          asset_content_type: application/zip
