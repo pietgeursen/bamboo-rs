@@ -195,9 +195,9 @@ jobs:
       - run: ci/build.bash /tmp/cross ${{ matrix.target }} RELEASE
       - run: |
         mkdir stage
-        (cp target/${{ matrix.target }}/release/bamboo-cli stage/ || true)
-        (cp target/${{ matrix.target }}/release/libbamboo_core.a stage/ || true)
-        (cp target/${{ matrix.target }}/release/libbamboo_core.so stage/ || true)
+        cp target/${{ matrix.target }}/release/bamboo-cli stage/ \|\| true
+        cp target/${{ matrix.target }}/release/libbamboo_core.a stage/ \|\| true
+        cp target/${{ matrix.target }}/release/libbamboo_core.so stage/ \|\| true
         cp src/bamboo-core/libbamboo.h stage
         cd stage
         tar czf ../${{ env.BIN }}.tar.gz *
