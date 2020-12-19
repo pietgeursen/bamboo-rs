@@ -195,7 +195,7 @@ jobs:
       - run: ci/set_rust_version.bash stable ${{ matrix.target }}
       - run: ci/build.bash /tmp/cross ${{ matrix.target }} RELEASE
         #- run: tar -czvf ${{ env.BIN }}.tar.gz --directory=target/${{ matrix.target }}/release ${{ env.LIB_BAMBOO_SO }} ${{ env.LIB_BAMBOO_A }} ${{ env.BAMBOO_CLI }}
-      - run: (cd target/${{ matrix.target }}/release && tar -cf - ${{ env.LIB_BAMBOO_SO }} ${{ env.LIB_BAMBOO_A }} ${{ env.BAMBOO_CLI }}) | gzip -9 >> ../../../${{ env.BIN }}.tar.gz
+      - run: (cd target/${{ matrix.target }}/release && tar -cf - ${{ env.LIB_BAMBOO_SO }} ${{ env.LIB_BAMBOO_A }} ${{ env.BAMBOO_CLI }}) | gzip -9 >> ../../../${{ env.BIN }}.tar.gz && cd -
       - uses: XAMPPRocky/create-release@v1.0.2
         id: create_release
         env:
