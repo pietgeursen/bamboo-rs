@@ -136,7 +136,7 @@ jobs:
   linux:
     env:
       # The * is because musl targets don't produce dynamic libs
-      LIB_BAMBOO_SO: libbamboo_core.so* 
+      LIB_BAMBOO_SO: libbamboo_core.s* 
       LIB_BAMBOO_A: libbamboo_core.a 
       BAMBOO_CLI: bamboo-cli 
     runs-on: ubuntu-latest
