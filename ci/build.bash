@@ -10,14 +10,30 @@ CROSS=$1
 TARGET_TRIPLE=$2
 # $3 {boolean} = Are we building for deployment? 
 RELEASE_BUILD=$3
+# $4 {boolean} = Are we building for no-std? 
+NO_STD=$4
 
 required_arg $CROSS 'CROSS'
 required_arg $TARGET_TRIPLE '<Target Triple>'
 
 if [ -z "$RELEASE_BUILD" ]; then
-    $CROSS build --target $TARGET_TRIPLE
-    $CROSS build --target $TARGET_TRIPLE --all-features
+    if [ -z $NO_STD ]
+    then
+      $CROSS build --target $TARGET_TRIPLE
+      $CROSS build --target $TARGET_TRIPLE --all-features
+    else
+      cd bamboo-core
+      $CROSS build -p bamboo-core --target $TARGET_TRIPLE --no-default-features
+      cd ..
+    fi
 else
-    $CROSS build --target $TARGET_TRIPLE --all-features --release
+    if [ -z $NO_STD ]
+    then
+      $CROSS build --target $TARGET_TRIPLE --all-features --release
+    else
+      cd bamboo-core
+      $CROSS build -p bamboo-core --target $TARGET_TRIPLE --release --no-default-features
+      cd ..
+    fi
 fi
 
