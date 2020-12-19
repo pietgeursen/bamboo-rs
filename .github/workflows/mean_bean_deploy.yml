@@ -6,8 +6,7 @@ on:
 
 name: Mean Bean Deploy
 env:
-  # TODO: Rename to your binary
-  BIN: bamboo_rs 
+  BIN: bamboo-rs 
 
 jobs:
   # This job downloads and stores `cross` as an artifact, so that it can be
@@ -153,7 +152,7 @@ jobs:
           - armv7-unknown-linux-gnueabihf
           - i686-unknown-linux-gnu
           - i686-unknown-linux-musl
-          - mips-unknown-linux-gnu
+            #- mips-unknown-linux-gnu
             #- mips64-unknown-linux-gnuabi64
             #- mips64el-unknown-linux-gnuabi64
             #- mipsel-unknown-linux-gnu
