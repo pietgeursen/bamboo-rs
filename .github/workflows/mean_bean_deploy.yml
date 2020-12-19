@@ -193,14 +193,13 @@ jobs:
       - run: chmod +x /tmp/cross
       - run: ci/set_rust_version.bash stable ${{ matrix.target }}
       - run: ci/build.bash /tmp/cross ${{ matrix.target }} RELEASE
-      - run: |
-        mkdir stage
-        cp target/${{ matrix.target }}/release/bamboo-cli stage/
-        cp target/${{ matrix.target }}/release/libbamboo_core.* stage/
-        cp src/bamboo-core/libbamboo.h stage
-        cd stage
-        tar czf ../${{ env.BIN }}.tar.gz *
-
+      - run:  |
+              mkdir stage
+              cp target/${{ matrix.target }}/release/bamboo-cli stage/
+              cp target/${{ matrix.target }}/release/libbamboo_core.* stage/
+              cp src/bamboo-core/libbamboo.h stage
+              cd stage
+              tar czf ../${{ env.BIN }}.tar.gz *
       - uses: XAMPPRocky/create-release@v1.0.2
         id: create_release
         env:
