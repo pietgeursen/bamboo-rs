@@ -197,7 +197,7 @@ jobs:
               mkdir stage
               cp target/${{ matrix.target }}/release/bamboo-cli stage/
               cp target/${{ matrix.target }}/release/libbamboo_core.* stage/
-              cp src/bamboo-core/libbamboo.h stage
+              cp bamboo-core/libbamboo.h stage
               cd stage
               tar czf ../${{ env.BIN }}.tar.gz *
       - uses: XAMPPRocky/create-release@v1.0.2
