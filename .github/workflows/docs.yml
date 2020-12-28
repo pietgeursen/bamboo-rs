@@ -15,9 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build docs
-      run:  |
-            cd bamboo-core
-            cargo doc
+      run:  cd bamboo-core && cargo doc
 
     - name: Deploy docs to gh pages
       uses: peaceiris/actions-gh-pages@v3
