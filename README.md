@@ -2,6 +2,8 @@
 
 > Rust implementation of [bamboo](https://github.com/AljoschaMeyer/bamboo).
 
+## [Docs](https://pietgeursen.github.io/bamboo-rs/bamboo_core/)
+
 ## About
 
 `bamboo-rs` aspires to be portable, fast and correct.
