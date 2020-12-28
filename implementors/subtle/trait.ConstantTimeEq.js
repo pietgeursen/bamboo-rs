@@ -1,0 +1,4 @@
+(function() {var implementors = {};
+implementors["curve25519_dalek"] = [{"text":"impl ConstantTimeEq for Scalar","synthetic":false,"types":[]},{"text":"impl ConstantTimeEq for MontgomeryPoint","synthetic":false,"types":[]},{"text":"impl ConstantTimeEq for CompressedEdwardsY","synthetic":false,"types":[]},{"text":"impl ConstantTimeEq for EdwardsPoint","synthetic":false,"types":[]},{"text":"impl ConstantTimeEq for CompressedRistretto","synthetic":false,"types":[]},{"text":"impl ConstantTimeEq for RistrettoPoint","synthetic":false,"types":[]}];
+implementors["subtle"] = [];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["MAX_ENTRY_SIZE","This is useful if you need to know at compile time how big an entry can get."],["MAX_ENTRY_SIZE_",""]],"fn":[["into_owned",""],["is_lipmaa_required",""]],"mod":[["decode",""],["encode",""],["publish",""],["verify",""],["verify_batch",""]],"struct":[["Entry",""]]});

@@ -1,0 +1,5 @@
+(function() {var implementors = {};
+implementors["arrayvec"] = [{"text":"impl&lt;A:&nbsp;Array, '_&gt; TryFrom&lt;&amp;'_ [&lt;A as Array&gt;::Item]&gt; for ArrayVec&lt;A&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;A::Item: Clone,&nbsp;</span>","synthetic":false,"types":[]}];
+implementors["bamboo_core"] = [{"text":"impl&lt;'a&gt; TryFrom&lt;&amp;'a [u8]&gt; for Entry&lt;&amp;'a [u8], &amp;'a [u8]&gt;","synthetic":false,"types":[]},{"text":"impl&lt;'a, H, S&gt; TryFrom&lt;Entry&lt;H, S&gt;&gt; for ArrayVec&lt;[u8; 512]&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;H: Borrow&lt;[u8]&gt;,<br>&nbsp;&nbsp;&nbsp;&nbsp;S: Borrow&lt;[u8]&gt;,&nbsp;</span>","synthetic":false,"types":[]}];
+implementors["ed25519"] = [{"text":"impl&lt;'a&gt; TryFrom&lt;&amp;'a [u8]&gt; for Signature","synthetic":false,"types":[]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

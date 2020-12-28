@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["lipmaa","Calculates the lipmaa link number given the current sequence number."]]});
