@@ -27,16 +27,15 @@ impl MemoryEntryStore {
     }
 }
 
-#[async_trait]
 impl EntryStorer for MemoryEntryStore {
-    async fn get_last_seq(&self, public_key: PublicKey, log_id: u64) -> Option<u64> {
+    fn get_last_seq(&self, public_key: PublicKey, log_id: u64) -> Option<u64> {
         self.store
             .get(&public_key.as_bytes().to_vec())
             .and_then(|logs| logs.get(&log_id))
             .and_then(|entries| entries.keys().max().map(|max| *max))
     }
 
-    async fn get_entries(
+    fn get_entries(
         &self,
         public_key: PublicKey,
         log_id: u64,
@@ -55,7 +54,7 @@ impl EntryStorer for MemoryEntryStore {
         Ok(result)
     }
 
-    async fn get_entries_ref<'a>(
+    fn get_entries_ref<'a>(
         &'a self,
         public_key: PublicKey,
         log_id: u64,
@@ -78,7 +77,7 @@ impl EntryStorer for MemoryEntryStore {
     // Also this is just a memory thing so perfomance is not critical
     // But the api is important for actuall callers.. But then nothing will be slower than fileio
     // soooo?
-    async fn add_entries(
+    fn add_entries(
         &mut self,
         public_key: PublicKey,
         log_id: u64,

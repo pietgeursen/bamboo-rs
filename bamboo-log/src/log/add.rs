@@ -27,7 +27,7 @@ impl<Store: EntryStorer> Log<Store> {
     // Need to decide how to handle broken feeds.
     // - Should entry store expose methods to record broken feeds?
     // - Should entry store expose stuff to handle storing payloads too which can be overridden?
-    pub async fn add_batch(&mut self, entry_bytes: &[u8], payload: Option<&[u8]>) -> Result<()> {
+    pub fn add_batch(&mut self, entry_bytes: &[u8], payload: Option<&[u8]>) -> Result<()> {
         // Decode the entry that we want to add.
         let entry = decode(entry_bytes).map_err(|_| Error::AddEntryDecodeFailed)?;
 
@@ -39,8 +39,7 @@ impl<Store: EntryStorer> Log<Store> {
         // Get the lipmaa entry and the backlink entry
         let links = self
             .store
-            .get_entries_ref(entry.author, entry.log_id, &[lipmaa_seq, entry.seq_num - 1])
-            .await?;
+            .get_entries_ref(entry.author, entry.log_id, &[lipmaa_seq, entry.seq_num - 1])?;
 
         // TODO how do we detect a fork?
         let is_valid = verify(entry_bytes, payload, links[0], links[1])?;
@@ -52,7 +51,6 @@ impl<Store: EntryStorer> Log<Store> {
         //Ok, store it!
         self.store
             .add_entries(entry.author, entry.log_id, &[entry_bytes])
-            .await
             .map_err(|_| Error::AppendFailed)
     }
 }

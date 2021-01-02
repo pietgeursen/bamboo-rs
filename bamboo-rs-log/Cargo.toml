@@ -13,4 +13,3 @@ async-trait = "0.1.41"
 [dev-dependencies]
 ed25519-dalek = { version = "1.0.1", features = ["u64_backend"] }
 rand = "0.7"
-smol = "1.2.4"

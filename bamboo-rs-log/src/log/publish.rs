@@ -30,7 +30,7 @@ impl<Store: EntryStore + Debug> Log<Store> {
             .context(PublishEntryGetBacklinkEntry)?;
 =======
 impl<Store: EntryStorer> Log<Store> {
-    pub async fn publish(
+    pub fn publish(
         &mut self,
         payload: &[u8],
         log_id: u64,
@@ -42,7 +42,7 @@ impl<Store: EntryStorer> Log<Store> {
             .as_ref()
             .ok_or_else(|| Error::PublishWithoutKeypair)?;
 
-        let last_seq_num = self.store.get_last_seq(key_pair.public, log_id).await;
+        let last_seq_num = self.store.get_last_seq(key_pair.public, log_id);
         let seq_num = last_seq_num.unwrap_or(0) + 1;
         let lipmaa_link_seq = lipmaa(seq_num);
 
@@ -53,7 +53,6 @@ impl<Store: EntryStorer> Log<Store> {
                 log_id,
                 &[lipmaa_link_seq, last_seq_num.unwrap_or(0)],
             )
-            .await
             .map_err(|_| Error::GetEntryFailed)?;
 >>>>>>> 38bf8e64 (Re-write the bamboo store):bamboo-log/src/log/publish.rs
 
@@ -75,7 +74,6 @@ impl<Store: EntryStorer> Log<Store> {
             .context(PublishEntryAppendFailed)
 =======
             .add_entries(key_pair.public, log_id, &[&buff[..length]])
-            .await
             .map_err(|_| Error::AppendFailed)
 >>>>>>> 38bf8e64 (Re-write the bamboo store):bamboo-log/src/log/publish.rs
     }
@@ -107,18 +105,15 @@ mod tests {
 
         let mut log = Log::new(MemoryEntryStore::new(), Some(keypair));
         let payload = [1, 2, 3];
-        smol::block_on(async move {
-            log.publish(&payload, log_id, false).await.unwrap();
-            let entry = log
-                .store
-                .get_entry_ref(public_key, log_id, 1)
-                .await
-                .unwrap()
-                .unwrap();
+        log.publish(&payload, log_id, false).unwrap();
+        let entry = log
+            .store
+            .get_entry_ref(public_key, log_id, 1)
+            .unwrap()
+            .unwrap();
 
-            let mut entry = decode(entry).unwrap();
-            assert!(entry.verify_signature().unwrap());
-        });
+        let entry = decode(entry).unwrap();
+        assert!(entry.verify_signature().unwrap());
     }
 
     #[test]
@@ -131,13 +126,11 @@ mod tests {
         let payload = [1, 2, 3];
 
         //publish an end of feed message.
-        smol::block_on(async move {
-            log.publish(&payload, log_id, true).await.unwrap();
-            match log.publish(&payload, log_id, false).await {
-                Err(Error::PublishNewEntryFailed) => {}
-                e => panic!("expected publish to fail with an error, got: {:?}", e),
-            }
-        });
+        log.publish(&payload, log_id, true).unwrap();
+        match log.publish(&payload, log_id, false) {
+            Err(Error::PublishNewEntryFailed) => {}
+            e => panic!("expected publish to fail with an error, got: {:?}", e),
+        }
     }
 
     #[test]
@@ -147,11 +140,9 @@ mod tests {
         let mut log = Log::new(MemoryEntryStore::new(), None);
         let payload = [1, 2, 3];
 
-        smol::block_on(async move {
-            match log.publish(&payload, log_id, false).await {
-                Err(Error::PublishWithoutKeypair) => {}
-                e => panic!("expected publish to fail with an error, got: {:?}", e),
-            }
-        });
+        match log.publish(&payload, log_id, false) {
+            Err(Error::PublishWithoutKeypair) => {}
+            e => panic!("expected publish to fail with an error, got: {:?}", e),
+        }
     }
 }

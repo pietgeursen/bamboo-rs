@@ -72,34 +72,29 @@ fn valid_first_entry() -> Value {
     let mut buffer = [0u8; 512];
     let buff_size = entry.encode(&mut buffer).unwrap();
 
-    smol::block_on(async move {
-        log.publish(payload.as_bytes(), log_id, false)
-            .await
-            .unwrap();
+    log.publish(payload.as_bytes(), log_id, false).unwrap();
 
-        let entry = log
-            .store
-            .get_entry_ref(public_key, log_id, 1)
-            .await
-            .unwrap()
-            .unwrap();
+    let entry = log
+        .store
+        .get_entry_ref(public_key, log_id, 1)
+        .unwrap()
+        .unwrap();
 
-        let entry = decode(entry).unwrap();
-        assert!(entry.verify_signature().unwrap());
+    let entry = decode(entry).unwrap();
+    assert!(entry.verify_signature().unwrap());
 
-        let mut buffer = [0u8; 512];
-        let buff_size = entry.encode(&mut buffer).unwrap();
+    let mut buffer = [0u8; 512];
+    let buff_size = entry.encode(&mut buffer).unwrap();
 
-        json!({
-            "description": "A valid first entry. Note that the previous and limpaa links are None / null. And that the seq_num starts at 1.",
-            "payload": hex::encode(payload),
-            "author": {
-                "public": public_byte_string,
-                "secret": secret_byte_string,
-            },
-            "decoded": entry,
-            "encoded": Bytes(&buffer[..buff_size])
-        })
+    json!({
+        "description": "A valid first entry. Note that the previous and limpaa links are None / null. And that the seq_num starts at 1.",
+        "payload": hex::encode(payload),
+        "author": {
+            "public": public_byte_string,
+            "secret": secret_byte_string,
+        },
+        "decoded": entry,
+        "encoded": Bytes(&buffer[..buff_size])
     })
 }
 
@@ -121,25 +116,20 @@ fn n_valid_entries(n: u64) -> Value {
         .map(|i| {
             let payload = format!("message number {}", i);
 
-            smol::block_on(async {
-                log.publish(&payload.as_bytes(), log_id, false)
-                    .await
-                    .unwrap();
-                let entry_bytes = log
-                    .store
-                    .get_entry_ref(public_key, log_id, i)
-                    .await
-                    .unwrap()
-                    .unwrap();
-                let entry = decode(entry_bytes).unwrap();
-                let mut buffer = [0u8; 512];
-                let buff_size = entry.encode(&mut buffer).unwrap();
+            log.publish(&payload.as_bytes(), log_id, false).unwrap();
+            let entry_bytes = log
+                .store
+                .get_entry_ref(public_key, log_id, i)
+                .unwrap()
+                .unwrap();
+            let entry = decode(entry_bytes).unwrap();
+            let mut buffer = [0u8; 512];
+            let buff_size = entry.encode(&mut buffer).unwrap();
 
-                json!({
-                    "payload": hex::encode(payload),
-                    "decoded": entry,
-                    "encoded": Bytes(&buffer[..buff_size])
-                })
+            json!({
+                "payload": hex::encode(payload),
+                "decoded": entry,
+                "encoded": Bytes(&buffer[..buff_size])
             })
         })
         .collect();
@@ -169,11 +159,7 @@ fn valid_partially_replicated_feed(n: u64) -> Value {
 
     (1..n).into_iter().for_each(|i| {
         let payload = format!("message number {}", i);
-        smol::block_on(async {
-            log.publish(&payload.as_bytes(), log_id, false)
-                .await
-                .unwrap();
-        });
+        log.publish(&payload.as_bytes(), log_id, false).unwrap();
     });
 
     let lipmaa_seqs = build_lipmaa_set(n - 1, None);
@@ -184,23 +170,20 @@ fn valid_partially_replicated_feed(n: u64) -> Value {
         .iter()
         .rev()
         .map(|lipmaa_seq| {
-            smol::block_on(async {
-                let entry_bytes = log
-                    .store
-                    .get_entry_ref(public_key, log_id, *lipmaa_seq)
-                    .await
-                    .unwrap()
-                    .unwrap();
-                let entry = decode(entry_bytes).unwrap();
-                partial_log.add(entry_bytes, None).await.unwrap();
+            let entry_bytes = log
+                .store
+                .get_entry_ref(public_key, log_id, *lipmaa_seq)
+                .unwrap()
+                .unwrap();
+            let entry = decode(entry_bytes).unwrap();
+            partial_log.add_batch(entry_bytes, None).unwrap();
 
-                let mut buffer = [0u8; 512];
-                let buff_size = entry.encode(&mut buffer).unwrap();
+            let mut buffer = [0u8; 512];
+            let buff_size = entry.encode(&mut buffer).unwrap();
 
-                json!({
-                    "decoded": entry,
-                    "encoded": Bytes(&buffer[..buff_size])
-                })
+            json!({
+                "decoded": entry,
+                "encoded": Bytes(&buffer[..buff_size])
             })
         })
         .collect::<Value>();
