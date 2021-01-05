@@ -38,7 +38,7 @@ pub use entry::verify_batch;
 pub use error::Error;
 pub use lipmaa_link::lipmaa;
 pub use signature::{Signature, ED25519_SIGNATURE_SIZE};
-pub use yamf_hash::{YamfHash, BLAKE2B_HASH_SIZE, OUTBYTES};
+pub use crate::yamf_hash::{YamfHash, BLAKE2B_HASH_SIZE, OUTBYTES};
 
 use core::slice;
 use ed25519_dalek::{KEYPAIR_LENGTH, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH};
