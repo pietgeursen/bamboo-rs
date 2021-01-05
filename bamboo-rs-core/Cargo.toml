@@ -1,5 +1,5 @@
 [package]
-name = "bamboo-core"
+name = "bamboo-rs-core"
 version = "0.1.0-pre-27"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
@@ -7,7 +7,7 @@ license = "AGPL-3.0"
 repository = "https://github.com/pietgeursen/bamboo-rs"
 
 [lib]
-name = "bamboo_core"
+name = "bamboo_rs_core"
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [features]

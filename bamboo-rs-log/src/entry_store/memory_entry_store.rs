@@ -1,5 +1,5 @@
 use super::*;
-pub use bamboo_core::error::*;
+pub use bamboo_rs_core::error::*;
 use std::collections::HashMap;
 
 pub struct MemoryEntryStore {

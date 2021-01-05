@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use bamboo_core::{Error, Signature};
-    use bamboo_core::signature::ED25519_SIGNATURE_SIZE;
+    use bamboo_rs_core::{Error, Signature};
+    use bamboo_rs_core::signature::ED25519_SIGNATURE_SIZE;
 
     #[test]
     fn decode_signature() {

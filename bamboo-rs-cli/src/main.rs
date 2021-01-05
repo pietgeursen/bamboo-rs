@@ -1,5 +1,5 @@
-use bamboo_core::entry::MAX_ENTRY_SIZE;
-use bamboo_core::{decode, lipmaa, publish, verify, YamfHash, Keypair};
+use bamboo_rs_core::entry::MAX_ENTRY_SIZE;
+use bamboo_rs_core::{decode, lipmaa, publish, verify, YamfHash, Keypair};
 use blake2b_simd::blake2b;
 use rand::rngs::OsRng;
 use snafu::ResultExt;

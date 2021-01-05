@@ -23,9 +23,9 @@ if [ -z "$RELEASE_BUILD" ]; then
       $CROSS build --target $TARGET_TRIPLE --all-features
     else
       mkdir -p target/$TARGET_TRIPLE/debug 
-      cd bamboo-core
-      $CROSS build -p bamboo-core --target $TARGET_TRIPLE --no-default-features
-      cp target/$TARGET_TRIPLE/debug/libbamboo_core.a ../target/$TARGET_TRIPLE/debug
+      cd bamboo-rs-core
+      $CROSS build -p bamboo-rs-core --target $TARGET_TRIPLE --no-default-features
+      cp target/$TARGET_TRIPLE/debug/libbamboo_rs_core.a ../target/$TARGET_TRIPLE/debug
       cd ..
     fi
 else
@@ -34,9 +34,9 @@ else
       $CROSS build --target $TARGET_TRIPLE --all-features --release
     else
       mkdir -p target/$TARGET_TRIPLE/release 
-      cd bamboo-core
-      $CROSS build -p bamboo-core --target $TARGET_TRIPLE --release --no-default-features
-      cp target/$TARGET_TRIPLE/release/libbamboo_core.a ../target/$TARGET_TRIPLE/release
+      cd bamboo-rs-core
+      $CROSS build -p bamboo-rs-core --target $TARGET_TRIPLE --release --no-default-features
+      cp target/$TARGET_TRIPLE/release/libbamboo_rs_core.a ../target/$TARGET_TRIPLE/release
       cd ..
     fi
 fi

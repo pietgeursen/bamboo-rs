@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use bamboo_core::entry::verify_batch;
-    use bamboo_core::entry::decode;
-    use bamboo_core::entry::verify_batch::verify_batch_signatures;
-    use bamboo_core::signature::ED25519_SIGNATURE_SIZE;
-    use bamboo_core::yamf_hash::BLAKE2B_HASH_SIZE;
-    use bamboo_core::Error;
-    use bamboo_core::{publish, verify, Entry, Signature, YamfHash};
+    use bamboo_rs_core::entry::verify_batch;
+    use bamboo_rs_core::entry::decode;
+    use bamboo_rs_core::entry::verify_batch::verify_batch_signatures;
+    use bamboo_rs_core::signature::ED25519_SIGNATURE_SIZE;
+    use bamboo_rs_core::yamf_hash::BLAKE2B_HASH_SIZE;
+    use bamboo_rs_core::Error;
+    use bamboo_rs_core::{publish, verify, Entry, Signature, YamfHash};
     use ed25519_dalek::{Keypair, PublicKey};
     use rand::rngs::OsRng;
     use std::io::Write;

@@ -1,4 +1,4 @@
-use bamboo_core::error::Result;
+use bamboo_rs_core::error::Result;
 
 pub mod memory_entry_store;
 pub use memory_entry_store::*;
