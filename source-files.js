@@ -1,7 +1,7 @@
 var N = null;var sourcesIndex = {};
 sourcesIndex["arrayref"] = {"name":"","files":["lib.rs"]};
 sourcesIndex["arrayvec"] = {"name":"","files":["array.rs","array_string.rs","char.rs","errors.rs","lib.rs","maybe_uninit.rs"]};
-sourcesIndex["bamboo_core"] = {"name":"","dirs":[{"name":"entry","files":["decode.rs","encode.rs","mod.rs","publish.rs","verify.rs","verify_batch.rs"]},{"name":"error","files":["mod.rs"]},{"name":"signature","files":["mod.rs"]},{"name":"util","files":["hex_serde.rs","mod.rs"]},{"name":"yamf_hash","files":["mod.rs"]}],"files":["lib.rs"]};
+sourcesIndex["bamboo_core"] = {"name":"","dirs":[{"name":"entry","files":["decode.rs","encode.rs","mod.rs","publish.rs","verify.rs","verify_batch.rs"]},{"name":"error","files":["mod.rs"]},{"name":"signature","files":["mod.rs"]},{"name":"util","files":["hex_serde.rs","mod.rs"]}],"files":["lib.rs","yamf_hash.rs"]};
 sourcesIndex["blake2b_simd"] = {"name":"","files":["avx2.rs","blake2bp.rs","guts.rs","lib.rs","many.rs","portable.rs","sse41.rs"]};
 sourcesIndex["block_buffer"] = {"name":"","files":["lib.rs"]};
 sourcesIndex["byteorder"] = {"name":"","files":["lib.rs"]};
@@ -50,6 +50,7 @@ sourcesIndex["synstructure"] = {"name":"","files":["lib.rs","macros.rs"]};
 sourcesIndex["typenum"] = {"name":"","files":["array.rs","bit.rs","int.rs","lib.rs","marker_traits.rs","operator_aliases.rs","private.rs","type_operators.rs","uint.rs"]};
 sourcesIndex["unicode_xid"] = {"name":"","files":["lib.rs","tables.rs"]};
 sourcesIndex["varu64"] = {"name":"","files":["lib.rs","nb.rs"]};
+sourcesIndex["yamf_hash"] = {"name":"","dirs":[{"name":"util","files":["hex_serde.rs","mod.rs"]}],"files":["error.rs","lib.rs"]};
 sourcesIndex["zeroize"] = {"name":"","files":["lib.rs","x86.rs"]};
 sourcesIndex["zeroize_derive"] = {"name":"","files":["lib.rs"]};
 createSourceSidebar();
