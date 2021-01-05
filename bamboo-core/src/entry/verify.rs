@@ -8,9 +8,9 @@ use ed25519_dalek::{
 };
 
 use crate::yamf_hash::new_blake2b;
+use crate::yamf_hash::YamfHash;
 use super::{Entry, is_lipmaa_required, decode::decode};
 use crate::error::*;
-use crate::yamf_hash::YamfHash;
 
 
 impl<'a, H, S> Entry<H, S>
