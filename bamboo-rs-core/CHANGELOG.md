@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-pre-28] - 2021-1-6
+### Rename
+- Renames everything from bamboo-\*  to bamboo-rs-\*. 
+
+## [0.1.0-pre-27] - 2021-1-5
+### Refactor
+- Refactor out yamf-hash into seperate crate. No change to functionality. 
+
 ## [0.1.0-pre-26] - 2020-12-12
 ### Added
 - Batch verify using rayon and simd now in bamboo-core when using std
