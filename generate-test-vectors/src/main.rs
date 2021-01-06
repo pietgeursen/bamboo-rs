@@ -37,7 +37,6 @@ struct KeyPairJson {
 #[derive(Serialize)]
 struct Bytes<'a>(#[serde(serialize_with = "hex_from_bytes")] &'a [u8]);
 
-#[cfg_attr(tarpaulin, skip)]
 pub fn main() {
 
     let jsn = json!({
@@ -50,7 +49,6 @@ pub fn main() {
     println!("{}", json_string);
 }
 
-#[cfg_attr(tarpaulin, skip)]
 fn valid_first_entry() -> Value {
 
     let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
@@ -89,7 +87,6 @@ fn valid_first_entry() -> Value {
     })
 }
 
-#[cfg_attr(tarpaulin, skip)]
 fn n_valid_entries(n: u64) -> Value {
 
     let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
@@ -132,7 +129,6 @@ fn n_valid_entries(n: u64) -> Value {
     })
 }
 
-#[cfg_attr(tarpaulin, skip)]
 fn valid_partially_replicated_feed(n: u64) -> Value {
 
     let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
