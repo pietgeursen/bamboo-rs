@@ -1,8 +1,8 @@
 use lipmaa_link::lipmaa;
 
 use crate::entry_store::EntryStore;
-use bamboo_core::entry::publish;
-use bamboo_core::error::*;
+use bamboo_rs_core::entry::publish;
+use bamboo_rs_core::error::*;
 
 use super::Log;
 
@@ -46,8 +46,8 @@ mod tests {
     use crate::entry_store::MemoryEntryStore;
     use crate::log::Log;
     use crate::EntryStore;
-    use bamboo_core::entry::decode;
-    use bamboo_core::{Error, Keypair};
+    use bamboo_rs_core::entry::decode;
+    use bamboo_rs_core::{Error, Keypair};
 
     use rand::rngs::OsRng;
 

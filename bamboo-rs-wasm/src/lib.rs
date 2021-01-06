@@ -3,13 +3,13 @@ pub mod utils;
 pub use utils::set_panic_hook;
 
 use arrayvec::*;
-use bamboo_core::entry::{
+use bamboo_rs_core::entry::{
     decode as decode_entry, into_owned, publish as publish_entry, verify as verify_entry,
     MAX_ENTRY_SIZE,
 };
-use bamboo_core::yamf_hash::new_blake2b;
-use bamboo_core::{lipmaa, Entry, YamfHash};
-use bamboo_core::{Keypair, PublicKey, SecretKey, Signature};
+use bamboo_rs_core::yamf_hash::new_blake2b;
+use bamboo_rs_core::{lipmaa, Entry, YamfHash};
+use bamboo_rs_core::{Keypair, PublicKey, SecretKey, Signature};
 use rand::rngs::OsRng;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;

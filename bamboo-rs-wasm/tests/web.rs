@@ -4,7 +4,7 @@
 
 extern crate wasm_bindgen_test;
 use wasm_bindgen_test::*;
-use bamboo_wasm::*;
+use bamboo_rs_wasm::*;
 
 #[wasm_bindgen_test]
 fn pass() {

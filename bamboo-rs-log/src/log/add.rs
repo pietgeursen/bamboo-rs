@@ -1,10 +1,10 @@
 use super::Log;
 use crate::entry_store::EntryStore;
-use bamboo_core::entry::decode;
-use bamboo_core::entry::verify;
+use bamboo_rs_core::entry::decode;
+use bamboo_rs_core::entry::verify;
 use lipmaa_link::lipmaa;
 
-use bamboo_core::error::*;
+use bamboo_rs_core::error::*;
 
 impl<Store: EntryStore> Log<Store> {
     /// Add a valid message to the Log.

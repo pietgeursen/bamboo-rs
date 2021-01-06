@@ -1,17 +1,16 @@
 [workspace]
 
 members = [
-    "bamboo-core",
-    "bamboo-core-test",
-    "bamboo-cli",
-    #"bamboo-log",
+    "bamboo-rs-core",
+    "bamboo-rs-core-test",
+    "bamboo-rs-cli",
+    #"bamboo-rs-log",
     "generate-test-vectors",
-    "bamboo-wasm"
+    "bamboo-rs-wasm"
 ]
 
 exclude = [
-    "bamboo-log"
-
+    "bamboo-rs-log"
 ]
 
 [profile.release]

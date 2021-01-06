@@ -1,11 +1,11 @@
 [package]
-name = "bamboo-cli"
+name = "bamboo-rs-cli"
 version = "0.1.0-pre-25"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-bamboo-core = {path = "../bamboo-core"}
+bamboo-rs-core = {path = "../bamboo-rs-core"}
 blake2b_simd = { version = "0.5"}
 rand = "0.7.0"
 serde_json = "1.0.40" 

@@ -4,15 +4,13 @@ version = "0.1.0"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [[bin]]
 name = "generate"
 path = "src/main.rs"
 
 [dependencies]
-bamboo-core = {path = "../bamboo-core"}
-bamboo-log = {path = "../bamboo-log"}
+bamboo-rs-core = {path = "../bamboo-rs-core"}
+bamboo-rs-log = {path = "../bamboo-rs-log"}
 hex = "0.3.2"
 serde = { version = "1.0.90", features = ["derive"] }
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend", "serde"] }
