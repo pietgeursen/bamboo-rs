@@ -3,7 +3,7 @@
 > Rust implementation of [bamboo](https://github.com/AljoschaMeyer/bamboo).
 
 ## Docs
-[Rust docs](https://pietgeursen.github.io/bamboo-rs/bamboo_rs_core/)
+[Rust docs](https://pietgeursen.github.io/bamboo-rs/bamboo_rs_core/index.html)
 
 ## About
 
