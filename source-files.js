@@ -1,7 +1,7 @@
 var N = null;var sourcesIndex = {};
 sourcesIndex["arrayref"] = {"name":"","files":["lib.rs"]};
 sourcesIndex["arrayvec"] = {"name":"","files":["array.rs","array_string.rs","char.rs","errors.rs","lib.rs","maybe_uninit.rs"]};
-sourcesIndex["bamboo_core"] = {"name":"","dirs":[{"name":"entry","files":["decode.rs","encode.rs","mod.rs","publish.rs","verify.rs","verify_batch.rs"]},{"name":"error","files":["mod.rs"]},{"name":"signature","files":["mod.rs"]},{"name":"util","files":["hex_serde.rs","mod.rs"]}],"files":["lib.rs","yamf_hash.rs"]};
+sourcesIndex["bamboo_rs_core"] = {"name":"","dirs":[{"name":"entry","files":["decode.rs","encode.rs","mod.rs","publish.rs","verify.rs","verify_batch.rs"]},{"name":"error","files":["mod.rs"]},{"name":"signature","files":["mod.rs"]},{"name":"util","files":["hex_serde.rs","mod.rs"]}],"files":["lib.rs","yamf_hash.rs"]};
 sourcesIndex["blake2b_simd"] = {"name":"","files":["avx2.rs","blake2bp.rs","guts.rs","lib.rs","many.rs","portable.rs","sse41.rs"]};
 sourcesIndex["block_buffer"] = {"name":"","files":["lib.rs"]};
 sourcesIndex["byteorder"] = {"name":"","files":["lib.rs"]};
