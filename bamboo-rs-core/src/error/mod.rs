@@ -1,8 +1,12 @@
-#[derive(Debug, Clone, Serialize)]
+use snafu::Snafu;
+use yamf_hash::error::Error as YamfHashError;
+
+#[derive(Debug, Serialize, Snafu)]
+#[snafu(visibility = "pub(crate)")]
 #[repr(C)]
 pub enum Error {
-    NoError = 0isize,
-    EncodeIsEndOfFeedError = 1isize,
+    NoError,
+    EncodeIsEndOfFeedError,
     EncodePayloadHashError,
     EncodePayloadSizeError,
     EncodeAuthorError,
@@ -20,57 +24,49 @@ pub enum Error {
     PublishWithoutLipmaaEntry,
     PublishWithoutBacklinkEntry,
 
-    DecodeIsEndOfFeedError,
-    DecodePayloadHashError,
+    DecodePayloadHashError {
+        source: YamfHashError,
+    },
     DecodePayloadSizeError,
     DecodeLogIdError,
     DecodeAuthorError,
     DecodeSeqError,
     DecodeSeqIsZero,
-    DecodeBacklinkError,
-    DecodeLipmaaError,
-    DecodeSigError,
+    DecodeBacklinkError {
+        source: YamfHashError,
+    },
+    #[snafu(display("Could not decode lipmaa link yamf hash {:?}", source))]
+    DecodeLipmaaError {
+        source: YamfHashError,
+    },
     DecodeSsbSigError,
-    DecodeSsbPubKeyError,
-    VerifySsbSigError,
 
     DecodeInputIsLengthZero,
 
-    GetEntrySequenceInvalid,
-
     GetEntryFailed,
     EntryNotFound,
-    EncodingForSigningFailed,
-    EncodingForStoringFailed,
     AppendFailed,
-    PreviousDecodeFailed,
     PublishNewEntryFailed,
     AddEntryDecodeFailed,
     AddEntryPayloadLengthDidNotMatch,
     AddEntryLipmaaHashDidNotMatch,
     AddEntryPayloadHashDidNotMatch,
     AddEntryBacklinkHashDidNotMatch,
-    AddEntryGetBacklinkError,
-    AddEntryGetLipmaalinkError,
     AddEntryNoLipmaalinkInStore,
     AddEntryDecodeLipmaalinkFromStore,
     AddEntryAuthorDidNotMatchLipmaaEntry,
     AddEntryLogIdDidNotMatchLipmaaEntry,
     AddEntryAuthorDidNotMatchPreviousEntry,
     AddEntryLogIdDidNotMatchPreviousEntry,
-    AddEntryGetLastEntryError,
-    AddEntryGetLastEntryNotFound,
     AddEntryDecodeLastEntry,
     AddEntryToFeedThatHasEnded,
     AddEntryWithInvalidSignature,
-    AddEntryDecodeEntryBytesForSigning,
     AddEntrySigNotValidError,
 
-    DecodeVaru64Error,
     DecodeError,
     EncodeWriteError,
     EncodeError,
-    SignatureInvalid
+    SignatureInvalid,
 }
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
