@@ -5,6 +5,7 @@ authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 license = "AGPL-3.0"
 repository = "https://github.com/pietgeursen/bamboo-rs"
+description = "Publish and verify signed hash chains of bamboo messages."
 
 [lib]
 name = "bamboo_rs_core"
