@@ -169,15 +169,10 @@ pub extern "C" fn verify_ed25519_blake2b_entry(args: &mut VerifyEd25519Blake2bEn
 
     let entry: &[u8] = unsafe { slice::from_raw_parts(args.entry_bytes, args.entry_length) };
 
-    verify(entry, payload, lipmaalink, backlink)
-        .map(|is_valid| {
-            if is_valid{
-                Error::NoError
-            }else{
-                Error::SignatureInvalid
-            }
-        })
-        .unwrap()
+    match verify(entry, payload, lipmaalink, backlink){
+        Ok(_) => Error::NoError,
+        Err(err) => err
+    }
 }
 
 #[no_mangle]

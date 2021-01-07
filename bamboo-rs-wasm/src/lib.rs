@@ -11,7 +11,6 @@ use bamboo_rs_core::yamf_hash::new_blake2b;
 use bamboo_rs_core::{lipmaa, Entry, YamfHash};
 use bamboo_rs_core::{Keypair, PublicKey, SecretKey, Signature};
 use rand::rngs::OsRng;
-use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -110,7 +109,7 @@ impl BambooEntry {
 #[wasm_bindgen]
 pub fn decode(buffer: &[u8]) -> Result<BambooEntry, JsValue> {
     let hash = new_blake2b(buffer);
-    let entry = decode_entry(buffer).map_err(|err| JsValue::from_serde(&err).unwrap())?;
+    let entry = decode_entry(buffer).map_err(|err| JsValue::from_str(&err.to_string()))?;
 
     let entry = into_owned(&entry);
     let bamboo_entry = BambooEntry {
@@ -119,7 +118,6 @@ pub fn decode(buffer: &[u8]) -> Result<BambooEntry, JsValue> {
     };
 
     Ok(bamboo_entry)
-    //Ok(JsValue::from_serde(&kv).unwrap())
 }
 
 #[wasm_bindgen]
@@ -128,20 +126,14 @@ pub fn verify(
     payload: Option<Vec<u8>>,
     lipmaa_link: Option<Vec<u8>>,
     backlink: Option<Vec<u8>>,
-) -> Result<bool, JsValue> {
+) -> Result<(), JsValue> {
     verify_entry(
         entry_bytes,
         payload.as_deref(),
         lipmaa_link.as_deref(),
         backlink.as_deref(),
     )
-    .map_err(|err| JsValue::from_serde(&err).unwrap())
-}
-
-#[derive(Serialize)]
-enum Error {
-    PublicKeyFromBytesError,
-    SecretKeyFromBytesError,
+    .map_err(|err| JsValue::from_str(&err.to_string()))
 }
 
 #[wasm_bindgen]
@@ -157,10 +149,10 @@ pub fn publish(
     backlink_vec: Option<Vec<u8>>,
 ) -> Result<usize, JsValue> {
     let public_key = PublicKey::from_bytes(public_key)
-        .map_err(|_| JsValue::from_serde(&Error::PublicKeyFromBytesError).unwrap())?;
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     let secret_key = SecretKey::from_bytes(secret_key)
-        .map_err(|_| JsValue::from_serde(&Error::SecretKeyFromBytesError).unwrap())?;
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     let key_pair = Keypair {
         public: public_key.clone(),
@@ -177,7 +169,7 @@ pub fn publish(
         lipmaa_entry_vec.as_ref().map(|vec| vec.as_slice()),
         backlink_vec.as_ref().map(|vec| vec.as_slice()),
     )
-    .map_err(|err| JsValue::from_serde(&err).unwrap())
+    .map_err(|err| JsValue::from_str(&err.to_string())) 
 }
 
 //TODO: keygen.

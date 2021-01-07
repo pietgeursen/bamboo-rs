@@ -70,7 +70,7 @@ fn valid_first_entry() -> Value {
     let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
 
     let entry = decode(entry_bytes).unwrap();
-    assert!(entry.verify_signature().unwrap());
+    assert!(entry.verify_signature().is_ok());
 
     let mut buffer = [0u8; 512];
     let buff_size = entry.encode(&mut buffer).unwrap();

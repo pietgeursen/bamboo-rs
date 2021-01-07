@@ -98,7 +98,7 @@ mod tests {
         .unwrap();
 
         let entry = decode(&out[..size]).unwrap();
-        assert!(entry.verify_signature().unwrap());
+        assert!(entry.verify_signature().is_ok());
     }
 
     #[test]
@@ -135,7 +135,7 @@ mod tests {
         .unwrap();
         let entry2 = decode(&out2[..size2]).unwrap();
 
-        assert!(entry2.verify_signature().unwrap());
+        assert!(entry2.verify_signature().is_ok());
     }
     #[test]
     fn publish_entry_with_missing_lipmaalink_errors() {
@@ -479,7 +479,7 @@ mod tests {
         let entry1_bytes = &out[..size];
 
         match verify(entry1_bytes, Some(payload.as_bytes()), None, None) {
-            Ok(true) => {}
+            Ok(_) => {}
             err => panic!("{:?}", err),
         }
 
@@ -491,7 +491,7 @@ mod tests {
             Some(entry1_bytes),
             Some(entry1_bytes),
         ) {
-            Ok(true) => {}
+            Ok(_) => {}
             err => panic!("{:?}", err),
         }
     }

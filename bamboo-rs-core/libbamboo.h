@@ -17,22 +17,9 @@
  */
 #define MAX_SIGNATURE_SIZE ED25519_SIGNATURE_SIZE
 
-#define BLAKE2B_HASH_SIZE 64
-
-#define BLAKE2B_NUMERIC_ID 0
-
-/**
- * The maximum number of bytes this will use for any variant.
- *
- * This is a bit yuck because it knows the number of bytes varu64 uses to encode the
- * BLAKE2B_HASH_SIZE and the BLAKE2B_NUMERIC_ID (2).
- * This is unlikely to cause a problem until there are hundreds of variants.
- */
-#define MAX_YAMF_HASH_SIZE (BLAKE2B_HASH_SIZE + 2)
-
-typedef enum {
-  NoError = 0,
-  EncodeIsEndOfFeedError = 1,
+typedef enum Error_Tag {
+  NoError,
+  EncodeIsEndOfFeedError,
   EncodePayloadHashError,
   EncodePayloadSizeError,
   EncodeAuthorError,
@@ -49,7 +36,6 @@ typedef enum {
   PublishWithoutKeypair,
   PublishWithoutLipmaaEntry,
   PublishWithoutBacklinkEntry,
-  DecodeIsEndOfFeedError,
   DecodePayloadHashError,
   DecodePayloadSizeError,
   DecodeLogIdError,
@@ -58,47 +44,70 @@ typedef enum {
   DecodeSeqIsZero,
   DecodeBacklinkError,
   DecodeLipmaaError,
-  DecodeSigError,
   DecodeSsbSigError,
-  DecodeSsbPubKeyError,
-  VerifySsbSigError,
   DecodeInputIsLengthZero,
-  GetEntrySequenceInvalid,
   GetEntryFailed,
   EntryNotFound,
-  EncodingForSigningFailed,
-  EncodingForStoringFailed,
   AppendFailed,
-  PreviousDecodeFailed,
   PublishNewEntryFailed,
   AddEntryDecodeFailed,
   AddEntryPayloadLengthDidNotMatch,
   AddEntryLipmaaHashDidNotMatch,
   AddEntryPayloadHashDidNotMatch,
   AddEntryBacklinkHashDidNotMatch,
-  AddEntryGetBacklinkError,
-  AddEntryGetLipmaalinkError,
   AddEntryNoLipmaalinkInStore,
   AddEntryDecodeLipmaalinkFromStore,
   AddEntryAuthorDidNotMatchLipmaaEntry,
   AddEntryLogIdDidNotMatchLipmaaEntry,
   AddEntryAuthorDidNotMatchPreviousEntry,
   AddEntryLogIdDidNotMatchPreviousEntry,
-  AddEntryGetLastEntryError,
-  AddEntryGetLastEntryNotFound,
   AddEntryDecodeLastEntry,
   AddEntryToFeedThatHasEnded,
   AddEntryWithInvalidSignature,
-  AddEntryDecodeEntryBytesForSigning,
   AddEntrySigNotValidError,
-  DecodeVaru64Error,
   DecodeError,
   EncodeWriteError,
   EncodeError,
   SignatureInvalid,
+} Error_Tag;
+
+typedef struct EncodePayloadHashError_Body {
+  YamfHashError source;
+} EncodePayloadHashError_Body;
+
+typedef struct EncodeBacklinkError_Body {
+  YamfHashError source;
+} EncodeBacklinkError_Body;
+
+typedef struct EncodeLipmaaError_Body {
+  YamfHashError source;
+} EncodeLipmaaError_Body;
+
+typedef struct DecodePayloadHashError_Body {
+  YamfHashError source;
+} DecodePayloadHashError_Body;
+
+typedef struct DecodeBacklinkError_Body {
+  YamfHashError source;
+} DecodeBacklinkError_Body;
+
+typedef struct DecodeLipmaaError_Body {
+  YamfHashError source;
+} DecodeLipmaaError_Body;
+
+typedef struct Error {
+  Error_Tag tag;
+  union {
+    EncodePayloadHashError_Body encode_payload_hash_error;
+    EncodeBacklinkError_Body encode_backlink_error;
+    EncodeLipmaaError_Body encode_lipmaa_error;
+    DecodePayloadHashError_Body decode_payload_hash_error;
+    DecodeBacklinkError_Body decode_backlink_error;
+    DecodeLipmaaError_Body decode_lipmaa_error;
+  };
 } Error;
 
-typedef struct {
+typedef struct CEntry {
   uint64_t log_id;
   bool is_end_of_feed;
   uint8_t payload_hash_bytes[BLAKE2B_HASH_SIZE];
@@ -112,13 +121,13 @@ typedef struct {
   uint8_t sig[ED25519_SIGNATURE_SIZE];
 } CEntry;
 
-typedef struct {
-  CEntry out_decoded_entry;
+typedef struct DecodeEd25519Blade2bEntryArgs {
+  struct CEntry out_decoded_entry;
   const uint8_t *entry_bytes;
   uintptr_t entry_length;
 } DecodeEd25519Blade2bEntryArgs;
 
-typedef struct {
+typedef struct VerifyEd25519Blake2bEntryArgs {
   const uint8_t *entry_bytes;
   uintptr_t entry_length;
   const uint8_t *payload_bytes;
@@ -129,7 +138,7 @@ typedef struct {
   uintptr_t lipmaalink_length;
 } VerifyEd25519Blake2bEntryArgs;
 
-typedef struct {
+typedef struct PublishEd25519Blake2bEntryArgs {
   uint8_t *out;
   uintptr_t out_length;
   const uint8_t *payload_bytes;
@@ -147,14 +156,16 @@ typedef struct {
   uint64_t log_id;
 } PublishEd25519Blake2bEntryArgs;
 
+void panic(const PanicInfo *panic_info);
+
 /**
  * Attempts to decode bytes as an entry.
  *
  * Returns `Error` which will have a value of `0` if decoding was
  * successful.
  */
-Error decode_ed25519_blake2b_entry(DecodeEd25519Blade2bEntryArgs *args);
+struct Error decode_ed25519_blake2b_entry(struct DecodeEd25519Blade2bEntryArgs *args);
 
-Error verify_ed25519_blake2b_entry(VerifyEd25519Blake2bEntryArgs *args);
+struct Error verify_ed25519_blake2b_entry(struct VerifyEd25519Blake2bEntryArgs *args);
 
-Error publish_ed25519_blake2b_entry(PublishEd25519Blake2bEntryArgs *args);
+struct Error publish_ed25519_blake2b_entry(struct PublishEd25519Blake2bEntryArgs *args);

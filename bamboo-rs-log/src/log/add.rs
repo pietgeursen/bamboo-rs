@@ -31,11 +31,8 @@ impl<Store: EntryStore> Log<Store> {
         // Try and get the backlink entry. If we have it, hash it and check it is correct.
         let backlink = self.store.get_entry_ref(entry.seq_num - 1)?;
 
-        let is_valid = verify(entry_bytes, payload, lipmaa, backlink)?;
-
-        if !is_valid {
-            return Err(Error::AddEntryWithInvalidSignature);
-        }
+        verify(entry_bytes, payload, lipmaa, backlink)
+            .map_err(|_| Error::AddEntryWithInvalidSignature)?;
 
         //Ok, store it!
         self.store

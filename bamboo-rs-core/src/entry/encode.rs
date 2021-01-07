@@ -1,4 +1,5 @@
 use core::borrow::Borrow;
+use snafu::{ResultExt, ensure};
 
 #[cfg(feature = "std")]
 use std::io::Write;
@@ -23,17 +24,14 @@ where
         // Encode the signature
         if let Some(ref sig) = self.sig {
             next_byte_num += sig
-                .encode(&mut out[next_byte_num..])
-                .map_err(|_| Error::EncodeSigError)?;
+                .encode(&mut out[next_byte_num..])?;
         }
 
         Ok(next_byte_num as usize)
     }
 
     pub fn encode_for_signing(&self, out: &mut [u8]) -> Result<usize, Error> {
-        if out.len() < self.encoding_length() {
-            return Err(Error::EncodeBufferLength);
-        }
+        ensure!(out.len() >= self.encoding_length(), EncodeBufferLength);
 
         let mut next_byte_num = 0;
 
@@ -61,16 +59,16 @@ where
             (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
                 next_byte_num += lipmaa_link
                     .encode(&mut out[next_byte_num..])
-                    .map_err(|_| Error::EncodeLipmaaError)?;
+                    .context(EncodeLipmaaError)?;
                 next_byte_num += backlink
                     .encode(&mut out[next_byte_num..])
-                    .map_err(|_| Error::EncodeBacklinkError)?;
+                    .context(EncodeBacklinkError)?;
                 Ok(next_byte_num)
             }
             (n, Some(ref backlink), None) if n > 1 => {
                 next_byte_num += backlink
                     .encode(&mut out[next_byte_num..])
-                    .map_err(|_| Error::EncodeBacklinkError)?;
+                    .context(EncodeBacklinkError)?;
                 Ok(next_byte_num)
             }
             (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
@@ -84,7 +82,7 @@ where
         next_byte_num += self
             .payload_hash
             .encode(&mut out[next_byte_num..])
-            .map_err(|_| Error::EncodePayloadHashError)?;
+            .context(EncodePayloadHashError)?;
 
         Ok(next_byte_num as usize)
     }
@@ -117,15 +115,15 @@ where
             (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
                 lipmaa_link
                     .encode_write(&mut w)
-                    .map_err(|_| Error::EncodeLipmaaError)?;
+                    .context(EncodeLipmaaError)?;
 
                 backlink
                     .encode_write(&mut w)
-                    .map_err(|_| Error::EncodeBacklinkError)
+                    .context(EncodeBacklinkError)
             }
             (n, Some(ref backlink), None) if n > 1 => backlink
                 .encode_write(&mut w)
-                .map_err(|_| Error::EncodeBacklinkError),
+                .context(EncodeBacklinkError),
             (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
             _ => Ok(()),
         }?;
@@ -137,7 +135,7 @@ where
         // Encode the payload hash
         self.payload_hash
             .encode_write(&mut w)
-            .map_err(|_| Error::EncodePayloadHashError)?;
+            .context(EncodePayloadHashError)?;
 
         Ok(())
     }
@@ -148,8 +146,7 @@ where
 
         // Encode the signature
         if let Some(ref sig) = self.sig {
-            sig.encode_write(&mut w)
-                .map_err(|_| Error::EncodeSigError)?;
+            sig.encode_write(&mut w)?;
         }
 
         Ok(())

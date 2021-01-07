@@ -126,7 +126,7 @@ fn verify_signature_benches(c: &mut Criterion) {
         .unwrap();
         let entry = decode(&out[..size]).unwrap();
 
-        b.iter(|| entry.verify_signature())
+        b.iter(|| assert!(entry.verify_signature().unwrap()))
     });
 
     c.bench_function("verify_signature_batch_100_entries", |b| {

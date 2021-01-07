@@ -1,19 +1,19 @@
 use snafu::Snafu;
 use yamf_hash::error::Error as YamfHashError;
 
-#[derive(Debug, Serialize, Snafu)]
+#[derive(Debug, Snafu)]
 #[snafu(visibility = "pub(crate)")]
 #[repr(C)]
 pub enum Error {
     NoError,
     EncodeIsEndOfFeedError,
-    EncodePayloadHashError,
+    EncodePayloadHashError{source: YamfHashError},
     EncodePayloadSizeError,
     EncodeAuthorError,
     EncodeSeqError,
     EncodeLogIdError,
-    EncodeBacklinkError,
-    EncodeLipmaaError,
+    EncodeBacklinkError{source: YamfHashError},
+    EncodeLipmaaError{source: YamfHashError},
     EncodeSigError,
     EncodeEntryHasBacklinksWhenSeqZero,
     EncodeBufferLength,
@@ -24,6 +24,7 @@ pub enum Error {
     PublishWithoutLipmaaEntry,
     PublishWithoutBacklinkEntry,
 
+    #[snafu(display("Could not decode payload hash {}", source))]
     DecodePayloadHashError {
         source: YamfHashError,
     },
@@ -35,7 +36,7 @@ pub enum Error {
     DecodeBacklinkError {
         source: YamfHashError,
     },
-    #[snafu(display("Could not decode lipmaa link yamf hash {:?}", source))]
+    #[snafu(display("Could not decode lipmaa link yamf hash {}", source))]
     DecodeLipmaaError {
         source: YamfHashError,
     },

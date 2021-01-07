@@ -1,6 +1,8 @@
+use snafu::NoneError;
 use arrayvec::ArrayVec;
 use core::borrow::Borrow;
 use core::convert::TryFrom;
+use snafu::ResultExt;
 
 use ed25519_dalek::{
     Signature as DalekSignature,
@@ -18,7 +20,8 @@ where
     H: Borrow<[u8]>,
     S: Borrow<[u8]>,
 {
-    pub fn verify_signature(&self) -> Result<bool> {
+    /// Verify the signature of an entry is valid. 
+    pub fn verify_signature(&self) -> Result<()> {
         let ssb_sig = DalekSignature::try_from(self.sig.as_ref().unwrap().0.borrow())
             .map_err(|_| Error::DecodeSsbSigError)?;
 
@@ -28,12 +31,10 @@ where
 
         let pub_key = self.author.borrow();
 
-        let result = pub_key
+        pub_key
             .verify(&buff[..encoded_size], &ssb_sig)
-            .map(|_| true)
-            .unwrap_or(false);
-
-        Ok(result)
+            .map_err(|_| NoneError)
+            .context(SignatureInvalid)
     }
 }
 
@@ -130,7 +131,7 @@ pub fn verify(
     payload: Option<&[u8]>,
     lipmaa_link: Option<&[u8]>,
     backlink: Option<&[u8]>,
-) -> Result<bool, Error> {
+) -> Result<(), Error> {
     // Decode the entry that we want to add.
     let entry = decode(entry_bytes).map_err(|_| Error::AddEntryDecodeFailed)?;
 
@@ -145,9 +146,7 @@ pub fn verify(
         backlink_and_hash,
     )?;
 
-    let is_valid = entry
+    entry
         .verify_signature()
-        .map_err(|_| Error::AddEntrySigNotValidError)?;
 
-    Ok(is_valid)
 }

@@ -6,6 +6,7 @@ use crate::error::*;
 use crate::signature::Signature;
 use crate::yamf_hash::new_blake2b;
 use ed25519_dalek::{Keypair, Signer};
+use snafu::ensure;
 
 pub fn publish(
     out: &mut [u8],
@@ -44,17 +45,14 @@ pub fn publish(
     if seq_num > 1 {
         let lipmaa_link = new_blake2b(lipmaa_entry_bytes.ok_or(Error::PublishWithoutLipmaaEntry)?);
 
-        //Make sure we're not trying to publish after the end of a feed.
         let backlink_entry =
             decode(&backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?[..])?;
-        if backlink_entry.is_end_of_feed {
-            return Err(Error::PublishAfterEndOfFeed);
-        }
+
+        // Ensure we're not trying to publish after the end of a feed.
+        ensure!(!backlink_entry.is_end_of_feed, PublishAfterEndOfFeed);
 
         // Avoid publishing to a feed using an incorrect log_id
-        if log_id != backlink_entry.log_id {
-            return Err(Error::PublishWithIncorrectLogId);
-        }
+        ensure!(log_id == backlink_entry.log_id, PublishWithIncorrectLogId);
 
         let backlink = new_blake2b(backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?);
         entry.backlink = Some(backlink);

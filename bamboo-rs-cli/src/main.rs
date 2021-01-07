@@ -118,7 +118,7 @@ fn main() -> Result<()> {
                 })
                 .transpose()?;
 
-            let is_valid = verify(
+            verify(
                 &entry_bytes,
                 payload.as_deref(),
                 lipmaa.as_deref(),
@@ -127,11 +127,7 @@ fn main() -> Result<()> {
             .map_err(|_| snafu::NoneError)
             .context(Verify)?;
 
-            if !is_valid {
-                return Err(Error::Verify {});
-            } else {
-                return Ok(());
-            }
+            return Ok(());
         }
         Opts::Decode { entry_file } => {
             let entry = read_file(&entry_file).context(DecodeEntryFile {
