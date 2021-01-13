@@ -3,7 +3,7 @@ use arrayvec::ArrayVec;
 use core::borrow::Borrow;
 use core::convert::TryFrom;
 use ed25519_dalek::PublicKey;
-use snafu::{ResultExt, NoneError};
+use snafu::{NoneError, ResultExt};
 #[cfg(feature = "std")]
 use std::collections::HashMap;
 
@@ -131,7 +131,7 @@ where
                     .map(|entry| {
                         let ssb_sig =
                             DalekSignature::try_from(entry.sig.as_ref().unwrap().0.borrow())
-                                .map_err(|_|NoneError)
+                                .map_err(|_| NoneError)
                                 .context(DecodeSigError)?;
                         Ok(ssb_sig)
                     })
@@ -143,7 +143,7 @@ where
                     .collect::<Vec<PublicKey>>();
 
                 verify_batch_dalek(&unsigned_encodings, &signatures, &pub_keys[..])
-                    .map_err(|_|NoneError)
+                    .map_err(|_| NoneError)
                     .context(InvalidSignature)?;
 
                 Ok(())

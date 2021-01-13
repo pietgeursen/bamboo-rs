@@ -17,7 +17,9 @@ pub struct VerifyEd25519Blake2bEntryArgs<'a> {
 }
 
 #[no_mangle]
-pub extern "C" fn verify_ed25519_blake2b_entry(args: &mut VerifyEd25519Blake2bEntryArgs) -> VerifyError {
+pub extern "C" fn verify_ed25519_blake2b_entry(
+    args: &mut VerifyEd25519Blake2bEntryArgs,
+) -> VerifyError {
     let lipmaalink_slice =
         unsafe { slice::from_raw_parts(args.lipmaalink_bytes, args.lipmaalink_length) };
     let lipmaalink = match args.lipmaalink_length {

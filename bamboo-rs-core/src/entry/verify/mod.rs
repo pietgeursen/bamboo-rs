@@ -1,7 +1,7 @@
 use arrayvec::ArrayVec;
 use core::borrow::Borrow;
 use core::convert::TryFrom;
-use snafu::{ensure, ResultExt, NoneError};
+use snafu::{ensure, NoneError, ResultExt};
 
 use ed25519_dalek::{Signature as DalekSignature, Verifier};
 
@@ -25,7 +25,7 @@ where
     /// Verify the signature of an entry is valid.
     pub fn verify_signature(&self) -> Result<()> {
         let ssb_sig = DalekSignature::try_from(self.sig.as_ref().unwrap().0.borrow())
-            .map_err(|_|NoneError)
+            .map_err(|_| NoneError)
             .context(DecodeSigError)?;
 
         let mut buff = [0u8; 512];
@@ -36,7 +36,7 @@ where
 
         pub_key
             .verify(&buff[..encoded_size], &ssb_sig)
-            .map_err(|_|NoneError)
+            .map_err(|_| NoneError)
             .context(InvalidSignature)
     }
 }

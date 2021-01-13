@@ -4,9 +4,9 @@ extern crate varu64;
 
 use bamboo_rs_core::entry::decode;
 use bamboo_rs_core::entry::publish;
-use bamboo_rs_core::entry::verify_batch;
 use bamboo_rs_core::entry::verify::batch::verify_batch_signatures;
 use bamboo_rs_core::entry::verify::Error as VerifyError;
+use bamboo_rs_core::entry::verify_batch;
 use bamboo_rs_core::verify;
 use bamboo_rs_log::entry_store::MemoryEntryStore;
 use bamboo_rs_log::*;

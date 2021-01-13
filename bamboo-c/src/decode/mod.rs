@@ -34,7 +34,9 @@ pub struct DecodeEd25519Blade2bEntryArgs<'a> {
 /// Returns `Error` which will have a value of `0` if decoding was
 /// successful.
 #[no_mangle]
-pub extern "C" fn decode_ed25519_blake2b_entry(args: &mut DecodeEd25519Blade2bEntryArgs) -> DecodeError {
+pub extern "C" fn decode_ed25519_blake2b_entry(
+    args: &mut DecodeEd25519Blade2bEntryArgs,
+) -> DecodeError {
     let entry_slice = unsafe { slice::from_raw_parts(args.entry_bytes, args.entry_length) };
 
     decode(&entry_slice)

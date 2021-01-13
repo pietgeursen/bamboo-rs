@@ -21,7 +21,7 @@ use crate::util::hex_serde::*;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use ed25519_dalek::{PublicKey as DalekPublicKey};
+use ed25519_dalek::PublicKey as DalekPublicKey;
 
 use super::signature::{Signature, MAX_SIGNATURE_SIZE};
 use super::yamf_hash::{YamfHash, MAX_YAMF_HASH_SIZE};

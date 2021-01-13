@@ -30,20 +30,32 @@ impl From<BambooVerifyError> for VerifyError {
             BambooVerifyError::DecodeSigError { .. } => VerifyError::DecodeSigError,
             BambooVerifyError::InvalidSignature { .. } => VerifyError::InvalidSignature,
             BambooVerifyError::PayloadHashDidNotMatch { .. } => VerifyError::PayloadHashDidNotMatch,
-            BambooVerifyError::PayloadLengthDidNotMatch { .. } => VerifyError::PayloadLengthDidNotMatch,
+            BambooVerifyError::PayloadLengthDidNotMatch { .. } => {
+                VerifyError::PayloadLengthDidNotMatch
+            }
             BambooVerifyError::LipmaaHashDoesNotMatch { .. } => VerifyError::LipmaaHashDoesNotMatch,
             BambooVerifyError::DecodeLipmaaEntry { .. } => VerifyError::DecodeLipmaaEntry,
-            BambooVerifyError::LipmaaLogIdDoesNotMatch { .. } => VerifyError::LipmaaLogIdDoesNotMatch,
-            BambooVerifyError::LipmaaAuthorDoesNotMatch { .. } => VerifyError::LipmaaAuthorDoesNotMatch,
+            BambooVerifyError::LipmaaLogIdDoesNotMatch { .. } => {
+                VerifyError::LipmaaLogIdDoesNotMatch
+            }
+            BambooVerifyError::LipmaaAuthorDoesNotMatch { .. } => {
+                VerifyError::LipmaaAuthorDoesNotMatch
+            }
             BambooVerifyError::LipmaaLinkRequired => VerifyError::LipmaaLinkRequired,
             BambooVerifyError::DecodeBacklinkEntry { .. } => VerifyError::DecodeBacklinkEntry,
-            BambooVerifyError::BacklinkLogIdDoesNotMatch { .. } => VerifyError::BacklinkLogIdDoesNotMatch,
+            BambooVerifyError::BacklinkLogIdDoesNotMatch { .. } => {
+                VerifyError::BacklinkLogIdDoesNotMatch
+            }
             BambooVerifyError::PublishedAfterEndOfFeed => VerifyError::PublishedAfterEndOfFeed,
-            BambooVerifyError::BacklinkHashDoesNotMatch { .. } => VerifyError::BacklinkHashDoesNotMatch,
+            BambooVerifyError::BacklinkHashDoesNotMatch { .. } => {
+                VerifyError::BacklinkHashDoesNotMatch
+            }
             BambooVerifyError::BackLinkRequired => VerifyError::BackLinkRequired,
             BambooVerifyError::DecodeEntry { .. } => VerifyError::DecodeEntry,
             BambooVerifyError::EncodeEntryForSigning { .. } => VerifyError::EncodeEntryForSigning,
-            BambooVerifyError::BacklinkAuthorDoesNotMatch => VerifyError::BacklinkAuthorDoesNotMatch,
+            BambooVerifyError::BacklinkAuthorDoesNotMatch => {
+                VerifyError::BacklinkAuthorDoesNotMatch
+            }
         }
     }
 }

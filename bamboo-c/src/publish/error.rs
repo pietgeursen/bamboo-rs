@@ -20,12 +20,20 @@ impl From<BambooPublishError> for PublishError {
         match err {
             BambooPublishError::PublishWithoutKeypair => PublishError::PublishWithoutKeypair,
             BambooPublishError::PublishAfterEndOfFeed => PublishError::PublishAfterEndOfFeed,
-            BambooPublishError::PublishWithIncorrectLogId => PublishError::PublishWithIncorrectLogId,
+            BambooPublishError::PublishWithIncorrectLogId => {
+                PublishError::PublishWithIncorrectLogId
+            }
             BambooPublishError::PublishWithoutSecretKey => PublishError::PublishWithoutSecretKey,
-            BambooPublishError::PublishWithoutLipmaaEntry => PublishError::PublishWithoutLipmaaEntry,
+            BambooPublishError::PublishWithoutLipmaaEntry => {
+                PublishError::PublishWithoutLipmaaEntry
+            }
             BambooPublishError::DecodeBacklinkEntry { .. } => PublishError::DecodeBacklinkEntry,
-            BambooPublishError::EncodeEntryToOutBuffer { .. } => PublishError::EncodeEntryToOutBuffer,
-            BambooPublishError::PublishWithoutBacklinkEntry => PublishError::PublishWithoutBacklinkEntry,
+            BambooPublishError::EncodeEntryToOutBuffer { .. } => {
+                PublishError::EncodeEntryToOutBuffer
+            }
+            BambooPublishError::PublishWithoutBacklinkEntry => {
+                PublishError::PublishWithoutBacklinkEntry
+            }
         }
     }
 }
