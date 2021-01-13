@@ -9,8 +9,8 @@ cargo-fuzz = true
 
 [dependencies]
 
-[dependencies.bamboo-core]
-path = "../../bamboo-core"
+[dependencies.bamboo-rs-core]
+path = "../../bamboo-rs-core"
 
 [dependencies.libfuzzer-sys]
 git = "https://github.com/rust-fuzz/libfuzzer-sys.git"
