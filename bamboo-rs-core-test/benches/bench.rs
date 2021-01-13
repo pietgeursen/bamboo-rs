@@ -2,14 +2,14 @@
 extern crate criterion;
 extern crate varu64;
 
-use bamboo_core::entry::decode;
-use bamboo_core::entry::publish;
-use bamboo_core::entry::verify_batch;
-use bamboo_core::entry::verify_batch::verify_batch_signatures;
-use bamboo_core::verify;
-use bamboo_core::Error;
-use bamboo_log::entry_store::MemoryEntryStore;
-use bamboo_log::*;
+use bamboo_rs_core::entry::decode;
+use bamboo_rs_core::entry::publish;
+use bamboo_rs_core::entry::verify_batch;
+use bamboo_rs_core::entry::verify::batch::verify_batch_signatures;
+use bamboo_rs_core::entry::verify::Error as VerifyError;
+use bamboo_rs_core::verify;
+use bamboo_rs_log::entry_store::MemoryEntryStore;
+use bamboo_rs_log::*;
 
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
@@ -126,7 +126,7 @@ fn verify_signature_benches(c: &mut Criterion) {
         .unwrap();
         let entry = decode(&out[..size]).unwrap();
 
-        b.iter(|| assert!(entry.verify_signature().unwrap()))
+        b.iter(|| entry.verify_signature().unwrap())
     });
 
     c.bench_function("verify_signature_batch_100_entries", |b| {
@@ -163,7 +163,7 @@ fn verify_entries_benches(c: &mut Criterion) {
                 .enumerate()
                 .map(|(index, (entry, payload))| {
                     let seq_num = index + 1;
-                    let lipmaa_num = bamboo_core::lipmaa(seq_num as u64) - 1;
+                    let lipmaa_num = bamboo_rs_core::lipmaa(seq_num as u64) - 1;
 
                     let lipmaa_link = entries
                         .get(lipmaa_num as usize)
@@ -177,7 +177,7 @@ fn verify_entries_benches(c: &mut Criterion) {
                     verify(entry, payload, lipmaa_link, backlink)?;
                     Ok(())
                 })
-                .collect::<Result<(), Error>>()
+                .collect::<Result<(), VerifyError>>()
                 .unwrap();
         })
     });

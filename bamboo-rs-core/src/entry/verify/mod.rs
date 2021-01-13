@@ -12,7 +12,7 @@ use crate::yamf_hash::YamfHash;
 #[cfg(feature = "std")]
 pub mod batch;
 #[cfg(feature = "std")]
-pub use batch::verify_batch;
+pub use batch::{verify_batch, verify_batch_signatures};
 
 pub mod error;
 pub use error::*;
