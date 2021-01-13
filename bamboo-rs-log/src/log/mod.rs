@@ -3,9 +3,11 @@ use bamboo_rs_core::{Keypair, PublicKey};
 
 pub mod add;
 pub mod publish;
+pub mod error;
 
 pub use add::*;
 pub use publish::*;
+pub use error::*;
 
 pub struct Log<Store: EntryStore> {
     pub store: Store,

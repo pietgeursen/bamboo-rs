@@ -1,12 +1,16 @@
+use core::fmt::Debug;
 use super::Log;
 use crate::entry_store::EntryStore;
 use bamboo_rs_core::entry::decode;
 use bamboo_rs_core::entry::verify;
 use lipmaa_link::lipmaa;
+use snafu::ResultExt;
 
-use bamboo_rs_core::error::*;
+use super::error::*;
 
-impl<Store: EntryStore> Log<Store> {
+
+impl<Store: EntryStore + Debug> Log<Store> {
+
     /// Add a valid message to the Log.
     ///
     /// Typically you would use this when you have an entry published by some other author and you
@@ -17,9 +21,9 @@ impl<Store: EntryStore> Log<Store> {
     /// - the lipmaa link that this message references must already exist in the Log. That means if you
     /// are doing partial replication, you must sort your messages by sequence number and add them
     /// from oldest to newest.
-    pub fn add(&mut self, entry_bytes: &[u8], payload: Option<&[u8]>) -> Result<()> {
+    pub fn add(&mut self, entry_bytes: &[u8], payload: Option<&[u8]>) -> Result<(), Error<Store>> {
         // Decode the entry that we want to add.
-        let entry = decode(entry_bytes).map_err(|_| Error::AddEntryDecodeFailed)?;
+        let entry = decode(entry_bytes).context(AddEntryDecodeFailed)?;
 
         let lipmaa_seq = match lipmaa(entry.seq_num) {
             0 => 1,
@@ -27,17 +31,19 @@ impl<Store: EntryStore> Log<Store> {
         };
 
         // Get the lipmaa entry.
-        let lipmaa = self.store.get_entry_ref(lipmaa_seq)?;
+        let lipmaa = self.store.get_entry_ref(lipmaa_seq)
+            .context(AddEntryGetLipmaaEntry)?;
         // Try and get the backlink entry. If we have it, hash it and check it is correct.
-        let backlink = self.store.get_entry_ref(entry.seq_num - 1)?;
+        let backlink = self.store.get_entry_ref(entry.seq_num - 1)
+            .context(AddEntryGetBacklinkEntry)?;
 
         verify(entry_bytes, payload, lipmaa, backlink)
-            .map_err(|_| Error::AddEntryWithInvalidSignature)?;
+            .context(AddEntryFailedVerification)?;
 
         //Ok, store it!
         self.store
             .add_entry(&entry_bytes, entry.seq_num)
-            .map_err(|_| Error::AppendFailed)
+            .context(AddEntryFailedToAddEntryToLog)
     }
 }
 
@@ -46,11 +52,11 @@ mod tests {
     use crate::entry_store::MemoryEntryStore;
     use crate::{EntryStore, Log};
     use arrayvec::ArrayVec;
-    use bamboo_core::signature::{Signature, ED25519_SIGNATURE_SIZE};
-    use bamboo_core::yamf_hash::{new_blake2b, YamfHash};
-    use bamboo_core::yamf_signatory::YamfSignatory;
-    use bamboo_core::Error;
-    use bamboo_core::{Entry, Keypair};
+    use bamboo_rs_core::signature::{Signature, ED25519_SIGNATURE_SIZE};
+    use bamboo_rs_core::yamf_hash::{new_blake2b, YamfHash};
+    use bamboo_rs_core::yamf_signatory::YamfSignatory;
+    use bamboo_rs_core::Error;
+    use bamboo_rs_core::{Entry, Keypair};
     use rand::rngs::OsRng;
     use std::convert::TryInto;
 

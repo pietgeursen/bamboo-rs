@@ -1,0 +1,17 @@
+[package]
+name = "bamboo-c"
+version = "1.0.0"
+authors = ["Piet Geursen <pietgeursen@gmail.com>"]
+edition = "2018"
+
+[lib]
+name = "bamboo_c"
+crate-type = ["cdylib", "staticlib"]
+
+[features]
+default = ["std"]
+std = []
+
+[dependencies]
+bamboo-rs-core = {path = "../bamboo-rs-core", default_features = false}
+ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }

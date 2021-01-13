@@ -1,0 +1,11 @@
+language = "C"
+
+[parse]
+parse_deps = true
+clean = true
+extra_bindings = ["bamboo-rs-core", "yamf-hash", "ed25519-dalek"]
+include = ["bamboo-rs-core", "yamf-hash", "ed25519-dalek"]
+exclude = ["typenum", "syn"]
+  [parse.expand]
+    #crates = ["bamboo-rs-core", "yamf-hash"]
+    features = []

@@ -1,11 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use bamboo_rs_core::entry::verify_batch;
     use bamboo_rs_core::entry::decode;
-    use bamboo_rs_core::entry::verify_batch::verify_batch_signatures;
+    use bamboo_rs_core::entry::publish::Error as PublishError;
+    use bamboo_rs_core::entry::verify::batch::verify_batch_signatures;
+    use bamboo_rs_core::entry::verify::Error as VerifyError;
+    use bamboo_rs_core::entry::verify_batch;
     use bamboo_rs_core::signature::ED25519_SIGNATURE_SIZE;
     use bamboo_rs_core::yamf_hash::BLAKE2B_HASH_SIZE;
-    use bamboo_rs_core::Error;
     use bamboo_rs_core::{publish, verify, Entry, Signature, YamfHash};
     use ed25519_dalek::{Keypair, PublicKey};
     use rand::rngs::OsRng;
@@ -169,7 +170,7 @@ mod tests {
             None,
             Some(&out[..size]),
         ) {
-            Err(Error::PublishWithoutLipmaaEntry) => {}
+            Err(PublishError::PublishWithoutLipmaaEntry) => {}
             _ => panic!(),
         }
     }
@@ -205,7 +206,7 @@ mod tests {
             Some(&out[..size]),
             None,
         ) {
-            Err(Error::PublishWithoutBacklinkEntry) => {}
+            Err(PublishError::PublishWithoutBacklinkEntry) => {}
             _ => panic!(),
         }
     }
@@ -241,7 +242,7 @@ mod tests {
             Some(&out[..size]),
             Some(&out[..size]),
         ) {
-            Err(Error::PublishAfterEndOfFeed) => {}
+            Err(PublishError::PublishAfterEndOfFeed) => {}
             _ => panic!(),
         }
     }
@@ -263,7 +264,7 @@ mod tests {
             None,
             None,
         ) {
-            Err(Error::EncodeBufferLength) => {}
+            Err(PublishError::EncodeEntryToOutBuffer { .. }) => {}
             _ => {}
         }
     }
@@ -283,7 +284,7 @@ mod tests {
             None,
             None,
         ) {
-            Err(Error::PublishWithoutKeypair) => {}
+            Err(PublishError::PublishWithoutKeypair) => {}
             _ => panic!(),
         }
     }
@@ -317,7 +318,7 @@ mod tests {
             Some(&out[..size]),
             Some(&out[..size]),
         ) {
-            Err(Error::PublishWithIncorrectLogId) => {}
+            Err(PublishError::PublishWithIncorrectLogId) => {}
             _ => panic!(),
         }
     }
@@ -541,7 +542,7 @@ mod tests {
             Some(entry1_bytes),
             Some(entry1_bytes),
         ) {
-            Err(Error::AddEntryLogIdDidNotMatchPreviousEntry) => {}
+            Err(VerifyError::BacklinkLogIdDoesNotMatch { .. }) => {}
             err => panic!("{:?}", err),
         }
     }

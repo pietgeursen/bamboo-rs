@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "bamboo-c",
     "bamboo-rs-core",
     "bamboo-rs-core-test",
     "bamboo-rs-cli",
@@ -15,6 +16,6 @@ exclude = [
 
 [profile.release]
 codegen-units = 1
-opt-level = 'z'  # Optimize for size.
+#opt-level = 'z'  # Optimize for size.
 lto = true
 panic = 'abort'

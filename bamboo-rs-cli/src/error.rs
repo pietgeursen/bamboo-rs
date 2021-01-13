@@ -50,9 +50,13 @@ pub enum Error {
     #[snafu(display("Could not parse log id {}", source))]
     ParseLogId { source: std::num::ParseIntError },
     #[snafu(display("Could not decode entry: {:?}", error))]
-    DecodeEntry { error: bamboo_rs_core::error::Error },
+    DecodeEntry {
+        error: bamboo_rs_core::entry::decode::Error,
+    },
     #[snafu(display("Could not decode previous entry: {:?}", error))]
-    DecodePreviousEntry { error: bamboo_rs_core::error::Error },
+    DecodePreviousEntry {
+        error: bamboo_rs_core::entry::decode::Error,
+    },
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

@@ -2,12 +2,12 @@
 extern crate criterion;
 extern crate varu64;
 
-use bamboo_core::Error;
-use bamboo_core::verify;
-use bamboo_core::entry::verify_batch;
-use bamboo_core::entry::verify_batch::verify_batch_signatures;
 use bamboo_core::entry::decode;
 use bamboo_core::entry::publish;
+use bamboo_core::entry::verify_batch;
+use bamboo_core::entry::verify_batch::verify_batch_signatures;
+use bamboo_core::verify;
+use bamboo_core::Error;
 use bamboo_log::entry_store::MemoryEntryStore;
 use bamboo_log::*;
 
@@ -155,19 +155,21 @@ fn verify_signature_benches(c: &mut Criterion) {
 }
 
 fn verify_entries_benches(c: &mut Criterion) {
-
     c.bench_function("verify_100_entries", |b| {
         let entries = create_n_entries(1000);
         b.iter(|| {
-            entries.iter()
+            entries
+                .iter()
                 .enumerate()
-                .map(|(index, (entry, payload))|{
+                .map(|(index, (entry, payload))| {
                     let seq_num = index + 1;
                     let lipmaa_num = bamboo_core::lipmaa(seq_num as u64) - 1;
 
-                    let lipmaa_link = entries.get(lipmaa_num as usize)
+                    let lipmaa_link = entries
+                        .get(lipmaa_num as usize)
                         .map(|(link, _)| link.as_slice());
-                    let backlink = entries.get(seq_num - 1 - 1)
+                    let backlink = entries
+                        .get(seq_num - 1 - 1)
                         .map(|(link, _)| link.as_slice());
 
                     let payload = payload.as_ref().map(|payload| payload.as_bytes());
@@ -175,7 +177,8 @@ fn verify_entries_benches(c: &mut Criterion) {
                     verify(entry, payload, lipmaa_link, backlink)?;
                     Ok(())
                 })
-            .collect::<Result<(), Error>>().unwrap();
+                .collect::<Result<(), Error>>()
+                .unwrap();
         })
     });
 
@@ -186,21 +189,21 @@ fn verify_entries_benches(c: &mut Criterion) {
 }
 
 fn create_n_entries(n: u64) -> Vec<(Vec<u8>, Option<String>)> {
-        let mut csprng: OsRng = OsRng {};
-        let keypair: Keypair = Keypair::generate(&mut csprng);
+    let mut csprng: OsRng = OsRng {};
+    let keypair: Keypair = Keypair::generate(&mut csprng);
 
-        let public = keypair.public.clone();
-        let mut log = Log::new(MemoryEntryStore::new(), public.clone(), Some(keypair), 0);
+    let public = keypair.public.clone();
+    let mut log = Log::new(MemoryEntryStore::new(), public.clone(), Some(keypair), 0);
 
-        (1..n)
-            .into_iter()
-            .map(|i| {
-                let payload = format!("message number {}", i);
-                log.publish(&payload.as_bytes(), false).unwrap();
-                (log.store.get_entry(i).unwrap().unwrap(), payload)
-            })
-            .map(|(entry, payload)| (entry, Some(payload)))
-            .collect::<Vec<_>>()
+    (1..n)
+        .into_iter()
+        .map(|i| {
+            let payload = format!("message number {}", i);
+            log.publish(&payload.as_bytes(), false).unwrap();
+            (log.store.get_entry(i).unwrap().unwrap(), payload)
+        })
+        .map(|(entry, payload)| (entry, Some(payload)))
+        .collect::<Vec<_>>()
 }
 
 criterion_group!(

@@ -1,4 +1,3 @@
-use crate::error::*;
 #[cfg(feature = "std")]
 use std::io::Write;
 
@@ -8,7 +7,6 @@ pub use ed25519_dalek::SIGNATURE_LENGTH;
 // that the value is actually correct.
 const_assert_eq!(ed25519_sig_size; ED25519_SIGNATURE_SIZE, SIGNATURE_LENGTH);
 
-
 /// The maximum number of bytes this will use.
 pub const MAX_SIGNATURE_SIZE: usize = ED25519_SIGNATURE_SIZE;
 
@@ -16,6 +14,9 @@ pub const MAX_SIGNATURE_SIZE: usize = ED25519_SIGNATURE_SIZE;
 use crate::util::hex_serde::{hex_from_bytes, vec_from_hex};
 use core::borrow::Borrow;
 use snafu::ensure;
+
+pub mod error;
+pub use error::*;
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Signature<B: Borrow<[u8]>>(

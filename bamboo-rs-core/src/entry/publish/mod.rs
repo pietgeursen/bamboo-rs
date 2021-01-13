@@ -2,11 +2,13 @@ pub use crate::BLAKE2B_HASH_SIZE;
 
 use super::decode::decode;
 use super::{is_lipmaa_required, Entry};
-use crate::error::*;
 use crate::signature::Signature;
 use crate::yamf_hash::new_blake2b;
 use ed25519_dalek::{Keypair, Signer};
-use snafu::ensure;
+use snafu::{ensure, ResultExt};
+
+pub mod error;
+pub use error::*;
 
 pub fn publish(
     out: &mut [u8],
@@ -45,8 +47,8 @@ pub fn publish(
     if seq_num > 1 {
         let lipmaa_link = new_blake2b(lipmaa_entry_bytes.ok_or(Error::PublishWithoutLipmaaEntry)?);
 
-        let backlink_entry =
-            decode(&backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?[..])?;
+        let backlink_entry = decode(&backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?[..])
+            .context(DecodeBacklinkEntry)?;
 
         // Ensure we're not trying to publish after the end of a feed.
         ensure!(!backlink_entry.is_end_of_feed, PublishAfterEndOfFeed);
@@ -64,17 +66,20 @@ pub fn publish(
         }
     }
 
-    let mut buff = [0u8; 512];
-    let buff_size = entry.encode(&mut buff)?;
+    let buff_size = entry.encode(out).context(EncodeEntryToOutBuffer {
+        buffer_size: out.len(),
+    })?;
 
     let signature = key_pair
         .as_ref()
         .ok_or(Error::PublishWithoutSecretKey)?
-        .sign(&buff[..buff_size]);
+        .sign(&out[..buff_size]);
     let sig_bytes = &signature.to_bytes()[..];
     let signature = Signature(sig_bytes.into());
 
     entry.sig = Some(signature);
 
-    entry.encode(out)
+    entry.encode(out).context(EncodeEntryToOutBuffer {
+        buffer_size: out.len(),
+    })
 }

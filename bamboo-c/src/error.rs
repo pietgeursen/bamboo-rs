@@ -1,22 +1,24 @@
 use snafu::Snafu;
-use yamf_hash::error::Error as YamfHashError;
+use bamboo_rs_core::entry::decode::Error as DecodeError;
 
 #[derive(Debug, Snafu)]
 #[snafu(visibility = "pub(crate)")]
 #[repr(C)]
 pub enum Error {
     NoError,
+
     EncodeIsEndOfFeedError,
-    EncodePayloadHashError{source: YamfHashError},
+    EncodePayloadHashError,
     EncodePayloadSizeError,
     EncodeAuthorError,
     EncodeSeqError,
     EncodeLogIdError,
-    EncodeBacklinkError{source: YamfHashError},
-    EncodeLipmaaError{source: YamfHashError},
+    EncodeBacklinkError,
+    EncodeLipmaaError,
     EncodeSigError,
     EncodeEntryHasBacklinksWhenSeqZero,
     EncodeBufferLength,
+
     PublishAfterEndOfFeed,
     PublishWithIncorrectLogId,
     PublishWithoutSecretKey,
@@ -24,23 +26,15 @@ pub enum Error {
     PublishWithoutLipmaaEntry,
     PublishWithoutBacklinkEntry,
 
-    #[snafu(display("Could not decode payload hash {}", source))]
-    DecodePayloadHashError {
-        source: YamfHashError,
-    },
+    DecodePayloadHashError,
     DecodePayloadSizeError,
     DecodeLogIdError,
     DecodeAuthorError,
     DecodeSeqError,
     DecodeSeqIsZero,
-    DecodeBacklinkError {
-        source: YamfHashError,
-    },
-    #[snafu(display("Could not decode lipmaa link yamf hash {}", source))]
-    DecodeLipmaaError {
-        source: YamfHashError,
-    },
-    DecodeSsbSigError,
+    DecodeBacklinkError,
+    DecodeLipmaaError,
+    DecodeSigError,
 
     DecodeInputIsLengthZero,
 
@@ -70,4 +64,10 @@ pub enum Error {
     SignatureInvalid,
 }
 
-pub type Result<T, E = Error> = core::result::Result<T, E>;
+
+impl From<DecodeError> for Error {
+    fn from(error: DecodeError) -> Error {
+        unimplemented!();
+    }
+}
+

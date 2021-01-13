@@ -7,14 +7,13 @@ pub mod decode;
 pub mod encode;
 pub mod publish;
 pub mod verify;
-#[cfg(feature = "std")]
-pub mod verify_batch;
 
 pub use decode::decode;
-pub use verify::verify;
-#[cfg(feature = "std")]
-pub use verify_batch::verify_batch;
 pub use publish::publish;
+pub use verify::verify;
+
+#[cfg(feature = "std")]
+pub use verify::verify_batch;
 
 #[cfg(feature = "std")]
 use crate::util::hex_serde::*;
@@ -22,17 +21,14 @@ use crate::util::hex_serde::*;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use ed25519_dalek::{
-    PublicKey as DalekPublicKey, PUBLIC_KEY_LENGTH,
-};
+use ed25519_dalek::{PublicKey as DalekPublicKey};
 
 use super::signature::{Signature, MAX_SIGNATURE_SIZE};
 use super::yamf_hash::{YamfHash, MAX_YAMF_HASH_SIZE};
 
-pub use crate::error::*;
-
-const TAG_BYTE_LENGTH: usize = 1;
-const MAX_VARU64_SIZE: usize = 9;
+pub use ed25519_dalek::PUBLIC_KEY_LENGTH;
+pub const TAG_BYTE_LENGTH: usize = 1;
+pub const MAX_VARU64_SIZE: usize = 9;
 pub const MAX_ENTRY_SIZE_: usize = TAG_BYTE_LENGTH
     + MAX_SIGNATURE_SIZE
     + PUBLIC_KEY_LENGTH
@@ -77,7 +73,7 @@ where
 }
 
 impl<'a> TryFrom<&'a [u8]> for Entry<&'a [u8], &'a [u8]> {
-    type Error = Error;
+    type Error = decode::Error;
 
     fn try_from(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Self::Error> {
         decode(bytes)
@@ -89,7 +85,7 @@ where
     H: Borrow<[u8]>,
     S: Borrow<[u8]>,
 {
-    type Error = Error;
+    type Error = encode::Error;
 
     fn try_from(entry: Entry<H, S>) -> Result<ArrayVec<[u8; 512]>, Self::Error> {
         let mut buff = [0u8; 512];
@@ -158,5 +154,3 @@ where
 pub fn is_lipmaa_required(sequence_num: u64) -> bool {
     lipmaa(sequence_num) != sequence_num - 1
 }
-
-

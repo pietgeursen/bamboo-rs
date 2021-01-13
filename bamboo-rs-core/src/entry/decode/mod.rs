@@ -6,8 +6,10 @@ use crate::signature::Signature;
 use crate::yamf_hash::YamfHash;
 
 use super::{is_lipmaa_required, Entry};
-use crate::error::*;
 use snafu::{ensure, ResultExt};
+
+pub mod error;
+pub use error::*;
 
 pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Error> {
     ensure!(bytes.len() > 0, DecodeInputIsLengthZero);
@@ -64,7 +66,7 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Error> {
         YamfHash::<&[u8]>::decode(remaining_bytes).context(DecodePayloadHashError)?;
 
     // Decode the signature
-    let (sig, _) = Signature::<&[u8]>::decode(remaining_bytes)?;
+    let (sig, _) = Signature::<&[u8]>::decode(remaining_bytes).context(DecodeSigError)?;
 
     Ok(Entry {
         log_id,

@@ -148,11 +148,11 @@ pub fn publish(
     lipmaa_entry_vec: Option<Vec<u8>>,
     backlink_vec: Option<Vec<u8>>,
 ) -> Result<usize, JsValue> {
-    let public_key = PublicKey::from_bytes(public_key)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let public_key =
+        PublicKey::from_bytes(public_key).map_err(|e| JsValue::from_str(&e.to_string()))?;
 
-    let secret_key = SecretKey::from_bytes(secret_key)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let secret_key =
+        SecretKey::from_bytes(secret_key).map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     let key_pair = Keypair {
         public: public_key.clone(),
@@ -169,7 +169,7 @@ pub fn publish(
         lipmaa_entry_vec.as_ref().map(|vec| vec.as_slice()),
         backlink_vec.as_ref().map(|vec| vec.as_slice()),
     )
-    .map_err(|err| JsValue::from_str(&err.to_string())) 
+    .map_err(|err| JsValue::from_str(&err.to_string()))
 }
 
 //TODO: keygen.

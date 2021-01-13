@@ -1,18 +1,16 @@
 use core::borrow::Borrow;
-use snafu::{ResultExt, ensure};
+use snafu::{ensure, ResultExt};
 
 #[cfg(feature = "std")]
 use std::io::Write;
-use varu64::{
-    encode as varu64_encode, encoding_length as varu64_encoding_length,
-};
+use varu64::{encode as varu64_encode, encoding_length as varu64_encoding_length};
 
 #[cfg(feature = "std")]
 use varu64::encode_write as varu64_encode_write;
 
-
 use super::{Entry, TAG_BYTE_LENGTH};
-use crate::error::*;
+pub mod error;
+pub use error::*;
 
 impl<'a, H, S> Entry<H, S>
 where
@@ -24,7 +22,8 @@ where
         // Encode the signature
         if let Some(ref sig) = self.sig {
             next_byte_num += sig
-                .encode(&mut out[next_byte_num..])?;
+                .encode(&mut out[next_byte_num..])
+                .context(EncodeSigError)?;
         }
 
         Ok(next_byte_num as usize)
@@ -117,13 +116,11 @@ where
                     .encode_write(&mut w)
                     .context(EncodeLipmaaError)?;
 
-                backlink
-                    .encode_write(&mut w)
-                    .context(EncodeBacklinkError)
+                backlink.encode_write(&mut w).context(EncodeBacklinkError)
             }
-            (n, Some(ref backlink), None) if n > 1 => backlink
-                .encode_write(&mut w)
-                .context(EncodeBacklinkError),
+            (n, Some(ref backlink), None) if n > 1 => {
+                backlink.encode_write(&mut w).context(EncodeBacklinkError)
+            }
             (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
             _ => Ok(()),
         }?;
@@ -146,7 +143,7 @@ where
 
         // Encode the signature
         if let Some(ref sig) = self.sig {
-            sig.encode_write(&mut w)?;
+            sig.encode_write(&mut w).context(EncodeSigError)?;
         }
 
         Ok(())

@@ -1,7 +1,7 @@
 use core::borrow::Borrow;
+use ed25519_dalek::PublicKey as DalekPublicKey;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serializer};
-use ed25519_dalek::PublicKey as DalekPublicKey;
 
 #[cfg(feature = "std")]
 pub fn serialize_pub_key<S>(public_key: &DalekPublicKey, serializer: S) -> Result<S::Ok, S::Error>
@@ -32,7 +32,6 @@ where
         Ok(pub_key)
     }
 }
-
 
 pub fn vec_from_hex<'de, D, B>(deserializer: D) -> Result<B, D::Error>
 where

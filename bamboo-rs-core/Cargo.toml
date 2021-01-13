@@ -7,10 +7,6 @@ license = "AGPL-3.0"
 repository = "https://github.com/pietgeursen/bamboo-rs"
 description = "Publish and verify signed hash chains of bamboo messages."
 
-[lib]
-name = "bamboo_rs_core"
-crate-type = ["cdylib", "staticlib", "rlib"]
-
 [features]
 default = ["std"]
 std = ["varu64/std", "hex/std", "rayon", "snafu/std", "ed25519-dalek/serde", "ed25519-dalek/std", "ed25519-dalek/batch", "yamf-hash/std"]
