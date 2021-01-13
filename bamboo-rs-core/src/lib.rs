@@ -1,8 +1,7 @@
-//! # bamboo-core
+//! # bamboo-rs-core
 //!
-//! Sign, and Verify [bamboo](https://github.com/AljoschaMeyer/bamboo) messages.
+//! Verify, and Publish [bamboo](https://github.com/AljoschaMeyer/bamboo) messages.
 //!
-//! `bamboo-core` exposes a c-friendly api and can be built with `no_std`.
 //!
 #![cfg_attr(not(feature = "std"), no_std)]
 
