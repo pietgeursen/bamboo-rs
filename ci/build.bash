@@ -22,19 +22,14 @@ if [ -z "$RELEASE_BUILD" ]; then
       $CROSS build --target $TARGET_TRIPLE
       $CROSS build --target $TARGET_TRIPLE --all-features
     else
-      cd bamboo-c
-      $CROSS build --target $TARGET_TRIPLE --no-default-features
-      cp target/$TARGET_TRIPLE/debug/libbamboo_c.a ../target/$TARGET_TRIPLE/debug
-      cd ..
+      $CROSS build -p bamboo-c --target $TARGET_TRIPLE 
     fi
 else
     if [ -z $NO_STD ]
     then
       $CROSS build --target $TARGET_TRIPLE --all-features --release
     else
-      cd bamboo-c
-      $CROSS build --target $TARGET_TRIPLE --release --no-default-features
-      cd ..
+      $CROSS build -p bamboo-c --target $TARGET_TRIPLE --release
     fi
 fi
 
