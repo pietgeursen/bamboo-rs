@@ -6,20 +6,20 @@ use crate::signature::Signature;
 use crate::yamf_hash::YamfHash;
 
 use super::{is_lipmaa_required, Entry};
-use crate::Error;
+use snafu::{ensure, ResultExt, NoneError};
+
+pub mod error;
+pub use error::*;
 
 pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Error> {
+    ensure!(bytes.len() > 0, DecodeInputIsLengthZero);
+
     // Decode is end of feed
-    if bytes.len() == 0 {
-        return Err(Error::DecodeInputIsLengthZero);
-    }
     let is_end_of_feed = bytes[0] == 1;
 
-    // Decode the author
-    if bytes.len() < PUBLIC_KEY_LENGTH + 1 {
-        return Err(Error::DecodeAuthorError);
-    }
+    ensure!(bytes.len() >= PUBLIC_KEY_LENGTH + 1, DecodeAuthorError);
 
+    // Decode the author
     let author = DalekPublicKey::from_bytes(&bytes[1..PUBLIC_KEY_LENGTH + 1])
         .map_err(|_| Error::DecodeAuthorError)?;
 
@@ -27,17 +27,15 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Error> {
 
     // Decode the log id
     let (log_id, remaining_bytes) = varu64_decode(remaining_bytes)
-        .map_err(|(err, _)| err)
-        .map_err(|_| Error::DecodeLogIdError)?;
+        .map_err(|_| NoneError)
+        .context(DecodeLogIdError)?;
 
     // Decode the sequence number
     let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
-        .map_err(|(err, _)| err)
-        .map_err(|_| Error::DecodeSeqError)?;
+        .map_err(|_| NoneError)
+        .context(DecodeSeqError)?;
 
-    if seq_num == 0 {
-        return Err(Error::DecodeSeqIsZero);
-    }
+    ensure!(seq_num > 0, DecodeSeqIsZero { seq_num });
 
     let lipmaa_is_required = is_lipmaa_required(seq_num);
 
@@ -46,30 +44,29 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Error> {
         (1, _) => (None, None, remaining_bytes),
         (_, true) => {
             let (lipmaa_link, remaining_bytes) =
-                YamfHash::<&[u8]>::decode(remaining_bytes).map_err(|_| Error::DecodeLipmaaError)?;
-            let (backlink, remaining_bytes) = YamfHash::<&[u8]>::decode(remaining_bytes)
-                .map_err(|_| Error::DecodeBacklinkError)?;
+                YamfHash::<&[u8]>::decode(remaining_bytes).context(DecodeLipmaaError)?;
+            let (backlink, remaining_bytes) =
+                YamfHash::<&[u8]>::decode(remaining_bytes).context(DecodeBacklinkError)?;
             (Some(backlink), Some(lipmaa_link), remaining_bytes)
         }
         (_, false) => {
-            let (backlink, remaining_bytes) = YamfHash::<&[u8]>::decode(remaining_bytes)
-                .map_err(|_| Error::DecodeBacklinkError)?;
+            let (backlink, remaining_bytes) =
+                YamfHash::<&[u8]>::decode(remaining_bytes).context(DecodeBacklinkError)?;
             (Some(backlink), None, remaining_bytes)
         }
     };
 
     // Decode the payload size
     let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
-        .map_err(|(err, _)| err)
-        .map_err(|_| Error::DecodePayloadSizeError)?;
+        .map_err(|_| NoneError)
+        .context(DecodePayloadSizeError)?;
 
     // Decode the payload hash
     let (payload_hash, remaining_bytes) =
-        YamfHash::<&[u8]>::decode(remaining_bytes).map_err(|_| Error::DecodePayloadHashError)?;
+        YamfHash::<&[u8]>::decode(remaining_bytes).context(DecodePayloadHashError)?;
 
     // Decode the signature
-    let (sig, _) =
-        Signature::<&[u8]>::decode(remaining_bytes).map_err(|_| Error::DecodeSigError)?;
+    let (sig, _) = Signature::<&[u8]>::decode(remaining_bytes).context(DecodeSigError)?;
 
     Ok(Entry {
         log_id,

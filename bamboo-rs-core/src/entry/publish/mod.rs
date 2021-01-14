@@ -2,10 +2,13 @@ pub use crate::BLAKE2B_HASH_SIZE;
 
 use super::decode::decode;
 use super::{is_lipmaa_required, Entry};
-use crate::error::*;
 use crate::signature::Signature;
 use crate::yamf_hash::new_blake2b;
 use ed25519_dalek::{Keypair, Signer};
+use snafu::{ensure, ResultExt};
+
+pub mod error;
+pub use error::*;
 
 pub fn publish(
     out: &mut [u8],
@@ -42,19 +45,26 @@ pub fn publish(
 
     // if the seq is larger than 1, we need to append the lipmaa and backlink hashes.
     if seq_num > 1 {
-        let lipmaa_link = new_blake2b(lipmaa_entry_bytes.ok_or(Error::PublishWithoutLipmaaEntry)?);
 
-        //Make sure we're not trying to publish after the end of a feed.
-        let backlink_entry =
-            decode(&backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?[..])?;
-        if backlink_entry.is_end_of_feed {
-            return Err(Error::PublishAfterEndOfFeed);
-        }
+        let backlink_entry = decode(&backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?[..])
+            .context(DecodeBacklinkEntry)?;
+
+        let lipmaa_entry = decode(&lipmaa_entry_bytes.ok_or(Error::PublishWithoutLipmaaEntry)?[..])
+            .context(DecodeLipmaaEntry)?;
+        // Ensure we're not trying to publish after the end of a feed.
+        ensure!(!backlink_entry.is_end_of_feed, PublishAfterEndOfFeed);
 
         // Avoid publishing to a feed using an incorrect log_id
-        if log_id != backlink_entry.log_id {
-            return Err(Error::PublishWithIncorrectLogId);
-        }
+        ensure!(log_id == backlink_entry.log_id, PublishWithIncorrectBacklinkLogId);
+
+        // Avoid publishing using a different public key to the backlink 
+        ensure!(author == backlink_entry.author, PublishKeypairDidNotMatchBacklinkPublicKey);
+
+        // Avoid publishing using a different public key to the lipmaa link 
+        ensure!(author == lipmaa_entry.author, PublishKeypairDidNotMatchBacklinkPublicKey);
+
+        // Avoid publishing to a feed using an incorrect log_id
+        ensure!(log_id == lipmaa_entry.log_id, PublishWithIncorrectLipmaaLinkLogId);
 
         let backlink = new_blake2b(backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?);
         entry.backlink = Some(backlink);
@@ -62,21 +72,26 @@ pub fn publish(
         // If the lipmaalink and backlink would be different, we should append the lipmaalink,
         // otherwise we're allowed to omit it to save some bytes.
         if is_lipmaa_required(seq_num) {
+
+            let lipmaa_link = new_blake2b(lipmaa_entry_bytes.ok_or(Error::PublishWithoutLipmaaEntry)?);
             entry.lipmaa_link = Some(lipmaa_link);
         }
     }
 
-    let mut buff = [0u8; 512];
-    let buff_size = entry.encode(&mut buff)?;
+    let buff_size = entry.encode(out).context(EncodeEntryToOutBuffer {
+        buffer_size: out.len(),
+    })?;
 
     let signature = key_pair
         .as_ref()
         .ok_or(Error::PublishWithoutSecretKey)?
-        .sign(&buff[..buff_size]);
+        .sign(&out[..buff_size]);
     let sig_bytes = &signature.to_bytes()[..];
     let signature = Signature(sig_bytes.into());
 
     entry.sig = Some(signature);
 
-    entry.encode(out)
+    entry.encode(out).context(EncodeEntryToOutBuffer {
+        buffer_size: out.len(),
+    })
 }

@@ -1,7 +1,14 @@
 use super::*;
-pub use bamboo_rs_core::error::*;
 use std::collections::HashMap;
 
+use snafu::Snafu;
+
+#[derive(Debug, Snafu)]
+pub enum Error {}
+
+pub type Result<T, E = Error> = core::result::Result<T, E>;
+
+#[derive(Debug)]
 pub struct MemoryEntryStore {
     pub store: HashMap<u64, Vec<u8>>,
 }
@@ -18,6 +25,8 @@ impl MemoryEntryStore {
 }
 
 impl EntryStore for MemoryEntryStore {
+    type Error = Error;
+
     fn get_last_seq(&self) -> Option<u64> {
         self.store.keys().max().map(|max| *max)
     }
@@ -36,15 +45,15 @@ impl EntryStore for MemoryEntryStore {
         Ok(result)
     }
     fn get_last_entry(&self) -> Result<Option<Vec<u8>>> {
-        match self.get_last_seq(){
+        match self.get_last_seq() {
             Some(seq) => self.get_entry(seq),
-            None => Ok(None)
+            None => Ok(None),
         }
     }
     fn get_last_entry_ref<'a>(&'a self) -> Result<Option<&'a [u8]>> {
-        match self.get_last_seq(){
+        match self.get_last_seq() {
             Some(seq) => self.get_entry_ref(seq),
-            None => Ok(None)
+            None => Ok(None),
         }
     }
     fn add_entry(&mut self, entry: &[u8], seq_num: u64) -> Result<()> {

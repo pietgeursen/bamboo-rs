@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 bamboo-rs-core = {path = "../bamboo-rs-core"}
 lipmaa-link = "0.1.1"
+snafu = "0.6.10"
 
 [dev-dependencies]
 arrayvec = "0.4.11"

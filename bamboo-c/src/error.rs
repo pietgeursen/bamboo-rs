@@ -1,8 +1,13 @@
-#[derive(Debug, Clone, Serialize)]
+use snafu::Snafu;
+use bamboo_rs_core::entry::decode::Error as DecodeError;
+
+#[derive(Debug, Snafu)]
+#[snafu(visibility = "pub(crate)")]
 #[repr(C)]
 pub enum Error {
-    NoError = 0isize,
-    EncodeIsEndOfFeedError = 1isize,
+    NoError,
+
+    EncodeIsEndOfFeedError,
     EncodePayloadHashError,
     EncodePayloadSizeError,
     EncodeAuthorError,
@@ -13,6 +18,7 @@ pub enum Error {
     EncodeSigError,
     EncodeEntryHasBacklinksWhenSeqZero,
     EncodeBufferLength,
+
     PublishAfterEndOfFeed,
     PublishWithIncorrectLogId,
     PublishWithoutSecretKey,
@@ -20,7 +26,6 @@ pub enum Error {
     PublishWithoutLipmaaEntry,
     PublishWithoutBacklinkEntry,
 
-    DecodeIsEndOfFeedError,
     DecodePayloadHashError,
     DecodePayloadSizeError,
     DecodeLogIdError,
@@ -30,47 +35,39 @@ pub enum Error {
     DecodeBacklinkError,
     DecodeLipmaaError,
     DecodeSigError,
-    DecodeSsbSigError,
-    DecodeSsbPubKeyError,
-    VerifySsbSigError,
 
     DecodeInputIsLengthZero,
 
-    GetEntrySequenceInvalid,
-
     GetEntryFailed,
     EntryNotFound,
-    EncodingForSigningFailed,
-    EncodingForStoringFailed,
     AppendFailed,
-    PreviousDecodeFailed,
     PublishNewEntryFailed,
     AddEntryDecodeFailed,
     AddEntryPayloadLengthDidNotMatch,
     AddEntryLipmaaHashDidNotMatch,
     AddEntryPayloadHashDidNotMatch,
     AddEntryBacklinkHashDidNotMatch,
-    AddEntryGetBacklinkError,
-    AddEntryGetLipmaalinkError,
     AddEntryNoLipmaalinkInStore,
     AddEntryDecodeLipmaalinkFromStore,
     AddEntryAuthorDidNotMatchLipmaaEntry,
     AddEntryLogIdDidNotMatchLipmaaEntry,
     AddEntryAuthorDidNotMatchPreviousEntry,
     AddEntryLogIdDidNotMatchPreviousEntry,
-    AddEntryGetLastEntryError,
-    AddEntryGetLastEntryNotFound,
     AddEntryDecodeLastEntry,
     AddEntryToFeedThatHasEnded,
     AddEntryWithInvalidSignature,
-    AddEntryDecodeEntryBytesForSigning,
     AddEntrySigNotValidError,
 
-    DecodeVaru64Error,
     DecodeError,
     EncodeWriteError,
     EncodeError,
-    SignatureInvalid
+    SignatureInvalid,
 }
 
-pub type Result<T, E = Error> = core::result::Result<T, E>;
+
+impl From<DecodeError> for Error {
+    fn from(error: DecodeError) -> Error {
+        unimplemented!();
+    }
+}
+

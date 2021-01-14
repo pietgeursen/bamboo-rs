@@ -7,10 +7,10 @@ extern crate bamboo_rs_log;
 extern crate hex;
 
 use bamboo_rs_core::entry::decode;
-use bamboo_rs_core::{lipmaa};
-use ed25519_dalek::Keypair;
+use bamboo_rs_core::lipmaa;
 use bamboo_rs_log::entry_store::MemoryEntryStore;
 use bamboo_rs_log::{EntryStore, Log};
+use ed25519_dalek::Keypair;
 use serde::Serializer;
 use serde_json::json;
 use serde_json::Value;
@@ -38,7 +38,6 @@ struct KeyPairJson {
 struct Bytes<'a>(#[serde(serialize_with = "hex_from_bytes")] &'a [u8]);
 
 pub fn main() {
-
     let jsn = json!({
         "validFirstEntry": valid_first_entry(),
         "fiveValidEntries": n_valid_entries(5),
@@ -50,7 +49,6 @@ pub fn main() {
 }
 
 fn valid_first_entry() -> Value {
-
     let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
         .unwrap()
         .key_pair;
@@ -70,7 +68,7 @@ fn valid_first_entry() -> Value {
     let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
 
     let entry = decode(entry_bytes).unwrap();
-    assert!(entry.verify_signature().unwrap());
+    assert!(entry.verify_signature().is_ok());
 
     let mut buffer = [0u8; 512];
     let buff_size = entry.encode(&mut buffer).unwrap();
@@ -88,7 +86,6 @@ fn valid_first_entry() -> Value {
 }
 
 fn n_valid_entries(n: u64) -> Value {
-
     let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
         .unwrap()
         .key_pair;
@@ -130,7 +127,6 @@ fn n_valid_entries(n: u64) -> Value {
 }
 
 fn valid_partially_replicated_feed(n: u64) -> Value {
-
     let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
         .unwrap()
         .key_pair;

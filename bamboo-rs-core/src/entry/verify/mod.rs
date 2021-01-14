@@ -1,26 +1,32 @@
 use arrayvec::ArrayVec;
 use core::borrow::Borrow;
 use core::convert::TryFrom;
+use snafu::{ensure, NoneError, ResultExt};
 
-use ed25519_dalek::{
-    Signature as DalekSignature,
-    Verifier
-};
+use ed25519_dalek::{Signature as DalekSignature, Verifier};
 
+use super::{decode::decode, is_lipmaa_required, Entry};
 use crate::yamf_hash::new_blake2b;
 use crate::yamf_hash::YamfHash;
-use super::{Entry, is_lipmaa_required, decode::decode};
-use crate::error::*;
 
+#[cfg(feature = "std")]
+pub mod batch;
+#[cfg(feature = "std")]
+pub use batch::{verify_batch, verify_batch_signatures};
+
+pub mod error;
+pub use error::*;
 
 impl<'a, H, S> Entry<H, S>
 where
     H: Borrow<[u8]>,
     S: Borrow<[u8]>,
 {
-    pub fn verify_signature(&self) -> Result<bool> {
+    /// Verify the signature of an entry is valid.
+    pub fn verify_signature(&self) -> Result<()> {
         let ssb_sig = DalekSignature::try_from(self.sig.as_ref().unwrap().0.borrow())
-            .map_err(|_| Error::DecodeSsbSigError)?;
+            .map_err(|_| NoneError)
+            .context(DecodeSigError)?;
 
         let mut buff = [0u8; 512];
 
@@ -28,12 +34,10 @@ where
 
         let pub_key = self.author.borrow();
 
-        let result = pub_key
+        pub_key
             .verify(&buff[..encoded_size], &ssb_sig)
-            .map(|_| true)
-            .unwrap_or(false);
-
-        Ok(result)
+            .map_err(|_| NoneError)
+            .context(InvalidSignature)
     }
 }
 
@@ -46,12 +50,14 @@ pub fn verify_links_and_payload(
     // If we have the payload, check that its hash and length match what is encoded in the
     // entry.
     if let Some((payload, payload_hash)) = payload {
-        if payload_hash != entry.payload_hash {
-            return Err(Error::AddEntryPayloadHashDidNotMatch);
-        }
-        if payload.len() as u64 != entry.payload_size {
-            return Err(Error::AddEntryPayloadLengthDidNotMatch);
-        }
+        ensure!(payload_hash == entry.payload_hash, PayloadHashDidNotMatch);
+        ensure!(
+            payload.len() == entry.payload_size as usize,
+            PayloadLengthDidNotMatch {
+                actual: payload.len(),
+                expected: entry.payload_size
+            }
+        );
     }
 
     let lipmaa_is_required = is_lipmaa_required(entry.seq_num);
@@ -67,26 +73,31 @@ pub fn verify_links_and_payload(
         // Happy path 2: seq is larger than one and we can find the lipmaa link in the store
         (Some((lipmaa, lipmaa_hash)), Some(ref entry_lipmaa), seq_num, true) if seq_num > 1 => {
             // Make sure the lipmaa entry hash matches what's in the entry.
-            if lipmaa_hash != **entry_lipmaa {
-                return Err(Error::AddEntryLipmaaHashDidNotMatch);
-            }
+            ensure!(lipmaa_hash == **entry_lipmaa, LipmaaHashDoesNotMatch);
 
-            let lipmaa_entry =
-                decode(lipmaa).map_err(|_| Error::AddEntryDecodeLipmaalinkFromStore)?;
+            let lipmaa_entry = decode(lipmaa).context(DecodeLipmaaEntry)?;
 
             // Verify that the log_id of the entry is the same as the lipmaa entry
-            if entry.log_id != lipmaa_entry.log_id {
-                return Err(Error::AddEntryLogIdDidNotMatchLipmaaEntry);
-            }
+            ensure!(
+                entry.log_id == lipmaa_entry.log_id,
+                LipmaaLogIdDoesNotMatch {
+                    expected: entry.log_id,
+                    actual: lipmaa_entry.log_id
+                }
+            );
+
             // Verify the author of the entry is the same as the author in the lipmaa link entry
-            if entry.author != lipmaa_entry.author {
-                return Err(Error::AddEntryAuthorDidNotMatchLipmaaEntry);
-            }
+            ensure!(
+                entry.author == lipmaa_entry.author,
+                LipmaaAuthorDoesNotMatch
+            );
+
             Ok(())
         }
         // Happy path 3: lipmaa link is not required because it would duplicate the backlink.
         (_, _, seq_num, false) if seq_num > 1 => Ok(()),
-        (_, _, _, _) => Err(Error::AddEntryNoLipmaalinkInStore),
+        (None, _, _, true) => Err(Error::LipmaaLinkRequired),
+        (_, _, _, _) => Err(Error::UnknownError),
     }?;
 
     match (backlink, entry.backlink.as_ref(), entry.seq_num) {
@@ -95,31 +106,35 @@ pub fn verify_links_and_payload(
 
         //Happy path 2: This does have a backlink and we found it.
         (Some((backlink, backlink_hash)), Some(ref entry_backlink), seq_num) if seq_num > 1 => {
-            let backlink_entry = decode(backlink).map_err(|_| Error::AddEntryDecodeLastEntry)?;
+            let backlink_entry = decode(backlink).context(DecodeBacklinkEntry)?;
 
             // Verify that the log_id of the entry is the same as the lipmaa entry
-            if entry.log_id != backlink_entry.log_id {
-                return Err(Error::AddEntryLogIdDidNotMatchPreviousEntry);
-            }
+            ensure!(
+                entry.log_id == backlink_entry.log_id,
+                BacklinkLogIdDoesNotMatch {
+                    expected: entry.log_id,
+                    actual: backlink_entry.log_id
+                }
+            );
+
             // Verify the author of the entry is the same as the author in the lipmaa link entry
-            if entry.author != backlink_entry.author {
-                return Err(Error::AddEntryAuthorDidNotMatchPreviousEntry);
-            }
+            ensure!(
+                entry.author == backlink_entry.author,
+                BacklinkAuthorDoesNotMatch
+            );
 
             // Verify this wasn't published after an end of feed message.
-            if backlink_entry.is_end_of_feed {
-                return Err(Error::AddEntryToFeedThatHasEnded);
-            }
+            ensure!(!backlink_entry.is_end_of_feed, PublishedAfterEndOfFeed);
 
-            if backlink_hash != **entry_backlink {
-                return Err(Error::AddEntryBacklinkHashDidNotMatch);
-            }
+            // Verify the backlink hashes match
+            ensure!(backlink_hash == **entry_backlink, BacklinkHashDoesNotMatch);
+
             Ok(())
         }
         //Happy path 3: We don't have the backlink for this entry, happens when doing partial
         //replication.
         (None, Some(_), seq_num) if seq_num > 1 => Ok(()),
-        (_, _, _) => Err(Error::AddEntryBacklinkHashDidNotMatch),
+        (_, _, _) => Err(Error::UnknownError),
     }?;
 
     Ok(())
@@ -130,9 +145,9 @@ pub fn verify(
     payload: Option<&[u8]>,
     lipmaa_link: Option<&[u8]>,
     backlink: Option<&[u8]>,
-) -> Result<bool, Error> {
-    // Decode the entry that we want to add.
-    let entry = decode(entry_bytes).map_err(|_| Error::AddEntryDecodeFailed)?;
+) -> Result<(), Error> {
+    // Decode the entry that we want to verify.
+    let entry = decode(entry_bytes).context(DecodeEntry)?;
 
     let payload_and_hash = payload.map(|payload| (payload, new_blake2b(payload)));
     let lipmaa_link_and_hash = lipmaa_link.map(|link| (link, new_blake2b(link)));
@@ -145,9 +160,5 @@ pub fn verify(
         backlink_and_hash,
     )?;
 
-    let is_valid = entry
-        .verify_signature()
-        .map_err(|_| Error::AddEntrySigNotValidError)?;
-
-    Ok(is_valid)
+    entry.verify_signature()
 }

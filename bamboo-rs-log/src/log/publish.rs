@@ -1,13 +1,15 @@
+use core::fmt::Debug;
 use lipmaa_link::lipmaa;
 
 use crate::entry_store::EntryStore;
 use bamboo_rs_core::entry::publish;
-use bamboo_rs_core::error::*;
+use snafu::ResultExt;
 
 use super::Log;
+use super::error::*;
 
-impl<Store: EntryStore> Log<Store> {
-    pub fn publish(&mut self, payload: &[u8], is_end_of_feed: bool) -> Result<()> {
+impl<Store: EntryStore + Debug> Log<Store> {
+    pub fn publish(&mut self, payload: &[u8], is_end_of_feed: bool) -> Result<(), Error<Store>> {
         let mut buff = [0u8; 512];
 
         let last_seq_num = self.store.get_last_seq();
@@ -17,11 +19,12 @@ impl<Store: EntryStore> Log<Store> {
         let lipmaa_entry_bytes = self
             .store
             .get_entry_ref(lipmaa_link_seq)
-            .map_err(|_| Error::GetEntryFailed)?;
+            .context(PublishEntryGetLipmaaEntry)?;
+
         let backlink_bytes = self
             .store
             .get_entry_ref(last_seq_num.unwrap_or(0))
-            .map_err(|_| Error::GetEntryFailed)?;
+            .context(PublishEntryGetBacklinkEntry)?;
 
         let length = publish(
             &mut buff,
@@ -33,21 +36,21 @@ impl<Store: EntryStore> Log<Store> {
             lipmaa_entry_bytes,
             backlink_bytes,
         )
-        .map_err(|_| Error::PublishNewEntryFailed)?;
+        .context(PublishNewEntryFailed)?;
 
         self.store
             .add_entry(&buff[..length], seq_num)
-            .map_err(|_| Error::AppendFailed)
+            .context(PublishEntryAppendFailed)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::entry_store::MemoryEntryStore;
-    use crate::log::Log;
+    use crate::log::{Log, Error};
     use crate::EntryStore;
     use bamboo_rs_core::entry::decode;
-    use bamboo_rs_core::{Error, Keypair};
+    use bamboo_rs_core::{Keypair};
 
     use rand::rngs::OsRng;
 

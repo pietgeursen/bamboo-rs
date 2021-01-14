@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-pre-29] - 2021-1-13
+### Changed
+- Move c bindings out into new module bamboo-c. Breaking change to name of libraries.
+- Greatly improves Error types to include more information.
+- Error types now don't implement `Serialize`. This will be a breaking change for p2p panda wasm code.
+
 ## [0.1.0-pre-28] - 2021-1-6
 ### Rename
 - Renames everything from bamboo-\*  to bamboo-rs-\*. 

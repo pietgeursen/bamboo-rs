@@ -1,17 +1,16 @@
 use core::borrow::Borrow;
+use snafu::{ensure, ResultExt};
 
 #[cfg(feature = "std")]
 use std::io::Write;
-use varu64::{
-    encode as varu64_encode, encoding_length as varu64_encoding_length,
-};
+use varu64::{encode as varu64_encode, encoding_length as varu64_encoding_length};
 
 #[cfg(feature = "std")]
 use varu64::encode_write as varu64_encode_write;
 
-
 use super::{Entry, TAG_BYTE_LENGTH};
-use crate::error::*;
+pub mod error;
+pub use error::*;
 
 impl<'a, H, S> Entry<H, S>
 where
@@ -24,16 +23,15 @@ where
         if let Some(ref sig) = self.sig {
             next_byte_num += sig
                 .encode(&mut out[next_byte_num..])
-                .map_err(|_| Error::EncodeSigError)?;
+                .context(EncodeSigError)?;
         }
 
         Ok(next_byte_num as usize)
     }
 
     pub fn encode_for_signing(&self, out: &mut [u8]) -> Result<usize, Error> {
-        if out.len() < self.encoding_length() {
-            return Err(Error::EncodeBufferLength);
-        }
+        ensure!(out.len() >= self.encoding_length(), EncodeBufferLength);
+        ensure!(self.seq_num > 0, EncodeSeqIsZero);
 
         let mut next_byte_num = 0;
 
@@ -61,19 +59,19 @@ where
             (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
                 next_byte_num += lipmaa_link
                     .encode(&mut out[next_byte_num..])
-                    .map_err(|_| Error::EncodeLipmaaError)?;
+                    .context(EncodeLipmaaError)?;
                 next_byte_num += backlink
                     .encode(&mut out[next_byte_num..])
-                    .map_err(|_| Error::EncodeBacklinkError)?;
+                    .context(EncodeBacklinkError)?;
                 Ok(next_byte_num)
             }
             (n, Some(ref backlink), None) if n > 1 => {
                 next_byte_num += backlink
                     .encode(&mut out[next_byte_num..])
-                    .map_err(|_| Error::EncodeBacklinkError)?;
+                    .context(EncodeBacklinkError)?;
                 Ok(next_byte_num)
             }
-            (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
+            (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasLinksWhenSeqZero),
             _ => Ok(next_byte_num),
         }?;
 
@@ -84,7 +82,7 @@ where
         next_byte_num += self
             .payload_hash
             .encode(&mut out[next_byte_num..])
-            .map_err(|_| Error::EncodePayloadHashError)?;
+            .context(EncodePayloadHashError)?;
 
         Ok(next_byte_num as usize)
     }
@@ -92,6 +90,7 @@ where
     /// Encode the entry ready for signing.
     #[cfg(feature = "std")]
     pub fn encode_for_signing_write<W: Write>(&self, mut w: W) -> Result<()> {
+        ensure!(self.seq_num > 0, EncodeSeqIsZero);
         // Encode the "is end of feed" tag.
         let mut is_end_of_feed_byte = [0];
         if self.is_end_of_feed {
@@ -117,16 +116,16 @@ where
             (n, Some(ref backlink), Some(ref lipmaa_link)) if n > 1 => {
                 lipmaa_link
                     .encode_write(&mut w)
-                    .map_err(|_| Error::EncodeLipmaaError)?;
+                    .context(EncodeLipmaaError)?;
 
-                backlink
-                    .encode_write(&mut w)
-                    .map_err(|_| Error::EncodeBacklinkError)
+                backlink.encode_write(&mut w).context(EncodeBacklinkError)
             }
-            (n, Some(ref backlink), None) if n > 1 => backlink
-                .encode_write(&mut w)
-                .map_err(|_| Error::EncodeBacklinkError),
-            (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
+            (n, Some(ref backlink), None) if n > 1 => {
+                backlink.encode_write(&mut w).context(EncodeBacklinkError)
+            }
+            (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasLinksWhenSeqZero),
+            (n, None, Some(_)) if n <= 1 => Err(Error::EncodeEntryHasLinksWhenSeqZero),
+            (n, Some(_), None) if n <= 1 => Err(Error::EncodeEntryHasLinksWhenSeqZero),
             _ => Ok(()),
         }?;
 
@@ -137,7 +136,7 @@ where
         // Encode the payload hash
         self.payload_hash
             .encode_write(&mut w)
-            .map_err(|_| Error::EncodePayloadHashError)?;
+            .context(EncodePayloadHashError)?;
 
         Ok(())
     }
@@ -148,8 +147,7 @@ where
 
         // Encode the signature
         if let Some(ref sig) = self.sig {
-            sig.encode_write(&mut w)
-                .map_err(|_| Error::EncodeSigError)?;
+            sig.encode_write(&mut w).context(EncodeSigError)?;
         }
 
         Ok(())
