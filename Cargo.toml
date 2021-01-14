@@ -5,7 +5,15 @@ members = [
     "bamboo-rs-core",
     "bamboo-rs-core-test",
     "bamboo-rs-cli",
-    #"bamboo-rs-log",
+    "generate-test-vectors",
+    "bamboo-rs-wasm"
+]
+
+
+default-members = [
+    "bamboo-rs-core",
+    "bamboo-rs-core-test",
+    "bamboo-rs-cli",
     "generate-test-vectors",
     "bamboo-rs-wasm"
 ]
