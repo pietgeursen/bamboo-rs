@@ -1,6 +1,5 @@
 use crate::signature::error::Error as SigError;
 use snafu::Snafu;
-use varu64::DecodeError as Varu64Error;
 use yamf_hash::error::Error as YamfHashError;
 
 #[derive(Debug, Snafu)]
@@ -9,19 +8,17 @@ pub enum Error {
     #[snafu(display("Could not decode payload hash {}", source))]
     DecodePayloadHashError { source: YamfHashError },
     #[snafu(display(
-        "Could not decode payload size, error with varu64 encoding: {}",
-        source
+        "Could not decode payload size, error with varu64 encoding"
     ))]
-    DecodePayloadSizeError { source: Varu64Error },
-    #[snafu(display("Could not decode log_id, error with varu64 encoding: {}", source))]
-    DecodeLogIdError { source: Varu64Error },
+    DecodePayloadSizeError,
+    #[snafu(display("Could not decode log_id, error with varu64 encoding"))]
+    DecodeLogIdError,
     #[snafu(display("Could not decode author public key from bytes"))]
     DecodeAuthorError,
     #[snafu(display(
-        "Could not decode entry sequence number, error with varu64 encoding: {}",
-        source
+        "Could not decode entry sequence number, error with varu64 encoding"
     ))]
-    DecodeSeqError { source: Varu64Error },
+    DecodeSeqError,
     #[snafu(display("Entry sequence must be larger than 0 but was {}", seq_num))]
     DecodeSeqIsZero { seq_num: u64 },
     #[snafu(display("Could not decode backlink yamf hash: {}", source))]

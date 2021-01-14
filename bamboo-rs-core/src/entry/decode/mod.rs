@@ -6,7 +6,7 @@ use crate::signature::Signature;
 use crate::yamf_hash::YamfHash;
 
 use super::{is_lipmaa_required, Entry};
-use snafu::{ensure, ResultExt};
+use snafu::{ensure, ResultExt, NoneError};
 
 pub mod error;
 pub use error::*;
@@ -27,12 +27,12 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Error> {
 
     // Decode the log id
     let (log_id, remaining_bytes) = varu64_decode(remaining_bytes)
-        .map_err(|(err, _)| err)
+        .map_err(|_| NoneError)
         .context(DecodeLogIdError)?;
 
     // Decode the sequence number
     let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
-        .map_err(|(err, _)| err)
+        .map_err(|_| NoneError)
         .context(DecodeSeqError)?;
 
     ensure!(seq_num > 0, DecodeSeqIsZero { seq_num });
@@ -58,7 +58,7 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Error> {
 
     // Decode the payload size
     let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
-        .map_err(|(err, _)| err)
+        .map_err(|_| NoneError)
         .context(DecodePayloadSizeError)?;
 
     // Decode the payload hash
