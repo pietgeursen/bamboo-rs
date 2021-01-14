@@ -1,7 +1,7 @@
 set -e
 
 cargo build --release
-cp ../../target/release/bamboo-cli .
+cp ../../target/release/bamboo-rs-cli ./bamboo-cli
 
 echo "Create hello world payload"
 echo "Hello Bamboooo" > payload
