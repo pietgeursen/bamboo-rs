@@ -21,11 +21,11 @@ impl From<BambooDecodeError> for DecodeError {
     fn from(err: BambooDecodeError) -> DecodeError {
         match err {
             BambooDecodeError::DecodePayloadHashError { .. } => DecodeError::PayloadHashError,
-            BambooDecodeError::DecodePayloadSizeError => DecodeError::PayloadSizeError,
-            BambooDecodeError::DecodeLogIdError => DecodeError::LogIdError,
+            BambooDecodeError::DecodePayloadSizeError { .. } => DecodeError::PayloadSizeError,
+            BambooDecodeError::DecodeLogIdError { .. } => DecodeError::LogIdError,
             BambooDecodeError::DecodeAuthorError => DecodeError::AuthorError,
-            BambooDecodeError::DecodeSeqError => DecodeError::SeqError,
-            BambooDecodeError::DecodeSeqIsZero => DecodeError::SeqIsZero,
+            BambooDecodeError::DecodeSeqError { .. } => DecodeError::SeqError,
+            BambooDecodeError::DecodeSeqIsZero { .. } => DecodeError::SeqIsZero,
             BambooDecodeError::DecodeBacklinkError { .. } => DecodeError::BacklinkError,
             BambooDecodeError::DecodeLipmaaError { .. } => DecodeError::LipmaaError,
             BambooDecodeError::DecodeSigError { .. } => DecodeError::SigError,

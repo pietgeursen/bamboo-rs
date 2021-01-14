@@ -27,15 +27,15 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Error> {
 
     // Decode the log id
     let (log_id, remaining_bytes) = varu64_decode(remaining_bytes)
-        .map_err(|_| snafu::NoneError)
+        .map_err(|(err, _)| err)
         .context(DecodeLogIdError)?;
 
     // Decode the sequence number
     let (seq_num, remaining_bytes) = varu64_decode(remaining_bytes)
-        .map_err(|_| snafu::NoneError)
+        .map_err(|(err, _)| err)
         .context(DecodeSeqError)?;
 
-    ensure!(seq_num > 0, DecodeSeqIsZero);
+    ensure!(seq_num > 0, DecodeSeqIsZero { seq_num });
 
     let lipmaa_is_required = is_lipmaa_required(seq_num);
 
@@ -58,7 +58,7 @@ pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Error> {
 
     // Decode the payload size
     let (payload_size, remaining_bytes) = varu64_decode(remaining_bytes)
-        .map_err(|_| snafu::NoneError)
+        .map_err(|(err, _)| err)
         .context(DecodePayloadSizeError)?;
 
     // Decode the payload hash

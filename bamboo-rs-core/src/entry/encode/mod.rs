@@ -31,6 +31,7 @@ where
 
     pub fn encode_for_signing(&self, out: &mut [u8]) -> Result<usize, Error> {
         ensure!(out.len() >= self.encoding_length(), EncodeBufferLength);
+        ensure!(self.seq_num > 0, EncodeSeqIsZero);
 
         let mut next_byte_num = 0;
 
@@ -89,6 +90,7 @@ where
     /// Encode the entry ready for signing.
     #[cfg(feature = "std")]
     pub fn encode_for_signing_write<W: Write>(&self, mut w: W) -> Result<()> {
+        ensure!(self.seq_num > 0, EncodeSeqIsZero);
         // Encode the "is end of feed" tag.
         let mut is_end_of_feed_byte = [0];
         if self.is_end_of_feed {
@@ -122,6 +124,8 @@ where
                 backlink.encode_write(&mut w).context(EncodeBacklinkError)
             }
             (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
+            (n, None, Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
+            (n, Some(_), None) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
             _ => Ok(()),
         }?;
 

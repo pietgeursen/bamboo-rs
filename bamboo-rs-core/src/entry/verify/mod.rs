@@ -81,8 +81,8 @@ pub fn verify_links_and_payload(
             ensure!(
                 entry.log_id == lipmaa_entry.log_id,
                 LipmaaLogIdDoesNotMatch {
-                    actual: entry.log_id,
-                    expected: lipmaa_entry.log_id
+                    expected: entry.log_id,
+                    actual: lipmaa_entry.log_id
                 }
             );
 
@@ -96,7 +96,8 @@ pub fn verify_links_and_payload(
         }
         // Happy path 3: lipmaa link is not required because it would duplicate the backlink.
         (_, _, seq_num, false) if seq_num > 1 => Ok(()),
-        (_, _, _, _) => Err(Error::LipmaaLinkRequired),
+        (None, _, _, true) => Err(Error::LipmaaLinkRequired),
+        (_, _, _, _) => Err(Error::UnknownError),
     }?;
 
     match (backlink, entry.backlink.as_ref(), entry.seq_num) {
@@ -111,8 +112,8 @@ pub fn verify_links_and_payload(
             ensure!(
                 entry.log_id == backlink_entry.log_id,
                 BacklinkLogIdDoesNotMatch {
-                    actual: entry.log_id,
-                    expected: backlink_entry.log_id
+                    expected: entry.log_id,
+                    actual: backlink_entry.log_id
                 }
             );
 

@@ -22,6 +22,7 @@ pub enum VerifyError {
     BackLinkRequired,
     DecodeEntry,
     EncodeEntryForSigning,
+    UnknownError,
 }
 
 impl From<BambooVerifyError> for VerifyError {
@@ -56,6 +57,7 @@ impl From<BambooVerifyError> for VerifyError {
             BambooVerifyError::BacklinkAuthorDoesNotMatch => {
                 VerifyError::BacklinkAuthorDoesNotMatch
             }
+            BambooVerifyError::UnknownError => VerifyError::UnknownError
         }
     }
 }

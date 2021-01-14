@@ -318,7 +318,7 @@ mod tests {
             Some(&out[..size]),
             Some(&out[..size]),
         ) {
-            Err(PublishError::PublishWithIncorrectLogId) => {}
+            Err(PublishError::PublishWithIncorrectBacklinkLogId) => {}
             _ => panic!(),
         }
     }
