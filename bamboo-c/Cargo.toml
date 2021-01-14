@@ -8,6 +8,10 @@ edition = "2018"
 name = "bamboo_c"
 crate-type = ["cdylib", "staticlib"]
 
+[features]
+default = ["std"]
+std = ["ed25519-dalek/std"]
+
 [dependencies]
 bamboo-rs-core = {path = "../bamboo-rs-core", default_features = false}
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }

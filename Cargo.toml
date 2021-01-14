@@ -9,15 +9,6 @@ members = [
     "bamboo-rs-wasm"
 ]
 
-
-default-members = [
-    "bamboo-rs-core",
-    "bamboo-rs-core-test",
-    "bamboo-rs-cli",
-    "generate-test-vectors",
-    "bamboo-rs-wasm"
-]
-
 exclude = [
     "bamboo-rs-log"
 ]
