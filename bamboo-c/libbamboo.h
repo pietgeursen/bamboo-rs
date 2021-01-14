@@ -83,6 +83,11 @@ typedef enum PublishError {
   PublishError_PublishWithoutBacklinkEntry,
   PublishError_DecodeBacklinkEntry,
   PublishError_EncodeEntryToOutBuffer,
+  PublishError_PublishKeypairDidNotMatchBacklinkPublicKey,
+  PublishError_PublishKeypairDidNotMatchLipmaaLinkPublicKey,
+  PublishError_DecodeLipmaaEntry,
+  PublishError_PublishWithIncorrectBacklinkLogId,
+  PublishError_PublishWithIncorrectLipmaaLinkLogId,
 } PublishError;
 
 typedef enum VerifyError {
@@ -104,6 +109,7 @@ typedef enum VerifyError {
   VerifyError_BackLinkRequired,
   VerifyError_DecodeEntry,
   VerifyError_EncodeEntryForSigning,
+  VerifyError_UnknownError,
 } VerifyError;
 
 typedef struct CEntry {
