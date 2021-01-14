@@ -1,1 +1,1 @@
-initSidebarItems({"constant":[["BLAKE2B_HASH_SIZE",""]],"fn":[["publish",""]]});
+initSidebarItems({"constant":[["BLAKE2B_HASH_SIZE",""]],"fn":[["publish",""]],"mod":[["error",""]]});

@@ -1,5 +1,6 @@
 (function() {var implementors = {};
 implementors["arrayvec"] = [{"text":"impl&lt;A&gt; Display for ArrayString&lt;A&gt; <span class=\"where fmt-newline\">where<br>&nbsp;&nbsp;&nbsp;&nbsp;A: Array&lt;Item = u8&gt; + Copy,&nbsp;</span>","synthetic":false,"types":[]},{"text":"impl&lt;T&gt; Display for CapacityError&lt;T&gt;","synthetic":false,"types":[]}];
+implementors["bamboo_rs_core"] = [{"text":"impl Display for Error","synthetic":false,"types":[]},{"text":"impl Display for Error","synthetic":false,"types":[]},{"text":"impl Display for Error","synthetic":false,"types":[]},{"text":"impl Display for Error","synthetic":false,"types":[]},{"text":"impl Display for Error","synthetic":false,"types":[]}];
 implementors["crossbeam_channel"] = [{"text":"impl&lt;T&gt; Display for SendError&lt;T&gt;","synthetic":false,"types":[]},{"text":"impl&lt;T&gt; Display for TrySendError&lt;T&gt;","synthetic":false,"types":[]},{"text":"impl&lt;T&gt; Display for SendTimeoutError&lt;T&gt;","synthetic":false,"types":[]},{"text":"impl Display for RecvError","synthetic":false,"types":[]},{"text":"impl Display for TryRecvError","synthetic":false,"types":[]},{"text":"impl Display for RecvTimeoutError","synthetic":false,"types":[]},{"text":"impl Display for TrySelectError","synthetic":false,"types":[]},{"text":"impl Display for SelectTimeoutError","synthetic":false,"types":[]}];
 implementors["crossbeam_utils"] = [{"text":"impl&lt;T:&nbsp;?Sized + Display, '_&gt; Display for ShardedLockReadGuard&lt;'_, T&gt;","synthetic":false,"types":[]},{"text":"impl&lt;T:&nbsp;?Sized + Display, '_&gt; Display for ShardedLockWriteGuard&lt;'_, T&gt;","synthetic":false,"types":[]}];
 implementors["digest"] = [{"text":"impl Display for InvalidOutputSize","synthetic":false,"types":[]}];
@@ -12,6 +13,8 @@ implementors["rand_core"] = [{"text":"impl Display for Error","synthetic":false,
 implementors["rayon_core"] = [{"text":"impl Display for ThreadPoolBuildError","synthetic":false,"types":[]}];
 implementors["serde"] = [{"text":"impl Display for Error","synthetic":false,"types":[]},{"text":"impl&lt;'a&gt; Display for Unexpected&lt;'a&gt;","synthetic":false,"types":[]},{"text":"impl&lt;'a&gt; Display for dyn Expected + 'a","synthetic":false,"types":[]}];
 implementors["signature"] = [{"text":"impl Display for Error","synthetic":false,"types":[]}];
+implementors["snafu"] = [{"text":"impl Display for Backtrace","synthetic":false,"types":[]}];
 implementors["syn"] = [{"text":"impl Display for Lifetime","synthetic":false,"types":[]},{"text":"impl Display for LitInt","synthetic":false,"types":[]},{"text":"impl Display for LitFloat","synthetic":false,"types":[]},{"text":"impl&lt;'a&gt; Display for ParseBuffer&lt;'a&gt;","synthetic":false,"types":[]},{"text":"impl Display for Error","synthetic":false,"types":[]}];
 implementors["varu64"] = [{"text":"impl Display for DecodeError","synthetic":false,"types":[]}];
+implementors["yamf_hash"] = [{"text":"impl Display for Error","synthetic":false,"types":[]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

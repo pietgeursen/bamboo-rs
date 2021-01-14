@@ -1,1 +1,1 @@
-initSidebarItems({"constant":[["BLAKE2B_HASH_SIZE",""],["BLAKE2B_NUMERIC_ID",""],["MAX_YAMF_HASH_SIZE","The maximum number of bytes this will use for any variant."],["OUTBYTES","The max hash length."]],"enum":[["YamfHash","Variants of `YamfHash`"]],"fn":[["new_blake2b",""]]});
+initSidebarItems({"constant":[["BLAKE2B_HASH_SIZE",""],["BLAKE2B_NUMERIC_ID",""],["MAX_YAMF_HASH_SIZE","The maximum number of bytes this will use for any variant."],["OUTBYTES","The max hash length."]],"enum":[["YamfHash","Variants of `YamfHash`"]],"fn":[["new_blake2b",""]],"mod":[["error",""]]});

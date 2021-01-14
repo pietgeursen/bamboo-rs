@@ -68,9 +68,7 @@
 <span id="65">65</span>
 <span id="66">66</span>
 <span id="67">67</span>
-<span id="68">68</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">error</span>::<span class="kw-2">*</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>)]</span>
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>::<span class="ident">Write</span>;
 
@@ -80,13 +78,16 @@
 <span class="comment">// that the value is actually correct.</span>
 <span class="macro">const_assert_eq</span><span class="macro">!</span>(<span class="ident">ed25519_sig_size</span>; <span class="ident">ED25519_SIGNATURE_SIZE</span>, <span class="ident">SIGNATURE_LENGTH</span>);
 
-
 <span class="doccomment">/// The maximum number of bytes this will use.</span>
 <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MAX_SIGNATURE_SIZE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">ED25519_SIGNATURE_SIZE</span>;
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>)]</span>
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">util</span>::<span class="ident">hex_serde</span>::{<span class="ident">hex_from_bytes</span>, <span class="ident">vec_from_hex</span>};
 <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">borrow</span>::<span class="ident">Borrow</span>;
+<span class="kw">use</span> <span class="ident">snafu</span>::<span class="ident">ensure</span>;
+
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">error</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">error</span>::<span class="kw-2">*</span>;
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Signature</span><span class="op">&lt;</span><span class="ident">B</span>: <span class="ident">Borrow</span><span class="op">&lt;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span><span class="op">&gt;</span>(
@@ -107,10 +108,7 @@
     <span class="comment">// This is bit yuck that the out slice needs to be the right length.</span>
     <span class="doccomment">/// Encodes signature into `out`. `out` must be the same length as the inner slice.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">encode</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">out</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
-
-        <span class="kw">if</span> <span class="ident">out</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">ED25519_SIGNATURE_SIZE</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">EncodeError</span>);
-        }
+        <span class="macro">ensure</span><span class="macro">!</span>(<span class="ident">out</span>.<span class="ident">len</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">ED25519_SIGNATURE_SIZE</span>, <span class="ident">EncodeError</span>);
 
         <span class="ident">out</span>[..<span class="ident">ED25519_SIGNATURE_SIZE</span>].<span class="ident">copy_from_slice</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>.<span class="ident">borrow</span>());
         <span class="prelude-val">Ok</span>(<span class="ident">ED25519_SIGNATURE_SIZE</span>)
