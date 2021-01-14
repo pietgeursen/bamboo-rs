@@ -134,7 +134,7 @@ pub fn verify_links_and_payload(
         //Happy path 3: We don't have the backlink for this entry, happens when doing partial
         //replication.
         (None, Some(_), seq_num) if seq_num > 1 => Ok(()),
-        (_, _, _) => Err(Error::BackLinkRequired),
+        (_, _, _) => Err(Error::UnknownError),
     }?;
 
     Ok(())

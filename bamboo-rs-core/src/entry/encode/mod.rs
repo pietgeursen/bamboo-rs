@@ -71,7 +71,7 @@ where
                     .context(EncodeBacklinkError)?;
                 Ok(next_byte_num)
             }
-            (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
+            (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasLinksWhenSeqZero),
             _ => Ok(next_byte_num),
         }?;
 
@@ -123,9 +123,9 @@ where
             (n, Some(ref backlink), None) if n > 1 => {
                 backlink.encode_write(&mut w).context(EncodeBacklinkError)
             }
-            (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
-            (n, None, Some(_)) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
-            (n, Some(_), None) if n <= 1 => Err(Error::EncodeEntryHasBacklinksWhenSeqZero),
+            (n, Some(_), Some(_)) if n <= 1 => Err(Error::EncodeEntryHasLinksWhenSeqZero),
+            (n, None, Some(_)) if n <= 1 => Err(Error::EncodeEntryHasLinksWhenSeqZero),
+            (n, Some(_), None) if n <= 1 => Err(Error::EncodeEntryHasLinksWhenSeqZero),
             _ => Ok(()),
         }?;
 

@@ -11,8 +11,8 @@ pub enum Error {
     EncodeLipmaaError { source: YamfHashError },
     #[snafu(display("Encode back link to yamf hash failed: {}", source))]
     EncodeBacklinkError { source: YamfHashError },
-    #[snafu(display("Lipmaa and backlinks were provided for first entry which should be impossible"))]
-    EncodeEntryHasBacklinksWhenSeqZero,
+    #[snafu(display("Lipmaa or backlinks were provided for first entry which should be impossible"))]
+    EncodeEntryHasLinksWhenSeqZero,
     #[snafu(display("Encode payload size failed"))]
     EncodePayloadSizeError,
     #[snafu(display("Encode payload hash failed: {}", source))]
