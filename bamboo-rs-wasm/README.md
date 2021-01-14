@@ -89,7 +89,7 @@ You need to provide a `store` object that is an abstraction over an asynchronous
 ### 🛠️ Build with `wasm-pack build`
 
 ```
-wasm-pack build
+wasm-pack build  -t nodejs --scope bamboo-logs --release --out-name index
 ```
 
 ### 🔬 Test in Headless Browsers with `wasm-pack test`
