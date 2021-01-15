@@ -1,6 +1,6 @@
 [package]
-name = "bamboo-rs-wasm"
-version = "0.5.0"
+name = "bamboo-wasm"
+version = "0.5.1"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 

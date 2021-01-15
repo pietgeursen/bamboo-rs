@@ -138,7 +138,6 @@ pub fn verify(
 
 #[wasm_bindgen]
 pub fn publish(
-    out: &mut [u8],
     public_key: &[u8],
     secret_key: &[u8],
     log_id: u64,
@@ -147,7 +146,11 @@ pub fn publish(
     last_seq_num: Option<u64>,
     lipmaa_entry_vec: Option<Vec<u8>>,
     backlink_vec: Option<Vec<u8>>,
-) -> Result<usize, JsValue> {
+) -> Result<Vec<u8>, JsValue> {
+    
+    let mut out = Vec::with_capacity(bamboo_rs_core::entry::MAX_ENTRY_SIZE);
+    out.resize(bamboo_rs_core::entry::MAX_ENTRY_SIZE, 0);
+
     let public_key =
         PublicKey::from_bytes(public_key).map_err(|e| JsValue::from_str(&e.to_string()))?;
 
@@ -160,7 +163,7 @@ pub fn publish(
     };
 
     publish_entry(
-        out,
+        &mut out[..],
         Some(&key_pair),
         log_id,
         payload,
@@ -170,6 +173,11 @@ pub fn publish(
         backlink_vec.as_ref().map(|vec| vec.as_slice()),
     )
     .map_err(|err| JsValue::from_str(&err.to_string()))
+    .map(|entry_size| {
+        out.truncate(entry_size);
+        out
+    })
+
 }
 
 //TODO: keygen.

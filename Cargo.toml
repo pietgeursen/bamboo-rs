@@ -6,7 +6,7 @@ members = [
     "bamboo-rs-core-test",
     "bamboo-rs-cli",
     "generate-test-vectors",
-    "bamboo-rs-wasm"
+    "bamboo-wasm"
 ]
 
 exclude = [
