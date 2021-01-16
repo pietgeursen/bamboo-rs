@@ -1,13 +1,14 @@
 use super::*;
-use async_trait::async_trait;
 use bamboo_rs_core::entry::decode;
-pub use bamboo_rs_core::entry::decode::error::*;
+pub use bamboo_rs_core::entry::decode::error::Error as DecodeError;
 use std::collections::HashMap;
 
-use snafu::Snafu;
+use snafu::{ResultExt, Snafu};
 
 #[derive(Debug, Snafu)]
-pub enum Error {}
+pub enum Error {
+    AddEntriesEntryToAddCouldNotBeDecoded { source: DecodeError },
+}
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
@@ -28,6 +29,8 @@ impl MemoryEntryStore {
 }
 
 impl EntryStorer for MemoryEntryStore {
+    type Error = Error;
+
     fn get_last_seq(&self, public_key: PublicKey, log_id: u64) -> Option<u64> {
         self.store
             .get(&public_key.as_bytes().to_vec())
@@ -40,7 +43,7 @@ impl EntryStorer for MemoryEntryStore {
         public_key: PublicKey,
         log_id: u64,
         seq_nums: &[u64],
-    ) -> Result<Vec<Option<Vec<u8>>>> {
+    ) -> Result<Vec<Option<Vec<u8>>>, Self::Error> {
         let result = seq_nums
             .iter()
             .map(|seq_num| {
@@ -59,7 +62,7 @@ impl EntryStorer for MemoryEntryStore {
         public_key: PublicKey,
         log_id: u64,
         seq_nums: &[u64],
-    ) -> Result<Vec<Option<&'a [u8]>>> {
+    ) -> Result<Vec<Option<&'a [u8]>>, Self::Error> {
         let result = seq_nums
             .iter()
             .map(|seq_num| {
@@ -82,7 +85,7 @@ impl EntryStorer for MemoryEntryStore {
         public_key: PublicKey,
         log_id: u64,
         entries: &[&[u8]],
-    ) -> Result<()> {
+    ) -> Result<(), Self::Error> {
         let public_key_bytes = public_key.as_bytes().to_vec();
         let entries_store = self
             .store
@@ -95,13 +98,12 @@ impl EntryStorer for MemoryEntryStore {
             .iter()
             .map(|entry| {
                 let mut vec = Vec::with_capacity(entry.len());
-                let decoded_entry = decode(&entry)?;
+                let decoded_entry =
+                    decode(&entry).context(AddEntriesEntryToAddCouldNotBeDecoded)?;
                 vec.extend_from_slice(entry);
                 entries_store.insert(decoded_entry.seq_num, vec);
                 Ok(())
             })
             .collect::<Result<()>>()
-            .ok()
-            .ok_or_else(|| Error::AppendFailed)
     }
 }

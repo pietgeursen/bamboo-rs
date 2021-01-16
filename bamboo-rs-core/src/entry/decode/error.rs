@@ -7,17 +7,13 @@ use yamf_hash::error::Error as YamfHashError;
 pub enum Error {
     #[snafu(display("Could not decode payload hash {}", source))]
     DecodePayloadHashError { source: YamfHashError },
-    #[snafu(display(
-        "Could not decode payload size, error with varu64 encoding"
-    ))]
+    #[snafu(display("Could not decode payload size, error with varu64 encoding"))]
     DecodePayloadSizeError,
     #[snafu(display("Could not decode log_id, error with varu64 encoding"))]
     DecodeLogIdError,
     #[snafu(display("Could not decode author public key from bytes"))]
     DecodeAuthorError,
-    #[snafu(display(
-        "Could not decode entry sequence number, error with varu64 encoding"
-    ))]
+    #[snafu(display("Could not decode entry sequence number, error with varu64 encoding"))]
     DecodeSeqError,
     #[snafu(display("Entry sequence must be larger than 0 but was {}", seq_num))]
     DecodeSeqIsZero { seq_num: u64 },

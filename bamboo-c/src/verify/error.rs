@@ -57,7 +57,7 @@ impl From<BambooVerifyError> for VerifyError {
             BambooVerifyError::BacklinkAuthorDoesNotMatch => {
                 VerifyError::BacklinkAuthorDoesNotMatch
             }
-            BambooVerifyError::UnknownError => VerifyError::UnknownError
+            BambooVerifyError::UnknownError => VerifyError::UnknownError,
         }
     }
 }

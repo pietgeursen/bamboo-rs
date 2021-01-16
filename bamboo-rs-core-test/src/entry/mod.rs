@@ -8,7 +8,7 @@ mod tests {
     use bamboo_rs_core::signature::ED25519_SIGNATURE_SIZE;
     use bamboo_rs_core::yamf_hash::BLAKE2B_HASH_SIZE;
     use bamboo_rs_core::{publish, verify, Entry, Signature, YamfHash};
-    use ed25519_dalek::{Keypair, PublicKey};
+    use ed25519_dalek::{Keypair, PublicKey, Signer};
     use rand::rngs::OsRng;
     use std::convert::TryFrom;
     use std::io::Write;
@@ -499,7 +499,7 @@ mod tests {
     }
 
     #[test]
-    fn verify_entry_detects_invalid_payload_hash(){
+    fn verify_entry_detects_invalid_payload_hash() {
         let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
@@ -523,13 +523,13 @@ mod tests {
         let result = verify(&out[..size], Some(&invalid_payload.as_bytes()), None, None);
 
         match result {
-            Err(Error::AddEntryPayloadHashDidNotMatch) => (),
+            Err(VerifyError::BacklinkHashDoesNotMatch { .. }) => (),
             actual => println!("{:?}", actual),
         }
     }
 
     #[test]
-    fn verify_entry_detects_invalid_backlink_hash(){
+    fn verify_entry_detects_invalid_backlink_hash() {
         let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
 
@@ -562,17 +562,22 @@ mod tests {
         )
         .unwrap();
 
-        let invalid_backlink = [1,2,3];
-        let result = verify(&out2[..size], Some(&payload.as_bytes()), Some(entry1_bytes), Some(&invalid_backlink[..]));
+        let invalid_backlink = [1, 2, 3];
+        let result = verify(
+            &out2[..size],
+            Some(&payload.as_bytes()),
+            Some(entry1_bytes),
+            Some(&invalid_backlink[..]),
+        );
 
         match result {
-            Err(Error::AddEntryBacklinkHashDidNotMatch) => (),
+            Err(VerifyError::BacklinkHashDoesNotMatch { .. }) => (),
             actual => println!("{:?}", actual),
         }
     }
 
     #[test]
-    fn verify_entry_detects_invalid_lipmaalink_hash(){
+    fn verify_entry_detects_invalid_lipmaalink_hash() {
         //TODO
     }
 
@@ -617,7 +622,7 @@ mod tests {
         let result = verify(&entry1_bytes[..], Some(payload.as_bytes()), None, None);
 
         match result {
-            Err(Error::AddEntryPayloadLengthDidNotMatch) => (),
+            Err(VerifyError::BacklinkHashDoesNotMatch { .. }) => (),
             actual => println!("{:?}", actual),
         }
     }

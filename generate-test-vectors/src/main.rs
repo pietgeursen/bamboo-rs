@@ -9,7 +9,7 @@ extern crate hex;
 use bamboo_rs_core::entry::decode;
 use bamboo_rs_core::lipmaa;
 use bamboo_rs_log::entry_store::MemoryEntryStore;
-use bamboo_rs_log::{EntryStore, Log};
+use bamboo_rs_log::{EntryStorer, Log};
 //use bamboo_log::entry_store::{EntryStorer, MemoryEntryStore};
 use ed25519_dalek::Keypair;
 use serde::Serializer;
@@ -62,15 +62,12 @@ fn valid_first_entry() -> Value {
 
     let mut log = Log::new(MemoryEntryStore::new(), Some(keypair));
     let payload = "hello bamboo!";
-    log.publish(payload.as_bytes(), false).unwrap();
+    log.publish(payload.as_bytes(), 0, false).unwrap();
 
-    let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
+    let entry_bytes = log.store.get_entry_ref(public_key, 0, 1).unwrap().unwrap();
 
     let entry = decode(entry_bytes).unwrap();
     assert!(entry.verify_signature().is_ok());
-
-    let mut buffer = [0u8; 512];
-    let buff_size = entry.encode(&mut buffer).unwrap();
 
     log.publish(payload.as_bytes(), log_id, false).unwrap();
 
@@ -81,7 +78,7 @@ fn valid_first_entry() -> Value {
         .unwrap();
 
     let entry = decode(entry).unwrap();
-    assert!(entry.verify_signature().unwrap());
+    assert!(entry.verify_signature().is_ok());
 
     let mut buffer = [0u8; 512];
     let buff_size = entry.encode(&mut buffer).unwrap();

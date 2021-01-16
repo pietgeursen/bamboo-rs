@@ -41,10 +41,14 @@ impl From<BambooPublishError> for PublishError {
             }
             BambooPublishError::PublishWithoutBacklinkEntry => {
                 PublishError::PublishWithoutBacklinkEntry
-            },
+            }
             BambooPublishError::DecodeLipmaaEntry { .. } => PublishError::DecodeLipmaaEntry,
-            BambooPublishError::PublishKeypairDidNotMatchBacklinkPublicKey => PublishError::PublishKeypairDidNotMatchBacklinkPublicKey,
-            BambooPublishError::PublishKeypairDidNotMatchLipmaaLinkPublicKey => PublishError::PublishKeypairDidNotMatchLipmaaLinkPublicKey,
+            BambooPublishError::PublishKeypairDidNotMatchBacklinkPublicKey => {
+                PublishError::PublishKeypairDidNotMatchBacklinkPublicKey
+            }
+            BambooPublishError::PublishKeypairDidNotMatchLipmaaLinkPublicKey => {
+                PublishError::PublishKeypairDidNotMatchLipmaaLinkPublicKey
+            }
         }
     }
 }
