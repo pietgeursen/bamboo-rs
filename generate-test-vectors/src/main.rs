@@ -9,7 +9,8 @@ extern crate hex;
 use bamboo_rs_core::entry::decode;
 use bamboo_rs_core::lipmaa;
 use bamboo_rs_log::entry_store::MemoryEntryStore;
-use bamboo_rs_log::{EntryStore, Log};
+use bamboo_rs_log::{EntryStorer, Log};
+//use bamboo_log::entry_store::{EntryStorer, MemoryEntryStore};
 use ed25519_dalek::Keypair;
 use serde::Serializer;
 use serde_json::json;
@@ -53,21 +54,30 @@ fn valid_first_entry() -> Value {
         .unwrap()
         .key_pair;
 
+    let log_id = 0;
+
     let secret_byte_string = hex::encode(&keypair.secret);
     let public_byte_string = hex::encode(&keypair.public);
+    let public_key = keypair.public.clone();
 
-    let mut log = Log::new(
-        MemoryEntryStore::new(),
-        keypair.public.clone(),
-        Some(keypair),
-        0,
-    );
+    let mut log = Log::new(MemoryEntryStore::new(), Some(keypair));
     let payload = "hello bamboo!";
-    log.publish(payload.as_bytes(), false).unwrap();
+    log.publish(payload.as_bytes(), 0, false).unwrap();
 
-    let entry_bytes = log.store.get_entry_ref(1).unwrap().unwrap();
+    let entry_bytes = log.store.get_entry_ref(public_key, 0, 1).unwrap().unwrap();
 
     let entry = decode(entry_bytes).unwrap();
+    assert!(entry.verify_signature().is_ok());
+
+    log.publish(payload.as_bytes(), log_id, false).unwrap();
+
+    let entry = log
+        .store
+        .get_entry_ref(public_key, log_id, 1)
+        .unwrap()
+        .unwrap();
+
+    let entry = decode(entry).unwrap();
     assert!(entry.verify_signature().is_ok());
 
     let mut buffer = [0u8; 512];
@@ -89,21 +99,26 @@ fn n_valid_entries(n: u64) -> Value {
     let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
         .unwrap()
         .key_pair;
+
+    let log_id = 0;
     let secret_byte_string = hex::encode(&keypair.secret);
     let public_byte_string = hex::encode(&keypair.public);
-    let mut log = Log::new(
-        MemoryEntryStore::new(),
-        keypair.public.clone(),
-        Some(keypair),
-        0,
-    );
+
+    let public_key = keypair.public.clone();
+
+    let mut log = Log::new(MemoryEntryStore::new(), Some(keypair));
 
     let vals: Vec<Value> = (1..n)
         .into_iter()
         .map(|i| {
             let payload = format!("message number {}", i);
-            log.publish(&payload.as_bytes(), false).unwrap();
-            let entry_bytes = log.store.get_entry_ref(i).unwrap().unwrap();
+
+            log.publish(&payload.as_bytes(), log_id, false).unwrap();
+            let entry_bytes = log
+                .store
+                .get_entry_ref(public_key, log_id, i)
+                .unwrap()
+                .unwrap();
             let entry = decode(entry_bytes).unwrap();
             let mut buffer = [0u8; 512];
             let buff_size = entry.encode(&mut buffer).unwrap();
@@ -130,27 +145,35 @@ fn valid_partially_replicated_feed(n: u64) -> Value {
     let keypair: Keypair = serde_json::from_str::<KeyPairJson>(KEYPAIR_JSON)
         .unwrap()
         .key_pair;
-    let public = keypair.public.clone();
+    let log_id = 0;
+
     let secret_byte_string = hex::encode(&keypair.secret);
     let public_byte_string = hex::encode(&keypair.public);
-    let mut log = Log::new(MemoryEntryStore::new(), public.clone(), Some(keypair), 0);
+
+    let public_key = keypair.public.clone();
+
+    let mut log = Log::new(MemoryEntryStore::new(), Some(keypair));
 
     (1..n).into_iter().for_each(|i| {
         let payload = format!("message number {}", i);
-        log.publish(&payload.as_bytes(), false).unwrap();
+        log.publish(&payload.as_bytes(), log_id, false).unwrap();
     });
 
     let lipmaa_seqs = build_lipmaa_set(n - 1, None);
 
-    let mut partial_log = Log::new(MemoryEntryStore::new(), public.clone(), None, 0);
+    let mut partial_log = Log::new(MemoryEntryStore::new(), None);
 
     let vals = lipmaa_seqs
         .iter()
         .rev()
         .map(|lipmaa_seq| {
-            let entry_bytes = log.store.get_entry_ref(*lipmaa_seq).unwrap().unwrap();
+            let entry_bytes = log
+                .store
+                .get_entry_ref(public_key, log_id, *lipmaa_seq)
+                .unwrap()
+                .unwrap();
             let entry = decode(entry_bytes).unwrap();
-            partial_log.add(entry_bytes, None).unwrap();
+            partial_log.add_batch(entry_bytes, None).unwrap();
 
             let mut buffer = [0u8; 512];
             let buff_size = entry.encode(&mut buffer).unwrap();

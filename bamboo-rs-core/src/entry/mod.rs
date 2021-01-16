@@ -80,7 +80,7 @@ impl<'a> TryFrom<&'a [u8]> for Entry<&'a [u8], &'a [u8]> {
     }
 }
 
-impl<'a, H, S> TryFrom<Entry<H, S>> for ArrayVec<[u8; 512]>
+impl<H, S> TryFrom<Entry<H, S>> for ArrayVec<[u8; 512]>
 where
     H: Borrow<[u8]>,
     S: Borrow<[u8]>,

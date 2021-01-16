@@ -13,11 +13,17 @@ pub enum Error {
     PayloadHashDidNotMatch {},
     #[snafu(display("The payload length encoded in the entry (expected) does not match the payload provided (actual). Expected: {}, actual: {}", expected, actual))]
     PayloadLengthDidNotMatch { actual: usize, expected: u64 },
-    #[snafu(display("The lipmaa hash encoded in the entry does not match the lipmaa entry provided"))]
+    #[snafu(display(
+        "The lipmaa hash encoded in the entry does not match the lipmaa entry provided"
+    ))]
     LipmaaHashDoesNotMatch {},
     #[snafu(display("Decode lipmaa entry failed: {}", source))]
     DecodeLipmaaEntry { source: DecodeError },
-    #[snafu(display("Lipmaa entry log_id does not match entry log_id: entry log_id: {}, lipmaa log_id: {}", expected, actual))]
+    #[snafu(display(
+        "Lipmaa entry log_id does not match entry log_id: entry log_id: {}, lipmaa log_id: {}",
+        expected,
+        actual
+    ))]
     LipmaaLogIdDoesNotMatch { actual: u64, expected: u64 },
     #[snafu(display("Lipmaa author does not match entry author"))]
     LipmaaAuthorDoesNotMatch {},
@@ -25,13 +31,19 @@ pub enum Error {
     LipmaaLinkRequired,
     #[snafu(display("Failed to decode backlink entry: {}", source))]
     DecodeBacklinkEntry { source: DecodeError },
-    #[snafu(display("Backlink entry log_id does not match entry log_id: entry log_id: {}, lipmaa log_id: {}", expected, actual))]
+    #[snafu(display(
+        "Backlink entry log_id does not match entry log_id: entry log_id: {}, lipmaa log_id: {}",
+        expected,
+        actual
+    ))]
     BacklinkLogIdDoesNotMatch { actual: u64, expected: u64 },
     #[snafu(display("Backlink author does not match entry author"))]
     BacklinkAuthorDoesNotMatch,
     #[snafu(display("Entry was published after the feed was declared ended by setting the `is_end_of_feed` bit in a previous message"))]
     PublishedAfterEndOfFeed,
-    #[snafu(display("The backlink hash encoded in the entry does not match the lipmaa entry provided"))]
+    #[snafu(display(
+        "The backlink hash encoded in the entry does not match the lipmaa entry provided"
+    ))]
     BacklinkHashDoesNotMatch {},
     #[snafu(display("Backlink link required but not provided"))]
     BackLinkRequired,

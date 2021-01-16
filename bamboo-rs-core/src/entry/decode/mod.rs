@@ -6,7 +6,7 @@ use crate::signature::Signature;
 use crate::yamf_hash::YamfHash;
 
 use super::{is_lipmaa_required, Entry};
-use snafu::{ensure, ResultExt, NoneError};
+use snafu::{ensure, NoneError, ResultExt};
 
 pub mod error;
 pub use error::*;

@@ -8,8 +8,9 @@ mod tests {
     use bamboo_rs_core::signature::ED25519_SIGNATURE_SIZE;
     use bamboo_rs_core::yamf_hash::BLAKE2B_HASH_SIZE;
     use bamboo_rs_core::{publish, verify, Entry, Signature, YamfHash};
-    use ed25519_dalek::{Keypair, PublicKey};
+    use ed25519_dalek::{Keypair, PublicKey, Signer};
     use rand::rngs::OsRng;
+    use std::convert::TryFrom;
     use std::io::Write;
     use varu64::encode_write as varu64_encode_write;
 
@@ -496,6 +497,136 @@ mod tests {
             err => panic!("{:?}", err),
         }
     }
+
+    #[test]
+    fn verify_entry_detects_invalid_payload_hash() {
+        let mut csprng: OsRng = OsRng {};
+        let key_pair: Keypair = Keypair::generate(&mut csprng);
+
+        let payload = "hello bamboo!";
+        let mut out = [0u8; 512];
+
+        let size = publish(
+            &mut out,
+            Some(&key_pair),
+            0,
+            payload.as_bytes(),
+            false,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+
+        let invalid_payload = "hello bambo!";
+
+        let result = verify(&out[..size], Some(&invalid_payload.as_bytes()), None, None);
+
+        match result {
+            Err(VerifyError::BacklinkHashDoesNotMatch { .. }) => (),
+            actual => println!("{:?}", actual),
+        }
+    }
+
+    #[test]
+    fn verify_entry_detects_invalid_backlink_hash() {
+        let mut csprng: OsRng = OsRng {};
+        let key_pair: Keypair = Keypair::generate(&mut csprng);
+
+        let payload = "hello bamboo!";
+        let mut out = [0u8; 512];
+
+        let size = publish(
+            &mut out,
+            Some(&key_pair),
+            0,
+            payload.as_bytes(),
+            false,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+        let entry1_bytes = &out[..size];
+
+        let mut out2 = [0u8; 512];
+        let size = publish(
+            &mut out2,
+            Some(&key_pair),
+            0,
+            payload.as_bytes(),
+            false,
+            Some(1),
+            Some(entry1_bytes),
+            Some(entry1_bytes),
+        )
+        .unwrap();
+
+        let invalid_backlink = [1, 2, 3];
+        let result = verify(
+            &out2[..size],
+            Some(&payload.as_bytes()),
+            Some(entry1_bytes),
+            Some(&invalid_backlink[..]),
+        );
+
+        match result {
+            Err(VerifyError::BacklinkHashDoesNotMatch { .. }) => (),
+            actual => println!("{:?}", actual),
+        }
+    }
+
+    #[test]
+    fn verify_entry_detects_invalid_lipmaalink_hash() {
+        //TODO
+    }
+
+    #[test]
+    fn verify_entry_detects_incorrect_payload_length() {
+        let mut csprng: OsRng = OsRng {};
+        let key_pair: Keypair = Keypair::generate(&mut csprng);
+
+        let payload = "hello bamboo!";
+        let mut out = [0u8; 512];
+
+        let size = publish(
+            &mut out,
+            Some(&key_pair),
+            0,
+            payload.as_bytes(),
+            false,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+
+        let entry1_bytes = &out[..size];
+        let mut decoded_entry = Entry::try_from(&entry1_bytes[..size]).unwrap();
+        // Set the payload_size to a lie.
+        decoded_entry.payload_size = payload.as_bytes().len() as u64 + 1;
+
+        let mut entry1_bytes = Vec::new();
+        decoded_entry.encode_write(&mut entry1_bytes).unwrap();
+
+        let signature = key_pair.sign(&entry1_bytes);
+        let sig_bytes = &signature.to_bytes()[..];
+        let signature = Signature(sig_bytes.into());
+
+        decoded_entry.sig = Some(signature);
+
+        let mut entry1_bytes = Vec::new();
+        decoded_entry.encode_write(&mut entry1_bytes).unwrap();
+
+        // Act
+        let result = verify(&entry1_bytes[..], Some(payload.as_bytes()), None, None);
+
+        match result {
+            Err(VerifyError::BacklinkHashDoesNotMatch { .. }) => (),
+            actual => println!("{:?}", actual),
+        }
+    }
+
     #[test]
     fn verify_entry_detects_incorrect_log_id() {
         let mut csprng: OsRng = OsRng {};

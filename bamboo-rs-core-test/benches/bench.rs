@@ -155,26 +155,29 @@ fn verify_signature_benches(c: &mut Criterion) {
 }
 
 fn verify_entries_benches(c: &mut Criterion) {
-    c.bench_function("verify_100_entries", |b| {
-        let entries = create_n_entries(1000);
+    c.bench_function("verify_1000_entries", |b| {
+        let entry_seqs = (1..1000)
+            .collect::<Vec<_>>();
+
+        let log = n_valid_entries(1000);
+        let public_key = log.key_pair.as_ref().unwrap().public.clone();
+        let entries = log.store.get_entries_ref(public_key, 0, &entry_seqs).unwrap();
         b.iter(|| {
             entries
                 .iter()
                 .enumerate()
-                .map(|(index, (entry, payload))| {
+                .map(|(index, entry)| {
                     let seq_num = index + 1;
                     let lipmaa_num = bamboo_rs_core::lipmaa(seq_num as u64) - 1;
 
                     let lipmaa_link = entries
                         .get(lipmaa_num as usize)
-                        .map(|(link, _)| link.as_slice());
+                        .map(|link| link.unwrap());
                     let backlink = entries
                         .get(seq_num - 1 - 1)
-                        .map(|(link, _)| link.as_slice());
+                        .map(|link| link.unwrap());
 
-                    let payload = payload.as_ref().map(|payload| payload.as_bytes());
-
-                    verify(entry, payload, lipmaa_link, backlink)?;
+                    verify(&entry.unwrap(), None, lipmaa_link, backlink)?;
                     Ok(())
                 })
                 .collect::<Result<(), VerifyError>>()
@@ -183,29 +186,34 @@ fn verify_entries_benches(c: &mut Criterion) {
     });
 
     c.bench_function("batch_verify_100_entries", |b| {
-        let entries = create_n_entries(1000);
+        let entry_seqs = (1..1000)
+            .collect::<Vec<_>>();
+
+        let log = n_valid_entries(1000);
+        let public_key = log.key_pair.as_ref().unwrap().public.clone();
+        let entries = log.store.get_entries_ref(public_key, 0, &entry_seqs).unwrap()
+            .iter()
+            .map(|entry| (entry.unwrap(), Option::<&[u8]>::None))
+            .collect::<Vec<_>>();
+
         b.iter(|| verify_batch(&entries[..]).unwrap())
     });
 }
 
-fn create_n_entries(n: u64) -> Vec<(Vec<u8>, Option<String>)> {
+
+fn n_valid_entries(n: u64) -> Log<MemoryEntryStore> {
     let mut csprng: OsRng = OsRng {};
-    let keypair: Keypair = Keypair::generate(&mut csprng);
+    let key_pair: Keypair = Keypair::generate(&mut csprng);
 
-    let public = keypair.public.clone();
-    let mut log = Log::new(MemoryEntryStore::new(), public.clone(), Some(keypair), 0);
+    let mut log = Log::new(MemoryEntryStore::new(), Some(key_pair));
 
-    (1..n)
-        .into_iter()
-        .map(|i| {
-            let payload = format!("message number {}", i);
-            log.publish(&payload.as_bytes(), false).unwrap();
-            (log.store.get_entry(i).unwrap().unwrap(), payload)
-        })
-        .map(|(entry, payload)| (entry, Some(payload)))
-        .collect::<Vec<_>>()
+    (1..n + 1).into_iter().for_each(|i| {
+        let payload = format!("message number {}", i);
+        log.publish(&payload.as_bytes(), 0, false).unwrap();
+    });
+
+    log
 }
-
 criterion_group!(
     benches,
     verify_entries_benches,
