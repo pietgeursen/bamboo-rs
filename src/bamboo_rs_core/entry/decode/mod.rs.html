@@ -83,6 +83,9 @@
 <span id="80">80</span>
 <span id="81">81</span>
 <span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">varu64</span>::<span class="ident">decode</span> <span class="kw">as</span> <span class="ident">varu64_decode</span>;
 
@@ -92,11 +95,14 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">yamf_hash</span>::<span class="ident">YamfHash</span>;
 
 <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">is_lipmaa_required</span>, <span class="ident">Entry</span>};
-<span class="kw">use</span> <span class="ident">snafu</span>::{<span class="ident">ensure</span>, <span class="ident">ResultExt</span>, <span class="ident">NoneError</span>};
+<span class="kw">use</span> <span class="ident">snafu</span>::{<span class="ident">ensure</span>, <span class="ident">NoneError</span>, <span class="ident">ResultExt</span>};
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">error</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">error</span>::<span class="kw-2">*</span>;
 
+<span class="doccomment">/// Try and decode `bytes` as an [Entry].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Returned [Entry] references `bytes`.</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">decode</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="ident">bytes</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Entry</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>], <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">u8</span>]<span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
     <span class="macro">ensure</span><span class="macro">!</span>(<span class="ident">bytes</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">0</span>, <span class="ident">DecodeInputIsLengthZero</span>);
 

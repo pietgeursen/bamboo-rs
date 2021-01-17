@@ -26,12 +26,116 @@
 <span id="23">23</span>
 <span id="24">24</span>
 <span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! # bamboo-rs-core</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! Verify, and Publish [bamboo](https://github.com/AljoschaMeyer/bamboo) messages.</span>
+<span class="doccomment">//! Verify, Publish and Decode [bamboo](https://github.com/AljoschaMeyer/bamboo) entries.</span>
 <span class="doccomment">//!</span>
+<span class="doccomment">//! ## About</span>
 <span class="doccomment">//!</span>
+<span class="doccomment">//! From the [spec](https://github.com/AljoschaMeyer/bamboo):</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! &gt; A cryptographically secure, distributed, single-writer append-only log that supports transitive partial replication and local deletion of data.</span>
+<span class="doccomment">//! &gt;</span>
+<span class="doccomment">//! &gt; Powered by science, this log format can serve as a more efficient alternative to secure-scuttlebutt&#39;s linked lists or hypercore&#39;s merkle forests.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! `bamboo-rs-core` exposes low level functions and types which can be built with `no_std`.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! ## Example</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! [publish](publish()), [verify](verify()) and [decode](decode()) the first [Entry] in a bamboo log.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! NB: Publishing and verifying the first entry is the most simple case. The subsequent entries</span>
+<span class="doccomment">//! require passing the previous seq_num, the previous entry, and lipmaa_link.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! ```</span>
+<span class="doccomment">//! use bamboo_rs_core::{publish, verify, decode, yamf_hash::new_blake2b, Entry, Signature, YamfHash, Keypair, entry::MAX_ENTRY_SIZE};</span>
+<span class="doccomment">//! use rand::rngs::OsRng;</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! let mut csprng: OsRng = OsRng {};</span>
+<span class="doccomment">//! let key_pair: Keypair = Keypair::generate(&amp;mut csprng);</span>
+<span class="doccomment">//! let log_id = 0;</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! let payload = &quot;hello bamboo!&quot;;</span>
+<span class="doccomment">//! let mut out = [0u8; MAX_ENTRY_SIZE];</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! let size = publish(</span>
+<span class="doccomment">//!     &amp;mut out,</span>
+<span class="doccomment">//!     &amp;key_pair,</span>
+<span class="doccomment">//!     log_id,</span>
+<span class="doccomment">//!     payload.as_bytes(),</span>
+<span class="doccomment">//!     false,</span>
+<span class="doccomment">//!     None,</span>
+<span class="doccomment">//!     None,</span>
+<span class="doccomment">//!     None,</span>
+<span class="doccomment">//! )</span>
+<span class="doccomment">//! .unwrap();</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! let entry = decode(&amp;out[..size]).unwrap();</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! let is_verified = verify(&amp;out[..size], Some(payload.as_bytes()), None, None).is_ok();</span>
+<span class="doccomment">//! let payload_hash = new_blake2b(payload.as_bytes());</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! assert!(is_verified);</span>
+<span class="doccomment">//! assert_eq!(entry.log_id, log_id);</span>
+<span class="doccomment">//! assert_eq!(entry.payload_hash, payload_hash);</span>
+<span class="doccomment">//! assert_eq!(entry.author, key_pair.public);</span>
+<span class="doccomment">//! assert_eq!(entry.lipmaa_link, None);</span>
+<span class="doccomment">//! assert_eq!(entry.backlink, None);</span>
+<span class="doccomment">//! assert_eq!(entry.is_end_of_feed, false);</span>
+<span class="doccomment">//! ```</span>
 <span class="attribute">#![<span class="ident">cfg_attr</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>), <span class="ident">no_std</span>)]</span>
 
 <span class="attribute">#[<span class="ident">macro_use</span>]</span>

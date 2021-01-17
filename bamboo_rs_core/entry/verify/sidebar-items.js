@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["verify",""],["verify_links_and_payload",""]],"mod":[["batch",""],["error",""]]});
+initSidebarItems({"fn":[["verify","verify `entry_bytes` is valid."],["verify_links_and_payload",""]],"mod":[["batch",""],["error",""]]});

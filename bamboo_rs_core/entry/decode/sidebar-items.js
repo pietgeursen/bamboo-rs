@@ -1,1 +1,1 @@
-initSidebarItems({"fn":[["decode",""]],"mod":[["error",""]]});
+initSidebarItems({"fn":[["decode","Try and decode `bytes` as an [Entry]."]],"mod":[["error",""]]});

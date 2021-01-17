@@ -35,6 +35,8 @@
 <span id="32">32</span>
 <span id="33">33</span>
 <span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">signature</span>::<span class="ident">Error</span> <span class="kw">as</span> <span class="ident">SigError</span>;
 <span class="kw">use</span> <span class="ident">snafu</span>::<span class="ident">Snafu</span>;
@@ -49,7 +51,9 @@
     <span class="ident">EncodeLipmaaError</span> { <span class="ident">source</span>: <span class="ident">YamfHashError</span> },
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Encode back link to yamf hash failed: {}&quot;</span>, <span class="ident">source</span>))]</span>
     <span class="ident">EncodeBacklinkError</span> { <span class="ident">source</span>: <span class="ident">YamfHashError</span> },
-    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Lipmaa or backlinks were provided for first entry which should be impossible&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(
+        <span class="string">&quot;Lipmaa or backlinks were provided for first entry which should be impossible&quot;</span>
+    ))]</span>
     <span class="ident">EncodeEntryHasLinksWhenSeqZero</span>,
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Encode payload size failed&quot;</span>))]</span>
     <span class="ident">EncodePayloadSizeError</span>,

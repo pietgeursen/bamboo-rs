@@ -42,10 +42,6 @@
 <span id="39">39</span>
 <span id="40">40</span>
 <span id="41">41</span>
-<span id="42">42</span>
-<span id="43">43</span>
-<span id="44">44</span>
-<span id="45">45</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">entry</span>::<span class="ident">decode</span>::<span class="ident">Error</span> <span class="kw">as</span> <span class="ident">EntryDecodeError</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">entry</span>::<span class="ident">encode</span>::<span class="ident">Error</span> <span class="kw">as</span> <span class="ident">EntryEncodeError</span>;
@@ -62,24 +58,20 @@
     <span class="ident">PublishWithIncorrectLipmaaLinkLogId</span>,
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Attempting to publish using a keypair that does not have a secret key&quot;</span>))]</span>
     <span class="ident">PublishWithoutSecretKey</span>,
-    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Attempting to publish without a keypair&quot;</span>))]</span>
-    <span class="ident">PublishWithoutKeypair</span>,
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Attempting to publish an entry with a different keypair than the backlink&quot;</span>))]</span>
     <span class="ident">PublishKeypairDidNotMatchBacklinkPublicKey</span>,
-    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Attempting to publish an entry with a different keypair than the lipmaa link&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(
+        <span class="string">&quot;Attempting to publish an entry with a different keypair than the lipmaa link&quot;</span>
+    ))]</span>
     <span class="ident">PublishKeypairDidNotMatchLipmaaLinkPublicKey</span>,
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Attempting to publish an entry that needs a lipmaa link but None provided&quot;</span>))]</span>
     <span class="ident">PublishWithoutLipmaaEntry</span>,
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Attempting to publish an entry that needs a backlink but None provided&quot;</span>))]</span>
     <span class="ident">PublishWithoutBacklinkEntry</span>,
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Failed to decode backlink, encoding error: {}&quot;</span>, <span class="ident">source</span>))]</span>
-    <span class="ident">DecodeBacklinkEntry</span> {
-        <span class="ident">source</span>: <span class="ident">EntryDecodeError</span>,
-    },
+    <span class="ident">DecodeBacklinkEntry</span> { <span class="ident">source</span>: <span class="ident">EntryDecodeError</span> },
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Failed to decode lipmaa link, encoding error: {}&quot;</span>, <span class="ident">source</span>))]</span>
-    <span class="ident">DecodeLipmaaEntry</span> {
-        <span class="ident">source</span>: <span class="ident">EntryDecodeError</span>,
-    },
+    <span class="ident">DecodeLipmaaEntry</span> { <span class="ident">source</span>: <span class="ident">EntryDecodeError</span> },
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(
         <span class="string">&quot;Could not encode the entry into the out buffer. Buffer len: {}, Encoding error: {}&quot;</span>,
         <span class="ident">buffer_size</span>,

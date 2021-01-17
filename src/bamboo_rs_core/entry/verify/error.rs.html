@@ -47,6 +47,18 @@
 <span id="44">44</span>
 <span id="45">45</span>
 <span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">entry</span>::<span class="ident">decode</span>::<span class="ident">Error</span> <span class="kw">as</span> <span class="ident">DecodeError</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">entry</span>::<span class="ident">encode</span>::<span class="ident">Error</span> <span class="kw">as</span> <span class="ident">EncodeError</span>;
@@ -63,11 +75,17 @@
     <span class="ident">PayloadHashDidNotMatch</span> {},
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;The payload length encoded in the entry (expected) does not match the payload provided (actual). Expected: {}, actual: {}&quot;</span>, <span class="ident">expected</span>, <span class="ident">actual</span>))]</span>
     <span class="ident">PayloadLengthDidNotMatch</span> { <span class="ident">actual</span>: <span class="ident">usize</span>, <span class="ident">expected</span>: <span class="ident">u64</span> },
-    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;The lipmaa hash encoded in the entry does not match the lipmaa entry provided&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(
+        <span class="string">&quot;The lipmaa hash encoded in the entry does not match the lipmaa entry provided&quot;</span>
+    ))]</span>
     <span class="ident">LipmaaHashDoesNotMatch</span> {},
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Decode lipmaa entry failed: {}&quot;</span>, <span class="ident">source</span>))]</span>
     <span class="ident">DecodeLipmaaEntry</span> { <span class="ident">source</span>: <span class="ident">DecodeError</span> },
-    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Lipmaa entry log_id does not match entry log_id: entry log_id: {}, lipmaa log_id: {}&quot;</span>, <span class="ident">expected</span>, <span class="ident">actual</span>))]</span>
+    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(
+        <span class="string">&quot;Lipmaa entry log_id does not match entry log_id: entry log_id: {}, lipmaa log_id: {}&quot;</span>,
+        <span class="ident">expected</span>,
+        <span class="ident">actual</span>
+    ))]</span>
     <span class="ident">LipmaaLogIdDoesNotMatch</span> { <span class="ident">actual</span>: <span class="ident">u64</span>, <span class="ident">expected</span>: <span class="ident">u64</span> },
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Lipmaa author does not match entry author&quot;</span>))]</span>
     <span class="ident">LipmaaAuthorDoesNotMatch</span> {},
@@ -75,13 +93,19 @@
     <span class="ident">LipmaaLinkRequired</span>,
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Failed to decode backlink entry: {}&quot;</span>, <span class="ident">source</span>))]</span>
     <span class="ident">DecodeBacklinkEntry</span> { <span class="ident">source</span>: <span class="ident">DecodeError</span> },
-    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Backlink entry log_id does not match entry log_id: entry log_id: {}, lipmaa log_id: {}&quot;</span>, <span class="ident">expected</span>, <span class="ident">actual</span>))]</span>
+    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(
+        <span class="string">&quot;Backlink entry log_id does not match entry log_id: entry log_id: {}, lipmaa log_id: {}&quot;</span>,
+        <span class="ident">expected</span>,
+        <span class="ident">actual</span>
+    ))]</span>
     <span class="ident">BacklinkLogIdDoesNotMatch</span> { <span class="ident">actual</span>: <span class="ident">u64</span>, <span class="ident">expected</span>: <span class="ident">u64</span> },
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Backlink author does not match entry author&quot;</span>))]</span>
     <span class="ident">BacklinkAuthorDoesNotMatch</span>,
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Entry was published after the feed was declared ended by setting the `is_end_of_feed` bit in a previous message&quot;</span>))]</span>
     <span class="ident">PublishedAfterEndOfFeed</span>,
-    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;The backlink hash encoded in the entry does not match the lipmaa entry provided&quot;</span>))]</span>
+    <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(
+        <span class="string">&quot;The backlink hash encoded in the entry does not match the lipmaa entry provided&quot;</span>
+    ))]</span>
     <span class="ident">BacklinkHashDoesNotMatch</span> {},
     <span class="attribute">#[<span class="ident">snafu</span>(<span class="ident">display</span>(<span class="string">&quot;Backlink link required but not provided&quot;</span>))]</span>
     <span class="ident">BackLinkRequired</span>,
