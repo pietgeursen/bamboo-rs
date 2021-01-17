@@ -26,7 +26,7 @@ fn encoding_benches(c: &mut Criterion) {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -52,7 +52,7 @@ fn encoding_benches(c: &mut Criterion) {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -78,7 +78,7 @@ fn publish_benches(c: &mut Criterion) {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -92,7 +92,7 @@ fn publish_benches(c: &mut Criterion) {
             let mut out2 = [0u8; 512];
             let _ = publish(
                 &mut out2,
-                Some(&key_pair),
+                &key_pair,
                 0,
                 payload.as_bytes(),
                 false,
@@ -115,7 +115,7 @@ fn verify_signature_benches(c: &mut Criterion) {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -138,7 +138,7 @@ fn verify_signature_benches(c: &mut Criterion) {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
