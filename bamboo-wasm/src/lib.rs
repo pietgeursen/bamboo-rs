@@ -147,7 +147,6 @@ pub fn publish(
     lipmaa_entry_vec: Option<Vec<u8>>,
     backlink_vec: Option<Vec<u8>>,
 ) -> Result<Vec<u8>, JsValue> {
-    
     let mut out = Vec::with_capacity(bamboo_rs_core::entry::MAX_ENTRY_SIZE);
     out.resize(bamboo_rs_core::entry::MAX_ENTRY_SIZE, 0);
 
@@ -177,7 +176,6 @@ pub fn publish(
         out.truncate(entry_size);
         out
     })
-
 }
 
 //TODO: keygen.

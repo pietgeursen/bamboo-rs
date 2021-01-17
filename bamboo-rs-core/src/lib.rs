@@ -18,7 +18,7 @@
 //!
 //! NB: Publishing and verifying the first entry is the most simple case. The following entries
 //! require passing the backlink and lipmaa_link.
-//! 
+//!
 //! ```
 //! use bamboo_rs_core::{publish, verify, decode, yamf_hash::new_blake2b, Entry, Signature, YamfHash, Keypair, entry::MAX_ENTRY_SIZE};
 //! use rand::rngs::OsRng;

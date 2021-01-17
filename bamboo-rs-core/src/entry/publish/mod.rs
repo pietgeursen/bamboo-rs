@@ -45,7 +45,6 @@ pub fn publish(
 
     // if the seq is larger than 1, we need to append the lipmaa and backlink hashes.
     if seq_num > 1 {
-
         let backlink_entry = decode(&backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?[..])
             .context(DecodeBacklinkEntry)?;
 
@@ -55,16 +54,28 @@ pub fn publish(
         ensure!(!backlink_entry.is_end_of_feed, PublishAfterEndOfFeed);
 
         // Avoid publishing to a feed using an incorrect log_id
-        ensure!(log_id == backlink_entry.log_id, PublishWithIncorrectBacklinkLogId);
+        ensure!(
+            log_id == backlink_entry.log_id,
+            PublishWithIncorrectBacklinkLogId
+        );
 
-        // Avoid publishing using a different public key to the backlink 
-        ensure!(author == backlink_entry.author, PublishKeypairDidNotMatchBacklinkPublicKey);
+        // Avoid publishing using a different public key to the backlink
+        ensure!(
+            author == backlink_entry.author,
+            PublishKeypairDidNotMatchBacklinkPublicKey
+        );
 
-        // Avoid publishing using a different public key to the lipmaa link 
-        ensure!(author == lipmaa_entry.author, PublishKeypairDidNotMatchBacklinkPublicKey);
+        // Avoid publishing using a different public key to the lipmaa link
+        ensure!(
+            author == lipmaa_entry.author,
+            PublishKeypairDidNotMatchBacklinkPublicKey
+        );
 
         // Avoid publishing to a feed using an incorrect log_id
-        ensure!(log_id == lipmaa_entry.log_id, PublishWithIncorrectLipmaaLinkLogId);
+        ensure!(
+            log_id == lipmaa_entry.log_id,
+            PublishWithIncorrectLipmaaLinkLogId
+        );
 
         let backlink = new_blake2b(backlink_bytes.ok_or(Error::PublishWithoutBacklinkEntry)?);
         entry.backlink = Some(backlink);
@@ -72,8 +83,8 @@ pub fn publish(
         // If the lipmaalink and backlink would be different, we should append the lipmaalink,
         // otherwise we're allowed to omit it to save some bytes.
         if is_lipmaa_required(seq_num) {
-
-            let lipmaa_link = new_blake2b(lipmaa_entry_bytes.ok_or(Error::PublishWithoutLipmaaEntry)?);
+            let lipmaa_link =
+                new_blake2b(lipmaa_entry_bytes.ok_or(Error::PublishWithoutLipmaaEntry)?);
             entry.lipmaa_link = Some(lipmaa_link);
         }
     }
