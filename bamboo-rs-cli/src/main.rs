@@ -69,7 +69,7 @@ fn main() -> Result<()> {
 
             let entry_size = publish(
                 &mut entry_buff,
-                Some(&key_pair),
+                &key_pair,
                 log_id,
                 &payload_bytes,
                 is_end_of_feed,

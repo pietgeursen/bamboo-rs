@@ -5,7 +5,7 @@ use bamboo_rs_core::entry::publish::Error as BambooPublishError;
 pub enum PublishError {
     NoError,
 
-    PublishWithoutKeypair,
+    PublishWithInvalidKeypair,
     PublishAfterEndOfFeed,
     PublishWithIncorrectLogId,
     PublishWithoutSecretKey,
@@ -23,7 +23,6 @@ pub enum PublishError {
 impl From<BambooPublishError> for PublishError {
     fn from(err: BambooPublishError) -> PublishError {
         match err {
-            BambooPublishError::PublishWithoutKeypair => PublishError::PublishWithoutKeypair,
             BambooPublishError::PublishAfterEndOfFeed => PublishError::PublishAfterEndOfFeed,
             BambooPublishError::PublishWithIncorrectBacklinkLogId => {
                 PublishError::PublishWithIncorrectLogId
@@ -41,10 +40,14 @@ impl From<BambooPublishError> for PublishError {
             }
             BambooPublishError::PublishWithoutBacklinkEntry => {
                 PublishError::PublishWithoutBacklinkEntry
-            },
+            }
             BambooPublishError::DecodeLipmaaEntry { .. } => PublishError::DecodeLipmaaEntry,
-            BambooPublishError::PublishKeypairDidNotMatchBacklinkPublicKey => PublishError::PublishKeypairDidNotMatchBacklinkPublicKey,
-            BambooPublishError::PublishKeypairDidNotMatchLipmaaLinkPublicKey => PublishError::PublishKeypairDidNotMatchLipmaaLinkPublicKey,
+            BambooPublishError::PublishKeypairDidNotMatchBacklinkPublicKey => {
+                PublishError::PublishKeypairDidNotMatchBacklinkPublicKey
+            }
+            BambooPublishError::PublishKeypairDidNotMatchLipmaaLinkPublicKey => {
+                PublishError::PublishKeypairDidNotMatchLipmaaLinkPublicKey
+            }
         }
     }
 }

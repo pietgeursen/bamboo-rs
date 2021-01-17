@@ -6,11 +6,14 @@ use crate::signature::Signature;
 use crate::yamf_hash::YamfHash;
 
 use super::{is_lipmaa_required, Entry};
-use snafu::{ensure, ResultExt, NoneError};
+use snafu::{ensure, NoneError, ResultExt};
 
 pub mod error;
 pub use error::*;
 
+/// Try and decode `bytes` as an [Entry].
+///
+/// Returned [Entry] references `bytes`.
 pub fn decode<'a>(bytes: &'a [u8]) -> Result<Entry<&'a [u8], &'a [u8]>, Error> {
     ensure!(bytes.len() > 0, DecodeInputIsLengthZero);
 

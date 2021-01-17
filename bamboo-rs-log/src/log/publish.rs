@@ -3,7 +3,7 @@ use lipmaa_link::lipmaa;
 
 use crate::entry_store::EntryStore;
 use bamboo_rs_core::entry::publish;
-use snafu::ResultExt;
+use snafu::{ResultExt, OptionExt};
 
 use super::Log;
 use super::error::*;
@@ -12,6 +12,7 @@ impl<Store: EntryStore + Debug> Log<Store> {
     pub fn publish(&mut self, payload: &[u8], is_end_of_feed: bool) -> Result<(), Error<Store>> {
         let mut buff = [0u8; 512];
 
+        let key_pair = self.key_pair.as_ref().context(PublishWithoutKeypair)?;
         let last_seq_num = self.store.get_last_seq();
         let seq_num = last_seq_num.unwrap_or(0) + 1;
         let lipmaa_link_seq = lipmaa(seq_num);
@@ -28,7 +29,7 @@ impl<Store: EntryStore + Debug> Log<Store> {
 
         let length = publish(
             &mut buff,
-            self.key_pair.as_ref(),
+            key_pair,
             self.log_id,
             payload,
             is_end_of_feed,

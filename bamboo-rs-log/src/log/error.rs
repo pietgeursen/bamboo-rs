@@ -17,4 +17,5 @@ pub enum Error<ES: EntryStore + Debug> {
     PublishEntryGetBacklinkEntry{source: ES::Error},
     PublishNewEntryFailed{source: PublishError},
     PublishEntryAppendFailed{source: ES::Error},
+    PublishWithoutKeypair,
 }
