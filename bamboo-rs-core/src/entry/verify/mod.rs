@@ -140,6 +140,19 @@ pub fn verify_links_and_payload(
     Ok(())
 }
 
+/// verify `entry_bytes` is valid.
+///
+/// - `entry_bytes`: bytes of an encoded bamboo entry to verify.
+/// - `payload`: [Option] of the payload bytes. It's ok to omit the payload if you don't have it
+/// (happens when doing partial replication.)
+/// - `lipmaa_link`: [Option] of the lipmaa_link bytes. Will be none when `entry_bytes` is the first entry.
+/// - `backlink`: [Option] of the backlink bytes. Will be none when `entry_bytes` is the first entry.
+///
+/// Verfies:
+/// - the cryptographic signature
+/// - the hash of `payload` matches what's encoded in `entry_bytes` (if provided).
+/// - the chain of hashes formed from this entry back to the `backlink` and `lipmaa_link`.
+///
 pub fn verify(
     entry_bytes: &[u8],
     payload: Option<&[u8]>,

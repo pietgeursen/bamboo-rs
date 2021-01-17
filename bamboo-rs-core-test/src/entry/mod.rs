@@ -88,7 +88,7 @@ mod tests {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -112,7 +112,7 @@ mod tests {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -125,7 +125,7 @@ mod tests {
         let mut out2 = [0u8; 512];
         let size2 = publish(
             &mut out2,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -148,7 +148,7 @@ mod tests {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -162,7 +162,7 @@ mod tests {
 
         match publish(
             &mut out2,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -184,7 +184,7 @@ mod tests {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -198,7 +198,7 @@ mod tests {
 
         match publish(
             &mut out2,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -221,7 +221,7 @@ mod tests {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             true,
@@ -234,7 +234,7 @@ mod tests {
         let mut out2 = [0u8; 512];
         match publish(
             &mut out2,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -256,7 +256,7 @@ mod tests {
 
         match publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -270,25 +270,6 @@ mod tests {
     }
 
     #[test]
-    fn publish_without_secret_key_errors() {
-        let payload = "hello bamboo!";
-        let mut out = [0u8; 512];
-
-        match publish(
-            &mut out,
-            None,
-            0,
-            payload.as_bytes(),
-            false,
-            None,
-            None,
-            None,
-        ) {
-            Err(PublishError::PublishWithoutKeypair) => {}
-            _ => panic!(),
-        }
-    }
-    #[test]
     fn publish_with_different_log_id_to_previous_errors() {
         let mut csprng: OsRng = OsRng {};
         let key_pair: Keypair = Keypair::generate(&mut csprng);
@@ -297,7 +278,7 @@ mod tests {
         let mut out = [0u8; 512];
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -310,7 +291,7 @@ mod tests {
         let mut out2 = [0u8; 512];
         match publish(
             &mut out2,
-            Some(&key_pair),
+            &key_pair,
             1,
             payload.as_bytes(),
             false,
@@ -333,7 +314,7 @@ mod tests {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -362,7 +343,7 @@ mod tests {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -375,7 +356,7 @@ mod tests {
         let mut out2 = [0u8; 512];
         let size2 = publish(
             &mut out2,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -407,7 +388,7 @@ mod tests {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -420,7 +401,7 @@ mod tests {
         let mut out2 = [0u8; 512];
         let size2 = publish(
             &mut out2,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -454,7 +435,7 @@ mod tests {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -467,7 +448,7 @@ mod tests {
         let mut out2 = [0u8; 512];
         let size2 = publish(
             &mut out2,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -506,7 +487,7 @@ mod tests {
 
         let size = publish(
             &mut out,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,
@@ -520,7 +501,7 @@ mod tests {
         let mut out2 = [0u8; 512];
         publish(
             &mut out2,
-            Some(&key_pair),
+            &key_pair,
             0,
             payload.as_bytes(),
             false,

@@ -14,10 +14,10 @@
 //!
 //! ## Example
 //!
-//! `publish`, `verify` and `decode` the first `Entry` in a bamboo log.
+//! [publish](publish()), [verify](verify()) and [decode](decode()) the first [Entry] in a bamboo log.
 //!
-//! NB: Publishing and verifying the first entry is the most simple case. The following entries
-//! require passing the backlink and lipmaa_link.
+//! NB: Publishing and verifying the first entry is the most simple case. The subsequent entries
+//! require passing the previous seq_num, the previous entry, and lipmaa_link.
 //!
 //! ```
 //! use bamboo_rs_core::{publish, verify, decode, yamf_hash::new_blake2b, Entry, Signature, YamfHash, Keypair, entry::MAX_ENTRY_SIZE};
@@ -32,7 +32,7 @@
 //!
 //! let size = publish(
 //!     &mut out,
-//!     Some(&key_pair),
+//!     &key_pair,
 //!     log_id,
 //!     payload.as_bytes(),
 //!     false,

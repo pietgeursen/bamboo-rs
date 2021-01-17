@@ -163,7 +163,7 @@ pub fn publish(
 
     publish_entry(
         &mut out[..],
-        Some(&key_pair),
+        &key_pair,
         log_id,
         payload,
         is_end_of_feed,

@@ -13,8 +13,6 @@ pub enum Error {
     PublishWithIncorrectLipmaaLinkLogId,
     #[snafu(display("Attempting to publish using a keypair that does not have a secret key"))]
     PublishWithoutSecretKey,
-    #[snafu(display("Attempting to publish without a keypair"))]
-    PublishWithoutKeypair,
     #[snafu(display("Attempting to publish an entry with a different keypair than the backlink"))]
     PublishKeypairDidNotMatchBacklinkPublicKey,
     #[snafu(display(

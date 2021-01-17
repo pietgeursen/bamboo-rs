@@ -57,12 +57,12 @@ pub extern "C" fn publish_ed25519_blake2b_entry(
     let key_pair = Keypair::from_bytes(&key_pair_bytes[..]);
 
     if let Err(_) = key_pair {
-        return PublishError::PublishWithoutKeypair;
+        return PublishError::PublishWithInvalidKeypair;
     }
 
     match publish(
         out,
-        Some(&key_pair.unwrap()),
+        &key_pair.unwrap(),
         args.log_id,
         payload,
         args.is_end_of_feed,
