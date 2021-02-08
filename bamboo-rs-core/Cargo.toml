@@ -1,6 +1,6 @@
 [package]
 name = "bamboo-rs-core"
-version = "0.1.0-pre-29"
+version = "0.1.0-pre-31"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 license = "AGPL-3.0"
@@ -8,13 +8,15 @@ repository = "https://github.com/pietgeursen/bamboo-rs"
 description = "Publish and verify signed hash chains of bamboo messages."
 
 [features]
-default = ["std"]
+default = ["std", "u64_backend"]
 std = ["varu64/std", "hex/std", "rayon", "snafu/std", "ed25519-dalek/serde", "ed25519-dalek/std", "ed25519-dalek/batch", "yamf-hash/std"]
+u64_backend = ["ed25519-dalek/u64_backend"]
+u32_backend = ["ed25519-dalek/u32_backend"]
 
 [dependencies]
 arrayvec = { version = "0.5.1", default-features = false}
 blake2b_simd = { version = "0.5", default-features = false }
-ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }
+ed25519-dalek = { version = "1.0.1", default-features = false }
 hex = { version = "0.4", default-features = false }
 lipmaa-link = "0.1"
 rayon = { version = "1.5", optional = true }

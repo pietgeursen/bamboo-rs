@@ -73,7 +73,8 @@ See the Typescript types in `index.d.ts`
 ### 🛠️ Build with `wasm-pack build`
 
 ```
-wasm-pack build  -t nodejs --scope bamboo-logs --release --out-name index
+wasm-pack build  -t nodejs --scope bamboo-logs --release --out-name index -- --no-default-features --features u32_backend
+wasm-opt index_bg.wasm --enable-mutable-globals -O4 -o ./index_bg.wasm
 ```
 
 ### 🔬 Test in Headless Browsers with `wasm-pack test`

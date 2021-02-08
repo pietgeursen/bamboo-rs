@@ -22,14 +22,14 @@ if [ -z "$RELEASE_BUILD" ]; then
       $CROSS build --target $TARGET_TRIPLE
       $CROSS build --target $TARGET_TRIPLE --all-features
     else
-      $CROSS build -p bamboo-c --target $TARGET_TRIPLE --no-default-features --manifest-path=bamboo-c/Cargo.toml
+      $CROSS build -p bamboo-c --target $TARGET_TRIPLE --no-default-features --features u32_backend --manifest-path=bamboo-c/Cargo.toml
     fi
 else
     if [ -z $NO_STD ]
     then
       $CROSS build --target $TARGET_TRIPLE --all-features --release
     else
-      $CROSS build -p bamboo-c --target $TARGET_TRIPLE --no-default-features --manifest-path=bamboo-c/Cargo.toml --release
+      $CROSS build -p bamboo-c --target $TARGET_TRIPLE --no-default-features --features u32_backend --manifest-path=bamboo-c/Cargo.toml --release
     fi
 fi
 

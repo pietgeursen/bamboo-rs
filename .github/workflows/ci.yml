@@ -19,7 +19,7 @@ jobs:
     - name: Build
       run: cargo build
     - name: Build no_std
-      run: cd bamboo-rs-core && cargo build --no-default-features
+      run: cd bamboo-rs-core && cargo build --no-default-features --features u64_backend
     - name: Run tests
       run: cargo test
     - name: Run benches
