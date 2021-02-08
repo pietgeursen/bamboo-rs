@@ -1,6 +1,6 @@
 [package]
 name = "bamboo-rs-core"
-version = "0.1.0-pre-29"
+version = "0.1.0-pre-31"
 authors = ["Piet Geursen <pietgeursen@gmail.com>"]
 edition = "2018"
 license = "AGPL-3.0"

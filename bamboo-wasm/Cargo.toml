@@ -11,6 +11,9 @@ wasm-opt = false
 crate-type = ["cdylib", "rlib"]
 
 [features]
+
+# I'd rather set the default to be u32_backend but if we do that then building from the workspace level breaks. 
+# Use the u32_backend feature when actually building for wasm.
 default = ["u64_backend"]
 u32_backend = ["base", "bamboo-rs-core/u32_backend", "ed25519-dalek/u32_backend"]
 u64_backend = ["base", "bamboo-rs-core/u64_backend", "ed25519-dalek/u64_backend"]
