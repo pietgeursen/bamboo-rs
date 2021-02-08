@@ -9,9 +9,11 @@ name = "bamboo_c"
 crate-type = ["cdylib", "staticlib"]
 
 [features]
-default = ["std"]
+default = ["std", "u64_backend"]
 std = ["ed25519-dalek/std"]
+u32_backend = ["bamboo-rs-core/u32_backend", "ed25519-dalek/u32_backend"]
+u64_backend = ["bamboo-rs-core/u64_backend", "ed25519-dalek/u64_backend"]
 
 [dependencies]
-bamboo-rs-core = {path = "../bamboo-rs-core", default_features = false, features = ["u64_backend"]}
-ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }
+bamboo-rs-core = {path = "../bamboo-rs-core", default_features = false}
+ed25519-dalek = { version = "1.0.1", default-features = false}
