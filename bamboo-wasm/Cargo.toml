@@ -11,14 +11,16 @@ wasm-opt = false
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["wee_alloc", "console_error_panic_hook"]
-
+default = ["u64_backend"]
+u32_backend = ["base", "bamboo-rs-core/u32_backend", "ed25519-dalek/u32_backend"]
+u64_backend = ["base", "bamboo-rs-core/u64_backend", "ed25519-dalek/u64_backend"]
+base = ["wee_alloc", "console_error_panic_hook"]
 
 [dependencies]
 arrayvec = { version = "0.5", default-features = false}
 wasm-bindgen = { version = "0.2.69"}
-bamboo-rs-core = {path = "../bamboo-rs-core"}
-ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend", "alloc", "serde"] }
+bamboo-rs-core = {path = "../bamboo-rs-core", default-features = false, features = ["std"]}
+ed25519-dalek = { version = "1.0.1", default-features = false, features = ["alloc", "serde"] }
 rand = { version = "0.7.3", features = ["wasm-bindgen"] }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by

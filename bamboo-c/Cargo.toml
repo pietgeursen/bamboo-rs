@@ -13,5 +13,5 @@ default = ["std"]
 std = ["ed25519-dalek/std"]
 
 [dependencies]
-bamboo-rs-core = {path = "../bamboo-rs-core", default_features = false}
+bamboo-rs-core = {path = "../bamboo-rs-core", default_features = false, features = ["u64_backend"]}
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"] }
