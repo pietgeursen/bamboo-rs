@@ -1,7 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/curve25519-dalek-3.0.2/src/traits.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>traits.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/curve25519-dalek-3.2.0/src/traits.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>traits.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="alternate icon" type="image/png" href="../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../curve25519_dalek/index.html'><div class='logo-container'><img src='https://doc.dalek.rs/assets/dalek-logo-clear.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><span class="help-button">?</span>
-                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
+<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../curve25519_dalek/index.html'><div class='logo-container'><img src='https://doc.dalek.rs/assets/dalek-logo-clear.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img src="../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -379,26 +378,43 @@
 <span id="376">376</span>
 <span id="377">377</span>
 <span id="378">378</span>
-</pre><div class="example-wrap"><pre class="rust ">
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
+<span id="384">384</span>
+<span id="385">385</span>
+<span id="386">386</span>
+<span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
+<span id="391">391</span>
+<span id="392">392</span>
+<span id="393">393</span>
+<span id="394">394</span>
+</pre><pre class="rust">
 <span class="comment">// -*- mode: rust; -*-</span>
 <span class="comment">//</span>
 <span class="comment">// This file is part of curve25519-dalek.</span>
-<span class="comment">// Copyright (c) 2016-2019 Isis Lovecruft, Henry de Valence</span>
+<span class="comment">// Copyright (c) 2016-2021 isis lovecruft</span>
+<span class="comment">// Copyright (c) 2016-2019 Henry de Valence</span>
 <span class="comment">// See LICENSE for licensing information.</span>
 <span class="comment">//</span>
 <span class="comment">// Authors:</span>
-<span class="comment">// - Isis Agora Lovecruft &lt;isis@patternsinthevoid.net&gt;</span>
+<span class="comment">// - isis agora lovecruft &lt;isis@patternsinthevoid.net&gt;</span>
 <span class="comment">// - Henry de Valence &lt;hdevalence@hdevalence.ca&gt;</span>
 
 <span class="doccomment">//! Module for common traits.</span>
 
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">non_snake_case</span>)]</span>
 
-<span class="kw">use</span> <span class="ident">core</span>::<span class="ident">borrow</span>::<span class="ident">Borrow</span>;
+<span class="kw">use</span> <span class="ident">core::borrow::Borrow</span>;
 
 <span class="kw">use</span> <span class="ident">subtle</span>;
 
-<span class="kw">use</span> <span class="ident">scalar</span>::<span class="ident">Scalar</span>;
+<span class="kw">use</span> <span class="ident">scalar::Scalar</span>;
 
 <span class="comment">// ------------------------------------------------------------------------</span>
 <span class="comment">// Public Traits</span>
@@ -422,11 +438,26 @@
 <span class="doccomment">/// constructor.</span>
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">IsIdentity</span> <span class="kw">for</span> <span class="ident">T</span>
 <span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">subtle</span>::<span class="ident">ConstantTimeEq</span> <span class="op">+</span> <span class="ident">Identity</span>,
+    <span class="ident">T</span>: <span class="ident">subtle::ConstantTimeEq</span> <span class="op">+</span> <span class="ident">Identity</span>,
 {
     <span class="kw">fn</span> <span class="ident">is_identity</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">ct_eq</span>(<span class="kw-2">&amp;</span><span class="ident">T</span>::<span class="ident">identity</span>()).<span class="ident">unwrap_u8</span>() <span class="op">=</span><span class="op">=</span> <span class="number">1u8</span>
+        <span class="self">self</span>.<span class="ident">ct_eq</span>(<span class="kw-2">&amp;</span><span class="ident">T::identity</span>()).<span class="ident">unwrap_u8</span>() <span class="op">=</span><span class="op">=</span> <span class="number">1u8</span>
     }
+}
+
+<span class="doccomment">/// A precomputed table of basepoints, for optimising scalar multiplications.</span>
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">BasepointTable</span> {
+    <span class="doccomment">/// The type of point contained within this table.</span>
+    <span class="kw">type</span> <span class="ident">Point</span>;
+
+    <span class="doccomment">/// Generate a new precomputed basepoint table from the given basepoint.</span>
+    <span class="kw">fn</span> <span class="ident">create</span>(<span class="ident">basepoint</span>: <span class="kw-2">&amp;</span><span class="self">Self</span><span class="ident">::Point</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span>;
+
+    <span class="doccomment">/// Retrieve the original basepoint from this table.</span>
+    <span class="kw">fn</span> <span class="ident">basepoint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span><span class="ident">::Point</span>;
+
+    <span class="doccomment">/// Multiply a `scalar` by this precomputed basepoint table, in constant time.</span>
+    <span class="kw">fn</span> <span class="ident">basepoint_mul</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">scalar</span>: <span class="kw-2">&amp;</span><span class="ident">Scalar</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span><span class="ident">::Point</span>;
 }
 
 <span class="doccomment">/// A trait for constant-time multiscalar multiplication without precomputation.</span>
@@ -477,12 +508,12 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// assert_eq!(A1.compress(), (-A2).compress());</span>
     <span class="doccomment">/// ```</span>
-    <span class="kw">fn</span> <span class="ident">multiscalar_mul</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">J</span><span class="op">&gt;</span>(<span class="ident">scalars</span>: <span class="ident">I</span>, <span class="ident">points</span>: <span class="ident">J</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span>::<span class="ident">Point</span>
+    <span class="kw">fn</span> <span class="ident">multiscalar_mul</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">J</span><span class="op">&gt;</span>(<span class="ident">scalars</span>: <span class="ident">I</span>, <span class="ident">points</span>: <span class="ident">J</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span><span class="ident">::Point</span>
     <span class="kw">where</span>
         <span class="ident">I</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">I</span>::<span class="ident">Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
+        <span class="ident">I::Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
         <span class="ident">J</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">J</span>::<span class="ident">Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Point</span><span class="op">&gt;</span>;
+        <span class="ident">J::Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Point</span><span class="op">&gt;</span>;
 }
 
 <span class="doccomment">/// A trait for variable-time multiscalar multiplication without precomputation.</span>
@@ -542,11 +573,11 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// assert_eq!(A3, Some(A1+A1));</span>
     <span class="doccomment">/// ```</span>
-    <span class="kw">fn</span> <span class="ident">optional_multiscalar_mul</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">J</span><span class="op">&gt;</span>(<span class="ident">scalars</span>: <span class="ident">I</span>, <span class="ident">points</span>: <span class="ident">J</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Point</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">optional_multiscalar_mul</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">J</span><span class="op">&gt;</span>(<span class="ident">scalars</span>: <span class="ident">I</span>, <span class="ident">points</span>: <span class="ident">J</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Point</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">I</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">I</span>::<span class="ident">Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
-        <span class="ident">J</span>: <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Point</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+        <span class="ident">I::Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
+        <span class="ident">J</span>: <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Point</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 
     <span class="doccomment">/// Given an iterator of public scalars and an iterator of</span>
     <span class="doccomment">/// public points, compute</span>
@@ -592,15 +623,15 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// assert_eq!(A1.compress(), (-A2).compress());</span>
     <span class="doccomment">/// ```</span>
-    <span class="kw">fn</span> <span class="ident">vartime_multiscalar_mul</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">J</span><span class="op">&gt;</span>(<span class="ident">scalars</span>: <span class="ident">I</span>, <span class="ident">points</span>: <span class="ident">J</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span>::<span class="ident">Point</span>
+    <span class="kw">fn</span> <span class="ident">vartime_multiscalar_mul</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">J</span><span class="op">&gt;</span>(<span class="ident">scalars</span>: <span class="ident">I</span>, <span class="ident">points</span>: <span class="ident">J</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span><span class="ident">::Point</span>
     <span class="kw">where</span>
         <span class="ident">I</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">I</span>::<span class="ident">Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
+        <span class="ident">I::Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
         <span class="ident">J</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">J</span>::<span class="ident">Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Point</span><span class="op">&gt;</span>,
-        <span class="self">Self</span>::<span class="ident">Point</span>: <span class="ident">Clone</span>,
+        <span class="ident">J::Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Point</span><span class="op">&gt;</span>,
+        <span class="self">Self</span><span class="ident">::Point</span>: <span class="ident">Clone</span>,
     {
-        <span class="self">Self</span>::<span class="ident">optional_multiscalar_mul</span>(
+        <span class="self">Self</span><span class="ident">::optional_multiscalar_mul</span>(
             <span class="ident">scalars</span>,
             <span class="ident">points</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">P</span><span class="op">|</span> <span class="prelude-val">Some</span>(<span class="ident">P</span>.<span class="ident">borrow</span>().<span class="ident">clone</span>())),
         )
@@ -643,7 +674,7 @@
     <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>(<span class="ident">static_points</span>: <span class="ident">I</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span>
     <span class="kw">where</span>
         <span class="ident">I</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">I</span>::<span class="ident">Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Point</span><span class="op">&gt;</span>;
+        <span class="ident">I::Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Point</span><span class="op">&gt;</span>;
 
     <span class="doccomment">/// Given `static_scalars`, an iterator of public scalars</span>
     <span class="doccomment">/// \\(b_i\\), compute</span>
@@ -659,18 +690,18 @@
     <span class="doccomment">/// be convertable to iterators (`I: IntoIter`), and the</span>
     <span class="doccomment">/// iterator&#39;s items must be `Borrow&lt;Scalar&gt;`, to allow iterators</span>
     <span class="doccomment">/// returning either `Scalar`s or `&amp;Scalar`s.</span>
-    <span class="kw">fn</span> <span class="ident">vartime_multiscalar_mul</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">static_scalars</span>: <span class="ident">I</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span>::<span class="ident">Point</span>
+    <span class="kw">fn</span> <span class="ident">vartime_multiscalar_mul</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">static_scalars</span>: <span class="ident">I</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span><span class="ident">::Point</span>
     <span class="kw">where</span>
         <span class="ident">I</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">I</span>::<span class="ident">Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
+        <span class="ident">I::Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
     {
-        <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">iter</span>;
+        <span class="kw">use</span> <span class="ident">core::iter</span>;
 
-        <span class="self">Self</span>::<span class="ident">vartime_mixed_multiscalar_mul</span>(
+        <span class="self">Self</span><span class="ident">::vartime_mixed_multiscalar_mul</span>(
             <span class="self">self</span>,
             <span class="ident">static_scalars</span>,
-            <span class="ident">iter</span>::<span class="ident">empty</span>::<span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>(),
-            <span class="ident">iter</span>::<span class="ident">empty</span>::<span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Point</span><span class="op">&gt;</span>(),
+            <span class="ident">iter::empty</span>::<span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>(),
+            <span class="ident">iter::empty</span>::<span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Point</span><span class="op">&gt;</span>(),
         )
     }
 
@@ -695,16 +726,16 @@
         <span class="ident">static_scalars</span>: <span class="ident">I</span>,
         <span class="ident">dynamic_scalars</span>: <span class="ident">J</span>,
         <span class="ident">dynamic_points</span>: <span class="ident">K</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span>::<span class="ident">Point</span>
+    ) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span><span class="ident">::Point</span>
     <span class="kw">where</span>
         <span class="ident">I</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">I</span>::<span class="ident">Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
+        <span class="ident">I::Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
         <span class="ident">J</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">J</span>::<span class="ident">Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
+        <span class="ident">J::Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
         <span class="ident">K</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">K</span>::<span class="ident">Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Point</span><span class="op">&gt;</span>,
+        <span class="ident">K::Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Point</span><span class="op">&gt;</span>,
     {
-        <span class="self">Self</span>::<span class="ident">optional_mixed_multiscalar_mul</span>(
+        <span class="self">Self</span><span class="ident">::optional_mixed_multiscalar_mul</span>(
             <span class="self">self</span>,
             <span class="ident">static_scalars</span>,
             <span class="ident">dynamic_scalars</span>,
@@ -736,13 +767,13 @@
         <span class="ident">static_scalars</span>: <span class="ident">I</span>,
         <span class="ident">dynamic_scalars</span>: <span class="ident">J</span>,
         <span class="ident">dynamic_points</span>: <span class="ident">K</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Point</span><span class="op">&gt;</span>
+    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Point</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">I</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">I</span>::<span class="ident">Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
+        <span class="ident">I::Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
         <span class="ident">J</span>: <span class="ident">IntoIterator</span>,
-        <span class="ident">J</span>::<span class="ident">Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
-        <span class="ident">K</span>: <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Point</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+        <span class="ident">J::Item</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>,
+        <span class="ident">K</span>: <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Point</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 }
 
 <span class="comment">// ------------------------------------------------------------------------</span>
@@ -759,4 +790,4 @@
     <span class="kw">fn</span> <span class="ident">is_valid</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span>;
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "curve25519_dalek";</script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="curve25519_dalek" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script></body></html>

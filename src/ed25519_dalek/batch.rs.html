@@ -1,7 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/ed25519-dalek-1.0.1/src/batch.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>batch.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/ed25519-dalek-1.0.1/src/batch.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>batch.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="alternate icon" type="image/png" href="../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../ed25519_dalek/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><span class="help-button">?</span>
-                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
+<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../ed25519_dalek/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img src="../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -306,7 +305,7 @@
 <span id="303">303</span>
 <span id="304">304</span>
 <span id="305">305</span>
-</pre><div class="example-wrap"><pre class="rust ">
+</pre><pre class="rust">
 <span class="comment">// -*- mode: rust; -*-</span>
 <span class="comment">//</span>
 <span class="comment">// This file is part of ed25519-dalek.</span>
@@ -321,35 +320,35 @@
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>)]</span>
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">alloc</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">alloc</span>::<span class="ident">vec</span>::<span class="ident">Vec</span>;
+<span class="kw">use</span> <span class="ident">alloc::vec::Vec</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;std&quot;</span>))]</span>
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">vec</span>::<span class="ident">Vec</span>;
+<span class="kw">use</span> <span class="ident">std::vec::Vec</span>;
 
-<span class="kw">use</span> <span class="ident">core</span>::<span class="ident">convert</span>::<span class="ident">TryFrom</span>;
-<span class="kw">use</span> <span class="ident">core</span>::<span class="ident">iter</span>::<span class="ident">once</span>;
+<span class="kw">use</span> <span class="ident">core::convert::TryFrom</span>;
+<span class="kw">use</span> <span class="ident">core::iter::once</span>;
 
-<span class="kw">use</span> <span class="ident">curve25519_dalek</span>::<span class="ident">constants</span>;
-<span class="kw">use</span> <span class="ident">curve25519_dalek</span>::<span class="ident">edwards</span>::<span class="ident">EdwardsPoint</span>;
-<span class="kw">use</span> <span class="ident">curve25519_dalek</span>::<span class="ident">scalar</span>::<span class="ident">Scalar</span>;
-<span class="kw">use</span> <span class="ident">curve25519_dalek</span>::<span class="ident">traits</span>::<span class="ident">IsIdentity</span>;
-<span class="kw">use</span> <span class="ident">curve25519_dalek</span>::<span class="ident">traits</span>::<span class="ident">VartimeMultiscalarMul</span>;
+<span class="kw">use</span> <span class="ident">curve25519_dalek::constants</span>;
+<span class="kw">use</span> <span class="ident">curve25519_dalek::edwards::EdwardsPoint</span>;
+<span class="kw">use</span> <span class="ident">curve25519_dalek::scalar::Scalar</span>;
+<span class="kw">use</span> <span class="ident">curve25519_dalek::traits::IsIdentity</span>;
+<span class="kw">use</span> <span class="ident">curve25519_dalek::traits::VartimeMultiscalarMul</span>;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">curve25519_dalek</span>::<span class="ident">digest</span>::<span class="ident">Digest</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">curve25519_dalek::digest::Digest</span>;
 
-<span class="kw">use</span> <span class="ident">merlin</span>::<span class="ident">Transcript</span>;
+<span class="kw">use</span> <span class="ident">merlin::Transcript</span>;
 
-<span class="kw">use</span> <span class="ident">rand</span>::<span class="ident">Rng</span>;
+<span class="kw">use</span> <span class="ident">rand::Rng</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;batch&quot;</span>, <span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;batch_deterministic&quot;</span>)))]</span>
-<span class="kw">use</span> <span class="ident">rand</span>::<span class="ident">thread_rng</span>;
+<span class="kw">use</span> <span class="ident">rand::thread_rng</span>;
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;batch&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;batch_deterministic&quot;</span>))]</span>
 <span class="kw">use</span> <span class="ident">rand_core</span>;
 
-<span class="kw">use</span> <span class="ident">sha2</span>::<span class="ident">Sha512</span>;
+<span class="kw">use</span> <span class="ident">sha2::Sha512</span>;
 
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">errors</span>::<span class="ident">InternalError</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">errors</span>::<span class="ident">SignatureError</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">public</span>::<span class="ident">PublicKey</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">signature</span>::<span class="ident">InternalSignature</span>;
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::errors::InternalError</span>;
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::errors::SignatureError</span>;
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::public::PublicKey</span>;
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::signature::InternalSignature</span>;
 
 <span class="kw">trait</span> <span class="ident">BatchTranscript</span> {
     <span class="kw">fn</span> <span class="ident">append_scalars</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">scalars</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span>);
@@ -393,13 +392,13 @@
 <span class="kw">struct</span> <span class="ident">ZeroRng</span> {}
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;batch&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;batch_deterministic&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">rand_core</span>::<span class="ident">RngCore</span> <span class="kw">for</span> <span class="ident">ZeroRng</span> {
+<span class="kw">impl</span> <span class="ident">rand_core::RngCore</span> <span class="kw">for</span> <span class="ident">ZeroRng</span> {
     <span class="kw">fn</span> <span class="ident">next_u32</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u32</span> {
-        <span class="ident">rand_core</span>::<span class="ident">impls</span>::<span class="ident">next_u32_via_fill</span>(<span class="self">self</span>)
+        <span class="ident">rand_core::impls::next_u32_via_fill</span>(<span class="self">self</span>)
     }
 
     <span class="kw">fn</span> <span class="ident">next_u64</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u64</span> {
-        <span class="ident">rand_core</span>::<span class="ident">impls</span>::<span class="ident">next_u64_via_fill</span>(<span class="self">self</span>)
+        <span class="ident">rand_core::impls::next_u64_via_fill</span>(<span class="self">self</span>)
     }
 
     <span class="doccomment">/// A no-op function which leaves the destination bytes for randomness unchanged.</span>
@@ -412,14 +411,14 @@
     <span class="doccomment">/// identical to the STROBE `MAC` operation.</span>
     <span class="kw">fn</span> <span class="ident">fill_bytes</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">_dest</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> [<span class="ident">u8</span>]) { }
 
-    <span class="kw">fn</span> <span class="ident">try_fill_bytes</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">dest</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">rand_core</span>::<span class="ident">Error</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">try_fill_bytes</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">dest</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> [<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">rand_core::Error</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">fill_bytes</span>(<span class="ident">dest</span>);
         <span class="prelude-val">Ok</span>(())
     }
 }
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;batch&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;batch_deterministic&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">rand_core</span>::<span class="ident">CryptoRng</span> <span class="kw">for</span> <span class="ident">ZeroRng</span> {}
+<span class="kw">impl</span> <span class="ident">rand_core::CryptoRng</span> <span class="kw">for</span> <span class="ident">ZeroRng</span> {}
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">all</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;batch&quot;</span>), <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;batch_deterministic&quot;</span>))]</span>
 <span class="kw">fn</span> <span class="ident">zero_rng</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ZeroRng</span> {
@@ -529,7 +528,7 @@
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">non_snake_case</span>)]</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify_batch</span>(
     <span class="ident">messages</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>[<span class="ident">u8</span>]],
-    <span class="ident">signatures</span>: <span class="kw-2">&amp;</span>[<span class="ident">ed25519</span>::<span class="ident">Signature</span>],
+    <span class="ident">signatures</span>: <span class="kw-2">&amp;</span>[<span class="ident">ed25519::Signature</span>],
     <span class="ident">public_keys</span>: <span class="kw-2">&amp;</span>[<span class="ident">PublicKey</span>],
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SignatureError</span><span class="op">&gt;</span>
 {
@@ -537,7 +536,7 @@
     <span class="kw">if</span> <span class="ident">signatures</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="ident">messages</span>.<span class="ident">len</span>() <span class="op">|</span><span class="op">|</span>
         <span class="ident">signatures</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="ident">public_keys</span>.<span class="ident">len</span>() <span class="op">|</span><span class="op">|</span>
         <span class="ident">public_keys</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="ident">messages</span>.<span class="ident">len</span>() {
-        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">InternalError</span>::<span class="ident">ArrayLengthError</span>{
+        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">InternalError::ArrayLengthError</span>{
             <span class="ident">name_a</span>: <span class="string">&quot;signatures&quot;</span>, <span class="ident">length_a</span>: <span class="ident">signatures</span>.<span class="ident">len</span>(),
             <span class="ident">name_b</span>: <span class="string">&quot;messages&quot;</span>, <span class="ident">length_b</span>: <span class="ident">messages</span>.<span class="ident">len</span>(),
             <span class="ident">name_c</span>: <span class="string">&quot;public_keys&quot;</span>, <span class="ident">length_c</span>: <span class="ident">public_keys</span>.<span class="ident">len</span>(),
@@ -547,16 +546,16 @@
     <span class="comment">// Convert all signatures to `InternalSignature`</span>
     <span class="kw">let</span> <span class="ident">signatures</span> <span class="op">=</span> <span class="ident">signatures</span>
         .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="ident">InternalSignature</span>::<span class="ident">try_from</span>)
+        .<span class="ident">map</span>(<span class="ident">InternalSignature::try_from</span>)
         .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span>, <span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
 
     <span class="comment">// Compute H(R || A || M) for each (signature, public_key, message) triplet</span>
     <span class="kw">let</span> <span class="ident">hrams</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span> <span class="op">=</span> (<span class="number">0</span>..<span class="ident">signatures</span>.<span class="ident">len</span>()).<span class="ident">map</span>(<span class="op">|</span><span class="ident">i</span><span class="op">|</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">h</span>: <span class="ident">Sha512</span> <span class="op">=</span> <span class="ident">Sha512</span>::<span class="ident">default</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">h</span>: <span class="ident">Sha512</span> <span class="op">=</span> <span class="ident">Sha512::default</span>();
         <span class="ident">h</span>.<span class="ident">update</span>(<span class="ident">signatures</span>[<span class="ident">i</span>].<span class="ident">R</span>.<span class="ident">as_bytes</span>());
         <span class="ident">h</span>.<span class="ident">update</span>(<span class="ident">public_keys</span>[<span class="ident">i</span>].<span class="ident">as_bytes</span>());
         <span class="ident">h</span>.<span class="ident">update</span>(<span class="kw-2">&amp;</span><span class="ident">messages</span>[<span class="ident">i</span>]);
-        <span class="ident">Scalar</span>::<span class="ident">from_hash</span>(<span class="ident">h</span>)
+        <span class="ident">Scalar::from_hash</span>(<span class="ident">h</span>)
     }).<span class="ident">collect</span>();
 
     <span class="comment">// Collect the message lengths and the scalar portions of the signatures,</span>
@@ -568,7 +567,7 @@
     <span class="comment">// This provides synthethic randomness in the default configuration, and</span>
     <span class="comment">// purely deterministic in the case of compiling with the</span>
     <span class="comment">// &quot;batch_deterministic&quot; feature.</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">transcript</span>: <span class="ident">Transcript</span> <span class="op">=</span> <span class="ident">Transcript</span>::<span class="ident">new</span>(<span class="string">b&quot;ed25519 batch verification&quot;</span>);
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">transcript</span>: <span class="ident">Transcript</span> <span class="op">=</span> <span class="ident">Transcript::new</span>(<span class="string">b&quot;ed25519 batch verification&quot;</span>);
 
     <span class="ident">transcript</span>.<span class="ident">append_scalars</span>(<span class="kw-2">&amp;</span><span class="ident">hrams</span>);
     <span class="ident">transcript</span>.<span class="ident">append_message_lengths</span>(<span class="kw-2">&amp;</span><span class="ident">message_lengths</span>);
@@ -582,7 +581,7 @@
     <span class="comment">// Select a random 128-bit scalar for each signature.</span>
     <span class="kw">let</span> <span class="ident">zs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Scalar</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">signatures</span>
         .<span class="ident">iter</span>()
-        .<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">Scalar</span>::<span class="ident">from</span>(<span class="ident">prng</span>.<span class="ident">gen</span>::<span class="op">&lt;</span><span class="ident">u128</span><span class="op">&gt;</span>()))
+        .<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">Scalar::from</span>(<span class="ident">prng</span>.<span class="ident">gen</span>::<span class="op">&lt;</span><span class="ident">u128</span><span class="op">&gt;</span>()))
         .<span class="ident">collect</span>();
 
     <span class="comment">// Compute the basepoint coefficient, ∑ s[i]z[i] (mod l)</span>
@@ -598,19 +597,19 @@
 
     <span class="kw">let</span> <span class="ident">Rs</span> <span class="op">=</span> <span class="ident">signatures</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">sig</span><span class="op">|</span> <span class="ident">sig</span>.<span class="ident">R</span>.<span class="ident">decompress</span>());
     <span class="kw">let</span> <span class="ident">As</span> <span class="op">=</span> <span class="ident">public_keys</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">pk</span><span class="op">|</span> <span class="prelude-val">Some</span>(<span class="ident">pk</span>.<span class="number">1</span>));
-    <span class="kw">let</span> <span class="ident">B</span> <span class="op">=</span> <span class="ident">once</span>(<span class="prelude-val">Some</span>(<span class="ident">constants</span>::<span class="ident">ED25519_BASEPOINT_POINT</span>));
+    <span class="kw">let</span> <span class="ident">B</span> <span class="op">=</span> <span class="ident">once</span>(<span class="prelude-val">Some</span>(<span class="ident">constants::ED25519_BASEPOINT_POINT</span>));
 
     <span class="comment">// Compute (-∑ z[i]s[i] (mod l)) B + ∑ z[i]R[i] + ∑ (z[i]H(R||A||M)[i] (mod l)) A[i] = 0</span>
-    <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">EdwardsPoint</span>::<span class="ident">optional_multiscalar_mul</span>(
+    <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">EdwardsPoint::optional_multiscalar_mul</span>(
         <span class="ident">once</span>(<span class="op">-</span><span class="ident">B_coefficient</span>).<span class="ident">chain</span>(<span class="ident">zs</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>()).<span class="ident">chain</span>(<span class="ident">zhrams</span>),
         <span class="ident">B</span>.<span class="ident">chain</span>(<span class="ident">Rs</span>).<span class="ident">chain</span>(<span class="ident">As</span>),
-    ).<span class="ident">ok_or</span>(<span class="ident">InternalError</span>::<span class="ident">VerifyError</span>)<span class="question-mark">?</span>;
+    ).<span class="ident">ok_or</span>(<span class="ident">InternalError::VerifyError</span>)<span class="question-mark">?</span>;
 
     <span class="kw">if</span> <span class="ident">id</span>.<span class="ident">is_identity</span>() {
         <span class="prelude-val">Ok</span>(())
     } <span class="kw">else</span> {
-        <span class="prelude-val">Err</span>(<span class="ident">InternalError</span>::<span class="ident">VerifyError</span>.<span class="ident">into</span>())
+        <span class="prelude-val">Err</span>(<span class="ident">InternalError::VerifyError</span>.<span class="ident">into</span>())
     }
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "ed25519_dalek";</script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="ed25519_dalek" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script></body></html>
